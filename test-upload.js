@@ -2,7 +2,7 @@ const { createClient } = require('@supabase/supabase-js');
 const fs = require('fs');
 
 const supabaseUrl = 'https://okgkghrlxsdkhzbpzlus.supabase.co';
-const supabaseKey = 'sb_secret_a_gV_kZDVptNqmGdy9IAjg_nq3oVgQx'; // service role
+const supabaseKey = 'YOUR_SUPABASE_SERVICE_ROLE_KEY'; // service role
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function testUpload() {

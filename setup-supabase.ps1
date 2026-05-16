@@ -1,4 +1,4 @@
-$serviceKey = "sb_secret_a_gV_kZDVptNqmGdy9IAjg_nq3oVgQx"
+$serviceKey = "YOUR_SUPABASE_SERVICE_ROLE_KEY"
 $supabaseUrl = "https://okgkghrlxsdkhzbpzlus.supabase.co"
 
 $headers = @{
