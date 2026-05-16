@@ -13,6 +13,54 @@ function sanitizeFileName(name) {
   return base.replace(/[^\w.\-]+/g, '_').replace(/_+/g, '_').slice(0, 120) || 'image'
 }
 
+const defaultTypes = {
+  anime: [],
+  kpop: [],
+  decor: []
+}
+
+const defaultCharactersByType = {
+  anime: {},
+  kpop: {},
+  decor: {}
+}
+
+function loadJson(key, fallback) {
+  if (typeof window === 'undefined') return fallback
+  try {
+    const raw = window.localStorage.getItem(key)
+    if (!raw) return fallback
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? parsed : fallback
+  } catch {
+    return fallback
+  }
+}
+
+function mergeTypes(saved, fallback) {
+  const out = { ...fallback }
+  if (!saved || typeof saved !== 'object') return out
+  for (const cat of Object.keys(fallback)) {
+    const merged = [...new Set([...(fallback[cat] || []), ...(saved[cat] || [])])]
+    out[cat] = merged
+  }
+  return out
+}
+
+function mergeCharsByType(saved, fallback) {
+  const out = JSON.parse(JSON.stringify(fallback))
+  if (!saved || typeof saved !== 'object') return out
+  for (const cat of Object.keys(fallback)) {
+    out[cat] = { ...(fallback[cat] || {}), ...(saved[cat] || {}) }
+    for (const typeName of Object.keys(out[cat])) {
+      const def = fallback[cat]?.[typeName] || []
+      const extra = saved[cat]?.[typeName] || []
+      out[cat][typeName] = [...new Set([...def, ...extra])]
+    }
+  }
+  return out
+}
+
 // --- CROPPING HELPER ---
 async function getCroppedImg(imageSrc, pixelCrop, rotation = 0) {
   const image = await new Promise((resolve, reject) => {
@@ -170,6 +218,20 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
             Belum Disimpan
           </div>
         )}
+
+        {/* DELETE BUTTON */}
+        {!slot.isLayoutSlot && activeUrl && (
+          <button
+            type="button"
+            onClick={(e) => { e.stopPropagation(); onReset(activeKey); }}
+            className="absolute bottom-2 right-2 bg-red-600/80 hover:bg-red-600 text-white p-2 rounded-lg backdrop-blur-md border border-white/10 transition-all opacity-0 group-hover:opacity-100 shadow-lg"
+            title="Hapus Gambar Permanen"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        )}
       </div>
 
       <div className="p-3 space-y-2">
@@ -241,7 +303,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
 
 // --- MAIN PAGE ---
 export default function TemaAdmin() {
-  const { getUrl, getText, updateAsset, updateText } = useSiteAssets()
+  const { getUrl, getText, updateAsset, updateText, loaded } = useSiteAssets()
   const [openGroup, setOpenGroup] = useState('layout')
   const [dynamicGroups, setDynamicGroups] = useState(ASSET_GROUPS)
   const [dynamicSlots, setDynamicSlots] = useState(ASSET_SLOTS)
@@ -251,6 +313,8 @@ export default function TemaAdmin() {
   const [stagedAssets, setStagedAssets] = useState({})
   const [isSaving, setIsSaving] = useState(false)
   const [saveStatus, setSaveStatus] = useState('')
+  const [saveProgress, setSaveProgress] = useState(0)
+  const [totalSaveItems, setTotalSaveItems] = useState(0)
 
   const handleResetAsset = async (key) => {
     if (!confirm('Hapus gambar kustom ini dan kembalikan ke default?')) return
@@ -289,63 +353,89 @@ export default function TemaAdmin() {
 
       // --- 1. Get from LocalStorage (Admin Definitions) ---
       const STORAGE_TYPES = 'dorong_admin_type_options'
-      let adminAnimeSeries = []
-      let adminKpopGroups = []
-      try {
-        const raw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          adminAnimeSeries = Array.isArray(parsed?.anime) ? parsed.anime : []
-          adminKpopGroups = Array.isArray(parsed?.kpop) ? parsed.kpop : []
-        }
-      } catch { /* ignore */ }
+      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
+      let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
+      let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
+      
+      // --- 2. Sync from Database Products & Assets ---
+      if (hasSupabaseConfig && supabase) {
+        try {
+          // A. Sync from Products
+          const { data: pData, error: pErr } = await supabase.from('products').select('category, subcategory')
+          if (!pErr && pData) {
+            pData.forEach(p => {
+              const cat = p.category
+              const sub = p.subcategory || ''
+              if (!cat || !sub) return
 
-      // --- 2. Get from Database (Actual Products) ---
-      let dbData = []
-      try {
-        const { data, error } = await supabase.from('products').select('category, subcategory')
-        if (!error && data) dbData = data
-      } catch (err) { console.error(err) }
+              let typeName = ''
+              let charName = ''
 
-      const seriesNames = new Set()
-      const seriesSet = new Set()
-      const charMap = new Map()
-      const kpopNames = new Set()
-      const kpopGroups = new Set()
+              if (cat === 'anime' || cat === 'kpop') {
+                const parts = sub.split(' - ')
+                typeName = parts[0].trim()
+                charName = parts[1]?.trim() || ''
+              } else if (cat === 'decor') {
+                typeName = sub.trim()
+              }
 
-      // Add admin definitions first
-      adminAnimeSeries.forEach(s => {
-        if (s && !seriesNames.has(s.toUpperCase())) {
-          seriesNames.add(s.toUpperCase())
-          seriesSet.add(s)
-        }
-      })
-      adminKpopGroups.forEach(g => {
-        if (g && !kpopNames.has(g.toUpperCase())) {
-          kpopNames.add(g.toUpperCase())
-          kpopGroups.add(g)
-        }
-      })
-
-      dbData.forEach(p => {
-        if (p.category === 'anime' && p.subcategory) {
-          const parts = p.subcategory.split(' - ')
-          const series = parts[0].trim(); const char = parts[1]?.trim() || ''
-          if (series && series !== '-' && !seriesNames.has(series.toUpperCase())) {
-            seriesNames.add(series.toUpperCase())
-            seriesSet.add(series)
-            if (!charMap.has(series)) charMap.set(series, new Set())
-            if (char && char !== '-') charMap.get(series).add(char)
+              if (typeName && typeName !== '-') {
+                if (!types[cat]) types[cat] = []
+                if (!types[cat].includes(typeName)) types[cat].push(typeName)
+                
+                if (charName && charName !== '-') {
+                  if (!chars[cat]) chars[cat] = {}
+                  if (!chars[cat][typeName]) chars[cat][typeName] = []
+                  if (!chars[cat][typeName].includes(charName)) chars[cat][typeName].push(charName)
+                }
+              }
+            })
           }
-        }
-        if (p.category === 'kpop' && p.subcategory) {
-          const groupName = p.subcategory.split(' - ')[0].trim()
-          if (groupName && !kpopNames.has(groupName.toUpperCase())) {
-            kpopNames.add(groupName.toUpperCase())
-            kpopGroups.add(groupName)
+
+          // B. Sync from Site Assets (Untuk kategori yang sudah ada cover tapi belum ada produk)
+          const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label')
+          if (!aErr && aData) {
+            aData.forEach(asset => {
+              let rawName = ''
+              if (asset.key.startsWith('anime-cover-')) {
+                rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
+              } else if (asset.key.startsWith('kpop-group-')) {
+                rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
+              } else if (asset.key.startsWith('decor-') && !asset.key.includes('sidebar')) {
+                rawName = asset.label || asset.key.replace('decor-', '').replace(/-/g, ' ')
+              }
+
+              if (rawName) {
+                // Bersihkan "Cover — " atau "Cover " dari nama agar tidak dobel
+                const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                // Ubah ke Title Case (contoh: naruto -> Naruto)
+                const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                
+                const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : 'decor'
+                if (!types[cat].includes(formattedName)) {
+                  types[cat].push(formattedName)
+                }
+              }
+            })
           }
-        }
+        } catch (err) { console.error('DB Sync Error:', err) }
+      }
+
+      // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
+      const finalTypes = {}
+      Object.keys(types).forEach(cat => {
+        const uniqueNames = new Set()
+        types[cat].forEach(raw => {
+          const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+          const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+          if (formatted) uniqueNames.add(formatted)
+        })
+        finalTypes[cat] = Array.from(uniqueNames).sort()
       })
+
+      const seriesSet = new Set(finalTypes.anime || [])
+      const kpopGroups = new Set(finalTypes.kpop || [])
+      const decorThemes = new Set(finalTypes.decor || [])
 
       // 1. Filter out ANY existing dynamic groups/slots to start fresh
       const filteredGroups = ASSET_GROUPS.filter(g =>
@@ -397,27 +487,7 @@ export default function TemaAdmin() {
         filteredSlots.push({ key: `decor-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'decor-sidebar-layout', isLayoutSlot: true, isDecor: true })
       }
       filteredGroups.push({ id: 'decor-all-covers', label: '🖼 Decor — All Theme Covers' })
-
-      const themeMap = new Map() // lowercase -> originalName
-      dbData.forEach(p => {
-        if (p.category === 'decor' && p.subcategory) {
-          const name = p.subcategory.trim()
-          if (name) themeMap.set(name.toLowerCase(), name)
-        }
-      })
-      if (typeof window !== 'undefined') {
-        try {
-          const saved = JSON.parse(window.localStorage.getItem('dorong_admin_type_options') || '{}')
-          if (saved.decor && Array.isArray(saved.decor)) {
-            saved.decor.forEach(t => {
-              const name = t.trim()
-              if (name && !themeMap.has(name.toLowerCase())) themeMap.set(name.toLowerCase(), name)
-            })
-          }
-        } catch { }
-      }
-
-      const sortedThemes = Array.from(themeMap.values()).sort((a, b) => a.localeCompare(b))
+      const sortedThemes = Array.from(decorThemes).sort((a, b) => a.localeCompare(b))
       sortedThemes.forEach(name => {
         const slug = toSlug(name)
         filteredSlots.push({ key: `decor-${slug}`, label: `Cover — ${name}`, group: 'decor-all-covers', defaultUrl: '' })
@@ -429,7 +499,7 @@ export default function TemaAdmin() {
       setSeriesList(sortedSeries.map(s => ({ name: s, slug: toSlug(s) })))
     }
     loadDynamicSlots()
-  }, [])
+  }, [loaded])
 
   const onStage = (key, data) => {
     if (data.file) {
@@ -478,62 +548,33 @@ export default function TemaAdmin() {
     if (keys.length === 0) return
 
     setIsSaving(true)
+    setTotalSaveItems(keys.length)
+    setSaveProgress(0)
     setSaveStatus(`Menyiapkan ${keys.length} perubahan...`)
 
     try {
       const dbUpdates = []
+      const CONCURRENCY_LIMIT = 3 // Parallel uploads limit
       let count = 0
 
-      for (const key of keys) {
-        count++
+      // Helper for uploading one asset
+      const uploadOneAsset = async (key) => {
         const item = stagedAssets[key]
         let finalUrl = item.url
         const isVideo = item.type === 'video'
 
         if (item.file && hasSupabaseConfig && supabase) {
-          setSaveStatus(`Mengunggah ${isVideo ? 'video' : 'gambar'} ${count} dari ${keys.length}... Mohon tunggu.`)
-
           const safeName = sanitizeFileName(item.file.name || 'upload')
           const folder = isVideo ? 'videos' : 'tema'
           const ext = isVideo ? '.mp4' : '.webp'
           const filePath = `${folder}/${key}-${Date.now()}-${safeName}${ext}`
 
-          const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-          const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-          const uploadUrl = `${supabaseUrl}/storage/v1/object/product-images/${filePath}`
-
-          await new Promise((resolve, reject) => {
-            const xhr = new XMLHttpRequest()
-            xhr.open('POST', uploadUrl, true)
-            xhr.setRequestHeader('Authorization', `Bearer ${supabaseAnonKey}`)
-            xhr.setRequestHeader('apikey', supabaseAnonKey)
-            // Penting: Jangan gunakan upsert false di header jika bucket tidak strict, atau bisa tambahkan header jika perlu
-            // xhr.setRequestHeader('x-upsert', 'false')
-            xhr.setRequestHeader('Content-Type', item.file.type || 'application/octet-stream')
-
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) {
-                const percent = Math.round((e.loaded / e.total) * 100)
-                setSaveStatus(`Mengunggah ${isVideo ? 'video' : 'gambar'} ${count} dari ${keys.length}... ${percent}%`)
-              }
-            }
-
-            xhr.onload = () => {
-              if (xhr.status >= 200 && xhr.status < 300) {
-                resolve(xhr.responseText)
-              } else {
-                try {
-                  const errResponse = JSON.parse(xhr.responseText)
-                  reject(new Error(`Upload gagal: ${errResponse.message || xhr.statusText}`))
-                } catch {
-                  reject(new Error(`Upload gagal: ${xhr.statusText}`))
-                }
-              }
-            }
-
-            xhr.onerror = () => reject(new Error('Koneksi terputus saat mengunggah.'))
-            xhr.send(item.file)
+          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, item.file, {
+            upsert: false,
+            contentType: item.file.type || 'application/octet-stream'
           })
+
+          if (upErr) throw new Error(`Gagal upload ${key}: ${upErr.message}`)
 
           finalUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
         }
@@ -549,10 +590,20 @@ export default function TemaAdmin() {
         if (item.text !== undefined) upsertData.text_value = item.text
 
         dbUpdates.push(upsertData)
-
+        
         // Local update
         if (item.file) updateAsset(key, finalUrl)
         if (item.text !== undefined) updateText(key, item.text)
+        
+        count++
+        setSaveProgress(count)
+        setSaveStatus(`Selesai ${count} dari ${keys.length}...`)
+      }
+
+      // Process in chunks (Parallel)
+      for (let i = 0; i < keys.length; i += CONCURRENCY_LIMIT) {
+        const chunk = keys.slice(i, i + CONCURRENCY_LIMIT)
+        await Promise.all(chunk.map(key => uploadOneAsset(key)))
       }
 
       // Simple Batch Upsert (Identical to K-pop/Anime Product creation)
@@ -567,6 +618,34 @@ export default function TemaAdmin() {
     } catch (e) {
       console.error('Save error:', e)
       setSaveStatus(`Gagal: ${e.message}`)
+    } finally {
+      setIsSaving(false)
+    }
+  }
+
+  const handleDeleteAsset = async (key) => {
+    if (!window.confirm(`⚠️ Hapus gambar untuk "${key}" secara permanen?`)) return
+
+    setIsSaving(true)
+    setSaveStatus('Menghapus...')
+    try {
+      if (hasSupabaseConfig && supabase) {
+        const { error } = await supabase.from('site_assets').delete().eq('key', key)
+        if (error) throw error
+      }
+      
+      // Update local state
+      updateAsset(key, '')
+      setStagedAssets(prev => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      setSaveStatus('Berhasil dihapus! ✓')
+      setTimeout(() => setSaveStatus(''), 3000)
+    } catch (e) {
+      console.error('Delete error:', e)
+      setSaveStatus(`Gagal hapus: ${e.message}`)
     } finally {
       setIsSaving(false)
     }
@@ -600,7 +679,31 @@ export default function TemaAdmin() {
           </div>
         </div>
 
-        {/* NAVIGATION TABS / GROUPED */}
+        {/* --- GLOBAL SAVING OVERLAY --- */}
+        {isSaving && totalSaveItems > 0 && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500">
+            <div className="bg-black border border-amber-500/30 p-8 rounded-3xl max-w-sm w-full shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col items-center">
+              <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-6"></div>
+              
+              <h3 className="text-xl font-black text-white uppercase tracking-widest mb-1 text-center">Menyimpan Aset</h3>
+              <p className="text-xs text-gray-500 mb-8 text-center font-mono">Mohon tunggu, sedang memproses data ke server...</p>
+              
+              <div className="w-full space-y-2">
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-amber-500 italic">
+                  <span>Progress</span>
+                  <span>{Math.round((saveProgress / totalSaveItems) * 100)}%</span>
+                </div>
+                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[2px]">
+                   <div 
+                    className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]"
+                    style={{ width: `${(saveProgress / totalSaveItems) * 100}%` }}
+                   ></div>
+                </div>
+                <p className="text-center text-[9px] text-gray-500 mt-2">{saveProgress} / {totalSaveItems} Item Berhasil</p>
+              </div>
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap items-center gap-3 mb-10">
           {/* 1. UMUM */}
           <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
@@ -778,7 +881,7 @@ export default function TemaAdmin() {
                     staged={stagedAssets[slot.key]}
                     onStage={onStage}
                     stagedAssets={stagedAssets}
-                    onReset={handleResetAsset}
+                    onReset={handleDeleteAsset}
                     seriesList={seriesList}
                   />
                 ))}
@@ -848,17 +951,32 @@ export default function TemaAdmin() {
 
       {/* LOADING OVERLAY */}
       {isSaving && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/80 backdrop-blur-sm">
-          <div className="relative flex items-center justify-center mb-6">
-            <div className="absolute w-24 h-24 border-4 border-t-neon-purple border-r-neon-cyan border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-            <div className="w-16 h-16 border-4 border-b-neon-purple border-l-neon-cyan border-t-transparent border-r-transparent rounded-full animate-spin direction-reverse"></div>
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+          <div className="relative flex items-center justify-center mb-10">
+            <div className="absolute w-28 h-28 border-4 border-t-neon-purple border-r-neon-cyan border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div className="w-20 h-20 border-4 border-b-neon-purple border-l-neon-cyan border-t-transparent border-r-transparent rounded-full animate-spin direction-reverse"></div>
+            <div className="absolute text-white font-black text-xl font-mono">
+              {Math.round((saveProgress / totalSaveItems) * 100)}%
+            </div>
           </div>
-          <h3 className="text-white text-xl font-black uppercase tracking-[0.2em] mb-2 neon-text-purple">
-            Memproses...
-          </h3>
-          <p className="text-gray-400 text-sm font-mono text-center max-w-md px-6">
-            {saveStatus || 'Harap tunggu, proses ini mungkin memakan waktu beberapa saat tergantung ukuran file.'}
-          </p>
+          
+          <div className="w-full max-w-sm px-6">
+            <h3 className="text-white text-xl font-black uppercase tracking-[0.2em] mb-4 text-center neon-text-purple">
+              MEMPROSES...
+            </h3>
+            
+            {/* Progress Bar Container */}
+            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 mb-4">
+              <div 
+                className="h-full bg-gradient-to-r from-neon-purple via-neon-cyan to-neon-purple bg-[length:200%_100%] animate-shimmer transition-all duration-500 ease-out"
+                style={{ width: `${(saveProgress / totalSaveItems) * 100}%` }}
+              />
+            </div>
+
+            <p className="text-gray-400 text-[10px] font-bold uppercase tracking-widest text-center">
+              {saveStatus || 'Mengunggah file ke server...'}
+            </p>
+          </div>
         </div>
       )}
 

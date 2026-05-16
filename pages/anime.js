@@ -98,11 +98,19 @@ export default function Anime() {
         }
       } catch { /* abaikan */ }
 
-      // ── 2. Buat map dari series admin (selalu tampil walaupun belum ada produk) ──
+      // ── 2. Buat map dari series (Gunakan normalisasi untuk hindari duplikat) ──
       const seriesMap = new Map()
+      const normalize = (name) => {
+        if (!name) return ''
+        // Bersihkan "Cover" dan format ke Title Case
+        const clean = name.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+        return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+      }
+
       adminAnimeSeries.forEach(name => {
-        if (name && !seriesMap.has(name)) {
-          seriesMap.set(name, new Set())
+        const norm = normalize(name)
+        if (norm && !seriesMap.has(norm)) {
+          seriesMap.set(norm, new Set())
         }
       })
 
@@ -117,12 +125,14 @@ export default function Anime() {
           data.forEach(item => {
             if (item.subcategory && item.subcategory.includes(' - ')) {
               const parts = item.subcategory.split(' - ')
-              const series = parts[0].trim()
+              const series = normalize(parts[0].trim())
               const char = parts[1].trim()
-              if (!seriesMap.has(series)) {
-                seriesMap.set(series, new Set())
+              if (series) {
+                if (!seriesMap.has(series)) {
+                  seriesMap.set(series, new Set())
+                }
+                seriesMap.get(series).add(char)
               }
-              seriesMap.get(series).add(char)
             }
           })
         }
@@ -209,7 +219,7 @@ export default function Anime() {
                     >
                       <div className="h-16 md:h-20 bg-gray-800 relative">
                         {displayImage ? (
-                          <img src={displayImage} className="w-full h-full object-cover" alt={series.name} />
+                          <img src={displayImage} className="w-full h-full object-cover" alt={series.name} loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#9d4edd]/20 to-[#00b4d8]/20" />
                         )}
@@ -241,6 +251,8 @@ export default function Anime() {
                               src={displayImage} 
                               alt={activeSeries.name} 
                               className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
+                              loading="eager"
+                              decoding="async"
                             />
                           ) : (
                             <div className="absolute inset-0 bg-gradient-to-br from-[#9d4edd]/20 via-black to-[#00b4d8]/20 group-hover:scale-110 transition-transform duration-700 z-0"></div>
@@ -281,7 +293,7 @@ export default function Anime() {
                     >
                       <div className="h-16 md:h-20 bg-gray-800 relative">
                         {displayImage ? (
-                          <img src={displayImage} className="w-full h-full object-cover" alt={series.name} />
+                          <img src={displayImage} className="w-full h-full object-cover" alt={series.name} loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#9d4edd]/20 to-[#00b4d8]/20" />
                         )}

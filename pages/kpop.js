@@ -114,16 +114,23 @@ export default function Kpop(){
         }
       } catch { /* abaikan error localStorage */ }
 
-      // ── 2. Buat map dari grup admin (ini selalu tampil, walaupun belum ada produk) ──
+      // ── 2. Buat map dari grup admin (Gunakan normalisasi untuk hindari duplikat) ──
       const groupMap = new Map()
+      const normalize = (name) => {
+        if (!name) return ''
+        const clean = name.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+        return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+      }
+
       adminKpopGroups.forEach(name => {
-        if (name && !groupMap.has(name)) {
-          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-          groupMap.set(name, { name, slug, assetKey: `kpop-${slug}` })
+        const norm = normalize(name)
+        if (norm && !groupMap.has(norm)) {
+          const slug = norm.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+          groupMap.set(norm, { name: norm, slug, assetKey: `kpop-${slug}` })
         }
       })
 
-      // ── 3. Merge dengan grup yang ada di database (untuk grup yang tidak di admin tapi punya produk) ──
+      // ── 3. Merge dengan grup yang ada di database ──
       if (hasSupabaseConfig && supabase) {
         const { data } = await supabase
           .from('products')
@@ -133,7 +140,7 @@ export default function Kpop(){
         if (data) {
           data.forEach(p => {
             if (p.subcategory && p.subcategory.includes(' - ')) {
-              const groupName = p.subcategory.split(' - ')[0].trim()
+              const groupName = normalize(p.subcategory.split(' - ')[0].trim())
               if (groupName && !groupMap.has(groupName)) {
                 const slug = groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
                 groupMap.set(groupName, { name: groupName, slug, assetKey: `kpop-${slug}` })
@@ -214,7 +221,7 @@ export default function Kpop(){
                     >
                       <div className="h-16 md:h-20 bg-gray-200 dark:bg-gray-800 relative">
                         {displayImage ? (
-                          <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
+                          <img src={displayImage} className="w-full h-full object-cover" alt={g.name} loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#9d4edd]/20 to-[#00b4d8]/20 flex items-center justify-center">
                             <span className="text-gray-400 text-[9px] text-center px-1">{t.noImage}</span>
@@ -246,6 +253,8 @@ export default function Kpop(){
                               src={displayImage} 
                               alt={activeGroup.name} 
                               className="w-full h-full object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
+                              loading="eager"
+                              decoding="async"
                             />
                           ) : (
                             <div className="absolute inset-0 flex items-center justify-center">
@@ -286,7 +295,7 @@ export default function Kpop(){
                     >
                       <div className="h-16 md:h-20 bg-gray-200 dark:bg-gray-800 relative">
                         {displayImage ? (
-                          <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
+                          <img src={displayImage} className="w-full h-full object-cover" alt={g.name} loading="lazy" decoding="async" />
                         ) : (
                           <div className="w-full h-full bg-gradient-to-br from-[#9d4edd]/20 to-[#00b4d8]/20 flex items-center justify-center">
                             <span className="text-gray-400 text-[9px] text-center px-1">{t.noImage}</span>

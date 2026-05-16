@@ -17,10 +17,23 @@ async function getCroppedImg(imageSrc, pixelCrop) {
     img.addEventListener('error', (error) => reject(error))
     img.src = imageSrc
   })
+
+  // Optimasi: Batasi ukuran maksimal agar upload cepat
+  const MAX_WIDTH = 1200
+  let targetWidth = pixelCrop.width
+  let targetHeight = pixelCrop.height
+
+  if (pixelCrop.width > MAX_WIDTH) {
+    const scale = MAX_WIDTH / pixelCrop.width
+    targetWidth = MAX_WIDTH
+    targetHeight = pixelCrop.height * scale
+  }
+
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
-  canvas.width = pixelCrop.width
-  canvas.height = pixelCrop.height
+  canvas.width = targetWidth
+  canvas.height = targetHeight
+
   ctx.drawImage(
     image,
     pixelCrop.x,
@@ -29,13 +42,14 @@ async function getCroppedImg(imageSrc, pixelCrop) {
     pixelCrop.height,
     0,
     0,
-    pixelCrop.width,
-    pixelCrop.height
+    targetWidth,
+    targetHeight
   )
+
   return new Promise((resolve) => {
     canvas.toBlob((blob) => {
       resolve(blob)
-    }, 'image/webp', 0.9)
+    }, 'image/webp', 0.8) // Kualitas 80% (Sangat cukup untuk website)
   })
 }
 
@@ -125,7 +139,7 @@ function mergeCharsByType(saved, fallback) {
 export default function Admin() {
   const router = useRouter()
   const { user, loading, adminRole } = useAuth()
-  const { loadAssets } = useSiteAssets()
+  const { loaded } = useSiteAssets()
   const [activeTab, setActiveTab] = useState('products') // 'products', 'content', 'admins'
   const [adminList, setAdminList] = useState([])
   const [newAdminEmail, setNewAdminEmail] = useState('')
@@ -284,19 +298,110 @@ export default function Admin() {
   }, [charactersByType, form.category, form.typeName])
 
   useEffect(() => {
-    const types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
-    const chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
-    setTypeOptions(types)
-    setCharactersByType(chars)
-    const firstType = types.anime?.[0] || 'One Piece'
-    const firstChar = chars.anime?.[firstType]?.[0] || ''
-    setForm((prev) => ({
-      ...prev,
-      typeName: firstType,
-      characterName: firstChar
-    }))
-    setListsReady(true)
-  }, [])
+    async function initCategories() {
+      // 1. Start with default or local storage
+      let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
+      let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
+
+      // 2. Fetch all products to find existing categories/subcategories
+      if (hasSupabaseConfig && supabase) {
+        try {
+          const { data, error } = await supabase.from('products').select('category, subcategory')
+          if (!error && data) {
+            data.forEach(p => {
+              const cat = p.category
+              const sub = p.subcategory || ''
+              if (!cat || !sub) return
+
+              // Add to typeOptions (Series/Group/Theme)
+              let typeName = ''
+              let charName = ''
+
+              if (cat === 'anime' || cat === 'kpop') {
+                const parts = sub.split(' - ')
+                typeName = parts[0].trim()
+                charName = parts[1]?.trim() || ''
+              } else if (cat === 'decor') {
+                typeName = sub.trim()
+              }
+
+              if (typeName && typeName !== '-') {
+                if (!types[cat]) types[cat] = []
+                if (!types[cat].includes(typeName)) {
+                  types[cat].push(typeName)
+                }
+
+                // Add to charactersByType
+                if (charName && charName !== '-') {
+                  if (!chars[cat]) chars[cat] = {}
+                  if (!chars[cat][typeName]) chars[cat][typeName] = []
+                  if (!chars[cat][typeName].includes(charName)) {
+                    chars[cat][typeName].push(charName)
+                  }
+                }
+              }
+            })
+          }
+          // B. Sync from Site Assets (Agar kategori yang baru ada cover-nya juga muncul)
+          const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label')
+          if (!aErr && aData) {
+            aData.forEach(asset => {
+              let rawName = ''
+              if (asset.key.startsWith('anime-cover-')) {
+                rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
+              } else if (asset.key.startsWith('kpop-group-')) {
+                rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
+              } else if (asset.key.startsWith('decor-') && !asset.key.includes('sidebar')) {
+                rawName = asset.label || asset.key.replace('decor-', '').replace(/-/g, ' ')
+              }
+
+              if (rawName) {
+                // Bersihkan "Cover — " atau "Cover " dari nama agar tidak dobel
+                const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                // Ubah ke Title Case (contoh: naruto -> Naruto)
+                const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                
+                const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : 'decor'
+                if (!types[cat].includes(formattedName)) {
+                  types[cat].push(formattedName)
+                }
+              }
+            })
+          }
+        } catch (err) {
+          console.error('Failed to sync categories from DB:', err)
+        }
+      }
+
+      // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
+      const finalTypes = {}
+      Object.keys(types).forEach(cat => {
+        const uniqueNames = new Set()
+        types[cat].forEach(raw => {
+          // Bersihkan "Cover", "Cover - ", dsb
+          const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+          // Format ke Title Case
+          const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+          if (formatted) uniqueNames.add(formatted)
+        })
+        finalTypes[cat] = Array.from(uniqueNames).sort()
+      })
+
+      setTypeOptions(finalTypes)
+      setCharactersByType(chars)
+
+      const firstType = finalTypes.anime?.[0] || 'One Piece'
+      const firstChar = chars.anime?.[firstType]?.[0] || ''
+      setForm((prev) => ({
+        ...prev,
+        typeName: firstType,
+        characterName: firstChar
+      }))
+      setListsReady(true)
+    }
+
+    initCategories()
+  }, [loaded])
 
   useEffect(() => {
     if (!listsReady || typeof window === 'undefined') return
@@ -491,25 +596,81 @@ export default function Admin() {
   }
 
   // ── Rename / Delete Type (Series / Grup) ──
-  function commitRenameType() {
+  async function commitRenameType() {
     const oldName = renamingType?.name
     const newName = renameTypeVal.trim()
     if (!oldName || !newName || newName === oldName) { setRenamingType(null); return }
+
+    const cat = form.category
+    const oldSlug = oldName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    const newSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-group-' : 'decor-'
+    
+    setStatusMessage(`Sedang memigrasi data dari "${oldName}" ke "${newName}"...`)
+
+    // 1. Update Database (Products) - Agar produk tetap muncul di series baru
+    if (hasSupabaseConfig && supabase) {
+      try {
+        // Cari semua produk yang subcategory-nya diawali dengan oldName
+        const { data: prods } = await supabase.from('products')
+          .select('id, subcategory')
+          .eq('category', cat)
+        
+        if (prods) {
+          const updates = prods
+            .filter(p => p.subcategory && p.subcategory.split(' - ')[0].trim() === oldName)
+            .map(p => ({
+              id: p.id,
+              subcategory: p.subcategory.replace(oldName, newName)
+            }))
+          
+          if (updates.length > 0) {
+            await supabase.from('products').upsert(updates)
+          }
+        }
+
+        // 2. Update Database (Site Assets / Cover) - Agar gambar tidak hilang
+        const oldKey = `${assetPrefix}${oldSlug}`
+        const newKey = `${assetPrefix}${newSlug}`
+        
+        const { data: assetData } = await supabase.from('site_assets').select('*').eq('key', oldKey).single()
+        if (assetData) {
+          // Hapus kunci lama, buat kunci baru dengan data yang sama
+          await supabase.from('site_assets').delete().eq('key', oldKey)
+          await supabase.from('site_assets').upsert({
+            ...assetData,
+            key: newKey,
+            label: assetData.label.replace(oldName, newName)
+          })
+          // Update local assets context if possible
+          if (typeof updateAsset === 'function') updateAsset(newKey, assetData.image_url)
+        }
+      } catch (err) {
+        console.error('Migration failed:', err)
+      }
+    }
+
+    // 3. Update Local State (Deduplicate)
     setTypeOptions(prev => {
-      const list = prev[form.category] || []
-      return { ...prev, [form.category]: list.map(n => n === oldName ? newName : n) }
+      const list = prev[cat] || []
+      const newList = list.map(n => n === oldName ? newName : n)
+      return { ...prev, [cat]: [...new Set(newList)] }
     })
     setCharactersByType(prev => {
-      const catMap = { ...(prev[form.category] || {}) }
+      const catMap = { ...(prev[cat] || {}) }
       if (catMap[oldName]) {
-        catMap[newName] = catMap[oldName]
+        // Gabungkan karakter jika nama baru sudah punya karakter
+        const existingChars = catMap[newName] || []
+        const oldChars = catMap[oldName] || []
+        catMap[newName] = [...new Set([...existingChars, ...oldChars])]
         delete catMap[oldName]
       }
-      return { ...prev, [form.category]: catMap }
+      return { ...prev, [cat]: catMap }
     })
+    
     if (form.typeName === oldName) setForm(prev => ({ ...prev, typeName: newName }))
     setRenamingType(null)
-    setStatusMessage(`"${oldName}" diubah menjadi "${newName}".`)
+    setStatusMessage(`Berhasil! "${oldName}" telah digabungkan ke "${newName}".`)
   }
 
   function deleteType(name) {
@@ -594,6 +755,10 @@ export default function Admin() {
     if (!file) return
     const url = URL.createObjectURL(file)
     setCropData({ url, file })
+    
+    // Auto-fill title from file name (without extension)
+    const fileName = file.name.split('.').slice(0, -1).join('.')
+    setForm(prev => ({ ...prev, title: fileName }))
   }
 
   const handleFinishCrop = async (useCrop = true) => {
@@ -621,8 +786,12 @@ export default function Admin() {
       setStatusMessage('Pilih beberapa gambar dulu ya.')
       return
     }
-    if (!form.title || !form.price) {
-      setStatusMessage('Lengkapi title dan price dulu ya.')
+    if (uploadMode === 'single' && !form.title) {
+      setStatusMessage('Lengkapi judul produk dulu ya.')
+      return
+    }
+    if (!form.price) {
+      setStatusMessage('Lengkapi harga dulu ya.')
       return
     }
     if (!hasSupabaseConfig || !supabase) {
@@ -659,64 +828,78 @@ export default function Admin() {
 
         if (imageFiles.length === 0) {
           setStatusMessage('Tidak ada file gambar valid yang dipilih.')
+          setIsSubmitting(false)
           return
         }
 
         setTotalBatchImages(imageFiles.length)
         setUploadProgress(0)
-        setStatusMessage(`Memulai upload ${imageFiles.length} gambar...`)
+        setStatusMessage(`Memulai upload ${imageFiles.length} gambar secara paralel...`)
 
-        let successCount = 0
+        const CONCURRENCY_LIMIT = 5 // Upload 5 gambar sekaligus
+        const payloads = []
+        let uploadedCount = 0
 
-        for (let i = 0; i < imageFiles.length; i++) {
-          const file = imageFiles[i]
-          setStatusMessage(`Mengunggah gambar ${i + 1} dari ${imageFiles.length}...`)
-          const blob = file
+        // Fungsi helper untuk upload satu file
+        const uploadOneFile = async (file, index) => {
           const safeName = sanitizeFileName(file.name)
-          const filePath = `products/${Date.now()}-${i}-${safeName}.webp`
-
-          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, blob, {
+          const filePath = `products/${Date.now()}-${index}-${safeName}.webp`
+          
+          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, file, {
             upsert: false,
             contentType: 'image/webp'
           })
 
-          if (!upErr) {
-            const publicUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
-            const payload = {
-              title: `${form.title} - ${i + 1}`,
-              price: priceNum,
-              category: form.category,
-              subcategory: subcategory,
-              notes: form.notes,
-              image_url: publicUrl
-            }
-            const { error: dbErr } = await supabase.from('products').insert(payload)
-            if (!dbErr) {
-              successCount++
-              setUploadProgress(successCount)
-            } else {
-              setStatusMessage(`Gagal simpan ke DB (${i + 1}): ${dbErr.message}`)
-              return
-            }
-          } else {
-            setStatusMessage(`Gagal upload Storage (${i + 1}): ${upErr.message}`)
-            return
-          }
+          if (upErr) throw new Error(`Gagal upload ${file.name}: ${upErr.message}`)
+
+          const publicUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
+          
+          const cleanTitle = file.name.split('.').slice(0, -1).join('.')
+          
+          payloads.push({
+            title: cleanTitle,
+            price: priceNum,
+            category: form.category,
+            subcategory: subcategory,
+            notes: form.notes,
+            image_url: publicUrl
+          })
+
+          uploadedCount++
+          setUploadProgress(uploadedCount)
         }
 
-        if (successCount > 0) {
-          setStatusMessage(`Upload selesai! ${successCount} gambar berhasil.`)
-          setShowSuccessModal(true)
-          // Refresh list
-          const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-          if (pData) setSavedProducts(pData)
+        // Jalankan dengan pembatasan jumlah paralel (concurrency)
+        for (let i = 0; i < imageFiles.length; i += CONCURRENCY_LIMIT) {
+          const chunk = imageFiles.slice(i, i + CONCURRENCY_LIMIT)
+          await Promise.all(chunk.map((file, idx) => uploadOneFile(file, i + idx)))
         }
+
+        // Terakhir, simpan semua ke database sekaligus (Batch Insert)
+        setStatusMessage('Menyimpan data ke database...')
+        const { error: dbErr } = await supabase.from('products').insert(payloads)
+
+        if (dbErr) {
+          setStatusMessage(`Gagal simpan ke DB: ${dbErr.message}`)
+          setIsSubmitting(false)
+          return
+        }
+
+        setStatusMessage(`Berhasil! ${payloads.length} produk tersimpan.`)
+        setShowSuccessModal(true)
+        
+        // Refresh list
+        const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false })
+        if (pData) setSavedProducts(pData)
         setBatchFiles([])
         return
       }
 
       // Single Upload Mode
+      setTotalBatchImages(1)
+      setUploadProgress(0)
       setStatusMessage('Mengunggah gambar...')
+      
       const compressedImage = imageFile
       const safeName = sanitizeFileName(imageFile.name)
       const filePath = `products/${Date.now()}-${safeName}.webp`
@@ -728,8 +911,11 @@ export default function Admin() {
 
       if (uploadErr) {
         setStatusMessage(`Upload gagal: ${uploadErr.message}`)
+        setIsSubmitting(false)
         return
       }
+      
+      setUploadProgress(1)
 
       const publicUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
       const payload = {
@@ -915,17 +1101,52 @@ export default function Admin() {
                     className="p-2 rounded bg-black/20 w-full"
                   />
                   {batchFiles.length > 0 && (
-                    <p className="text-sm text-green-400 mt-2">{batchFiles.length} file gambar terpilih</p>
+                    <div className="mt-3 p-3 bg-black/40 rounded-xl border border-white/5 space-y-1">
+                      <p className="text-[10px] uppercase tracking-widest text-purple-400 font-black mb-2 flex items-center gap-2">
+                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
+                        {batchFiles.length} File terpilih (Akan menjadi Judul Produk):
+                      </p>
+                      <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1 pr-2">
+                        {batchFiles.map((f, i) => (
+                          <div key={i} className="text-[11px] text-gray-400 font-mono truncate bg-white/5 px-2 py-1 rounded flex justify-between">
+                            <span>{f.name.split('.').slice(0, -1).join('.')}</span>
+                            <span className="text-gray-600">.{(f.name.split('.').pop() || '').toLowerCase()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
                   )}
-                  {isSubmitting && uploadMode === 'batch' && totalBatchImages > 0 && (
-                    <div className="mt-4 p-4 rounded bg-black/30 border border-white/10">
-                      <div className="flex justify-between text-xs mb-2 text-gray-300">
-                        <span>Proses Uploading...</span>
-                        <span className="font-bold text-purple-400">{uploadProgress} / {totalBatchImages}</span>
+
+                  {isSubmitting && totalBatchImages > 0 && (
+                    <div className="mt-4 p-4 rounded-2xl bg-black/40 border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in duration-300">
+                      <div className="flex justify-between items-end mb-2">
+                        <div className="flex flex-col">
+                          <span className="text-[10px] uppercase tracking-widest text-gray-500 font-black">Status Upload</span>
+                          <span className="text-xs font-bold text-white flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            {uploadProgress === totalBatchImages ? 'Hampir Selesai...' : `Mengunggah ${uploadProgress} dari ${totalBatchImages}`}
+                          </span>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-2xl font-black text-purple-400 italic">
+                            {Math.round((uploadProgress / totalBatchImages) * 100)}%
+                          </span>
+                        </div>
                       </div>
-                      <div className="w-full bg-white/10 rounded-full h-2.5 overflow-hidden">
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2.5 rounded-full transition-all duration-300" style={{ width: `${(uploadProgress / totalBatchImages) * 100}%` }}></div>
+                      
+                      {/* Visual Progress Bar */}
+                      <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[2px]">
+                        <div 
+                          className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(168,85,247,0.5)]"
+                          style={{ width: `${(uploadProgress / totalBatchImages) * 100}%` }}
+                        >
+                          <div className="w-full h-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]"></div>
+                        </div>
                       </div>
+                      
+                      <p className="text-[9px] text-gray-500 mt-3 text-center font-mono uppercase tracking-widest animate-pulse">
+                        Mohon jangan tutup halaman ini sampai proses selesai
+                      </p>
                     </div>
                   )}
                 </>
@@ -1115,10 +1336,6 @@ export default function Admin() {
             )}
 
             <div className="space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Judul Product</p>
-                <input value={form.title} onChange={(e) => updateField('title', e.target.value)} placeholder="Nama product" className="p-3 rounded bg-black/20 w-full" />
-              </div>
               <div>
                 <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Harga (Rp)</p>
                 <input value={form.price} onChange={(e) => updateField('price', e.target.value)} placeholder="Contoh: 159000" className="p-3 rounded bg-black/20 w-full" />

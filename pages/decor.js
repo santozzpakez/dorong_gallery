@@ -30,12 +30,19 @@ export default function Decor(){
         }
       } catch { /* abaikan */ }
 
-      // ── 2. Buat map dari tema admin (selalu tampil) ──
+      // ── 2. Buat map dari tema (Gunakan normalisasi untuk hindari duplikat) ──
       const themeMap = new Map()
+      const normalize = (name) => {
+        if (!name) return ''
+        const clean = name.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+        return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+      }
+
       adminThemes.forEach(name => {
-        if (name && !themeMap.has(name)) {
-          const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-          themeMap.set(name, { name, key: `decor-${slug}`, slug })
+        const norm = normalize(name)
+        if (norm && !themeMap.has(norm)) {
+          const slug = norm.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+          themeMap.set(norm, { name: norm, key: `decor-${slug}`, slug })
         }
       })
 
@@ -49,7 +56,7 @@ export default function Decor(){
         if (data) {
           data.forEach(p => {
             if (p.subcategory) {
-              const name = p.subcategory.trim()
+              const name = normalize(p.subcategory.trim())
               if (name && !themeMap.has(name)) {
                 const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
                 themeMap.set(name, { name, key: `decor-${slug}`, slug })
@@ -194,7 +201,7 @@ export default function Decor(){
                     className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[120px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-cyan shadow-[0_0_10px_rgba(0,243,255,0.4)] scale-105 z-10 opacity-100' : 'opacity-40 hover:opacity-100 hover:scale-[1.02]'}`}
                   >
                     <div className="h-16 md:h-20 bg-gray-800 relative">
-                      <img src={displayImage} className="w-full h-full object-cover" alt={c.name} />
+                      <img src={displayImage} className="w-full h-full object-cover" alt={c.name} loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 group-hover:bg-black/20 transition-colors">
                         <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center drop-shadow-md leading-tight">
                           {getText(c.key) || c.name}
@@ -210,7 +217,7 @@ export default function Decor(){
             <div className="col-span-12 md:col-span-8 flex">
               <Link href={`/decor/${themes[active]?.slug}`} className="block group w-full h-full">
                 <div className="rounded-2xl overflow-hidden glass border border-[#00b4d8]/20 dark:border-neon-cyan/20 cinematic-glow-cyan relative flex items-center justify-center bg-black w-full h-full min-h-[300px]">
-                  <img src={getUrl(themes[active]?.key)} alt={themes[active]?.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" />
+                  <img src={getUrl(themes[active]?.key)} alt={themes[active]?.name} className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" loading="eager" decoding="async" />
                   <div className="absolute inset-0 bg-gradient-to-t from-white/90 via-white/20 dark:from-black/90 dark:via-black/20 to-transparent flex flex-col justify-end p-6">
                     <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wider text-gray-900 dark:text-white group-hover:text-[#00b4d8] dark:group-hover:text-neon-cyan dark:group-hover:neon-text-cyan transition-colors">
                       {getText(themes[active]?.key) || themes[active]?.name}
@@ -238,7 +245,7 @@ export default function Decor(){
                     className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[120px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-purple shadow-[0_0_10px_rgba(176,38,255,0.4)] scale-105 z-10 opacity-100' : 'opacity-40 hover:opacity-100 hover:scale-[1.02]'}`}
                   >
                     <div className="h-16 md:h-20 bg-gray-800 relative">
-                      <img src={displayImage} className="w-full h-full object-cover" alt={c.name} />
+                      <img src={displayImage} className="w-full h-full object-cover" alt={c.name} loading="lazy" decoding="async" />
                       <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-2 group-hover:bg-black/20 transition-colors">
                         <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-widest text-center drop-shadow-md leading-tight">
                           {getText(c.key) || c.name}

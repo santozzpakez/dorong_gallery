@@ -65,51 +65,67 @@ export default function AnimeSeriesPage() {
     }
 
     async function loadCharacters() {
-      // Fetch semua produk anime untuk mengekstrak nama karakter di series ini
-      const { data, error } = await supabase
-        .from('products')
-        .select('subcategory, image_url')
-        .eq('category', 'anime')
+      // ── 1. Baca definisi karakter dari Admin (localStorage) ──
+      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
+      const STORAGE_TYPES = 'dorong_admin_type_options'
+      
+      let adminChars = {}
+      let adminSeries = []
+      try {
+        const rawChars = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_CHARS) : null
+        if (rawChars) adminChars = JSON.parse(rawChars)?.anime || {}
+        
+        const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
+        if (rawTypes) adminSeries = JSON.parse(rawTypes)?.anime || []
+      } catch { /* abaikan */ }
 
-      if (error || !data) {
-        setLoading(false)
-        return
-      }
+      // Cari nama asli series dari slug
+      const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      const actualSeriesName = adminSeries.find(s => toSlug(s) === seriesSlug) || seriesSlug.replace(/-/g, ' ').toUpperCase()
+      setSeriesName(actualSeriesName)
 
-      const charMap = new Map() // Untuk menyimpan karakter unik dan data tambahannya
-      let actualSeriesName = ''
-
-      data.forEach(item => {
-        if (item.subcategory && item.subcategory.includes(' - ')) {
-          const parts = item.subcategory.split(' - ')
-          const sName = parts[0].trim()
-          const cName = parts[1].trim()
-          
-          // Re-create slug untuk membandingkan dengan URL
-          const sSlug = sName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-          
-          if (sSlug === seriesSlug) {
-            actualSeriesName = sName
-            if (!charMap.has(cName)) {
-              charMap.set(cName, { count: 1, image: item.image_url })
-            } else {
-              const current = charMap.get(cName)
-              // Kalau sebelumnya blm punya image, pakai image ini
-              charMap.set(cName, { count: current.count + 1, image: current.image || item.image_url })
-            }
-          }
+      const charMap = new Map()
+      
+      // Masukkan karakter dari Admin Panel dulu
+      const definedChars = adminChars[actualSeriesName] || []
+      definedChars.forEach(cName => {
+        if (cName && cName !== '-') {
+          charMap.set(cName, { count: 0, image: '' })
         }
       })
 
-      if (actualSeriesName) {
-        setSeriesName(actualSeriesName)
-      } else {
-        // Fallback jika anehnya kosong
-        setSeriesName(seriesSlug.replace(/-/g, ' ').toUpperCase())
+      // ── 2. Ambil dari Database ──
+      if (hasSupabaseConfig && supabase) {
+        const { data, error } = await supabase
+          .from('products')
+          .select('subcategory, image_url')
+          .eq('category', 'anime')
+
+        if (!error && data) {
+          data.forEach(item => {
+            if (item.subcategory && item.subcategory.includes(' - ')) {
+              const parts = item.subcategory.split(' - ')
+              const sName = parts[0].trim()
+              const cName = parts[1].trim()
+              
+              if (toSlug(sName) === seriesSlug) {
+                if (!charMap.has(cName)) {
+                  charMap.set(cName, { count: 1, image: item.image_url })
+                } else {
+                  const current = charMap.get(cName)
+                  charMap.set(cName, { 
+                    count: current.count + 1, 
+                    image: current.image || item.image_url 
+                  })
+                }
+              }
+            }
+          })
+        }
       }
 
       const formatted = Array.from(charMap.keys()).map(char => {
-        const cSlug = char.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        const cSlug = toSlug(char)
         return {
           name: char,
           slug: cSlug,
@@ -118,9 +134,7 @@ export default function AnimeSeriesPage() {
         }
       })
 
-      // Urutkan alfabet
       formatted.sort((a, b) => a.name.localeCompare(b.name))
-
       setCharacterList(formatted)
       setLoading(false)
     }
