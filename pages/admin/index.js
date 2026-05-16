@@ -307,6 +307,8 @@ export default function Admin() {
   const [searchChar, setSearchChar] = useState('')
   const [uploadMode, setUploadMode] = useState('single')
   const [batchFiles, setBatchFiles] = useState([])
+  const [batchTitles, setBatchTitles] = useState([])
+  const [batchPreviews, setBatchPreviews] = useState([])
   const [uploadProgress, setUploadProgress] = useState(0)
   const [totalBatchImages, setTotalBatchImages] = useState(0)
   // Rename & delete state for tags
@@ -913,6 +915,46 @@ export default function Admin() {
     setCropData(null)
   }
 
+  const handleBatchFilesChange = (e) => {
+    const files = Array.from(e.target.files || [])
+    setBatchFiles(files)
+    
+    // Initialize titles from filenames
+    const titles = files.map(f => f.name.split('.').slice(0, -1).join('.'))
+    setBatchTitles(titles)
+    
+    // Generate previews
+    const previews = files.map(f => URL.createObjectURL(f))
+    setBatchPreviews(previews)
+  }
+
+  const updateBatchTitle = (index, value) => {
+    setBatchTitles(prev => {
+      const next = [...prev]
+      next[index] = value
+      return next
+    })
+  }
+
+  const handleBulkPaste = (e) => {
+    const text = e.target.value
+    if (!text) return
+    
+    const lines = text.split(/\r?\n/).filter(line => line.trim() !== '')
+    setBatchTitles(prev => {
+      const next = [...prev]
+      lines.forEach((line, i) => {
+        if (i < next.length) {
+          next[i] = line.trim()
+        }
+      })
+      return next
+    })
+    
+    // Clear textarea after paste for better UX (optional)
+    e.target.value = ''
+  }
+
   async function handleSubmit(event) {
     event.preventDefault()
     if (uploadMode === 'single' && !imageFile) {
@@ -993,10 +1035,10 @@ export default function Admin() {
 
           const publicUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
           
-          const cleanTitle = file.name.split('.').slice(0, -1).join('.')
+          const finalTitle = batchTitles[index] || file.name.split('.').slice(0, -1).join('.')
           
           payloads.push({
-            title: cleanTitle,
+            title: finalTitle,
             price: priceNum,
             category: form.category,
             subcategory: subcategory,
@@ -1236,22 +1278,55 @@ export default function Admin() {
                     type="file"
                     accept="image/*"
                     multiple
-                    onChange={(e) => setBatchFiles(Array.from(e.target.files || []))}
+                    onChange={handleBatchFilesChange}
                     className="p-2 rounded bg-black/20 w-full"
                   />
                   {batchFiles.length > 0 && (
-                    <div className="mt-3 p-3 bg-black/40 rounded-xl border border-white/5 space-y-1">
-                      <p className="text-[10px] uppercase tracking-widest text-purple-400 font-black mb-2 flex items-center gap-2">
-                        <span className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></span>
-                        {batchFiles.length} File terpilih (Akan menjadi Judul Produk):
-                      </p>
-                      <div className="max-h-40 overflow-y-auto custom-scrollbar space-y-1 pr-2">
-                        {batchFiles.map((f, i) => (
-                          <div key={i} className="text-[11px] text-gray-400 font-mono truncate bg-white/5 px-2 py-1 rounded flex justify-between">
-                            <span>{f.name.split('.').slice(0, -1).join('.')}</span>
-                            <span className="text-gray-600">.{(f.name.split('.').pop() || '').toLowerCase()}</span>
-                          </div>
-                        ))}
+                    <div className="mt-4 space-y-4">
+                      {/* Bulk Paste Area */}
+                      <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                        <div className="flex justify-between items-center mb-2">
+                          <p className="text-[10px] uppercase tracking-widest text-purple-400 font-black">⚡ Quick Paste Titles</p>
+                          <span className="text-[9px] text-gray-500 italic">Paste list from Notepad/Excel (one per line)</span>
+                        </div>
+                        <textarea
+                          placeholder="Paste daftar nama di sini..."
+                          className="w-full h-20 p-3 rounded-lg bg-black/40 border border-white/5 text-xs focus:border-purple-500/50 outline-none transition-all placeholder:text-gray-700"
+                          onChange={handleBulkPaste}
+                        ></textarea>
+                      </div>
+
+                      {/* Individual File List */}
+                      <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-3">
+                        <p className="text-[10px] uppercase tracking-widest text-gray-500 font-black mb-2 flex items-center gap-2">
+                          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                          Review {batchFiles.length} File & Judul:
+                        </p>
+                        <div className="max-h-[400px] overflow-y-auto custom-scrollbar space-y-2 pr-2">
+                          {batchFiles.map((f, i) => (
+                            <div key={i} className="flex gap-3 items-center bg-white/5 p-2 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                              {/* Thumbnail */}
+                              <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0 border border-white/10">
+                                <img src={batchPreviews[i]} alt="Preview" className="w-full h-full object-cover" />
+                              </div>
+                              
+                              {/* Title Input */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between mb-1">
+                                  <span className="text-[9px] text-gray-600 font-mono truncate">{f.name}</span>
+                                  <span className="text-[9px] text-purple-400 font-bold">Prod #{i+1}</span>
+                                </div>
+                                <input 
+                                  type="text" 
+                                  value={batchTitles[i] || ''} 
+                                  onChange={(e) => updateBatchTitle(i, e.target.value)}
+                                  placeholder="Masukkan judul produk..."
+                                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-purple-500/50 outline-none transition-all"
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}

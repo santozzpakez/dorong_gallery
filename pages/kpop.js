@@ -224,9 +224,9 @@ export default function Kpop() {
                       href={`/kpop/${g.slug}`}
                       key={g.slug}
                       onMouseEnter={() => setActive(i)}
-                      className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-cyan shadow-[0_0_10px_rgba(0,243,255,0.4)] scale-105 opacity-100' : 'opacity-40 hover:opacity-100'}`}
+                      className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-cyan shadow-[0_0_10px_rgba(0,243,255,0.4)] scale-105 opacity-100' : 'opacity-60 hover:opacity-100'}`}
                     >
-                      <div className="h-16 md:h-20 bg-gray-200 dark:bg-gray-800 relative">
+                      <div className="h-16 md:h-20 bg-slate-300 dark:bg-gray-800 border border-gray-200 dark:border-white/5 shadow-sm relative">
                         {displayImage ? (
                           <img src={displayImage} className="w-full h-full object-cover" alt={g.name} loading="lazy" decoding="async" />
                         ) : (
@@ -234,8 +234,8 @@ export default function Kpop() {
                             <span className="text-gray-400 text-[9px] text-center px-1">{t.noImage}</span>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center group-hover:bg-black/20 transition-all">
-                          <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-tighter drop-shadow-md leading-tight">
+                        <div className="absolute inset-0 bg-white/20 dark:bg-black/60 flex items-center justify-center p-1 text-center group-hover:bg-white/5 dark:group-hover:bg-black/20 transition-all">
+                          <span className="text-slate-900 dark:text-white text-[9px] md:text-[10px] font-black uppercase tracking-tighter drop-shadow-sm leading-tight">
                             {getText(g.assetKey) || g.name}
                           </span>
                         </div>
@@ -298,9 +298,9 @@ export default function Kpop() {
                       href={`/kpop/${g.slug}`}
                       key={g.slug}
                       onMouseEnter={() => setActive(i)}
-                      className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-purple shadow-[0_0_10px_rgba(176,38,255,0.4)] scale-105 opacity-100' : 'opacity-40 hover:opacity-100'}`}
+                      className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-purple shadow-[0_0_10px_rgba(176,38,255,0.4)] scale-105 opacity-100' : 'opacity-60 hover:opacity-100'}`}
                     >
-                      <div className="h-16 md:h-20 bg-gray-200 dark:bg-gray-800 relative">
+                      <div className="h-16 md:h-20 bg-slate-300 dark:bg-gray-800 border border-gray-200 dark:border-white/5 shadow-sm relative">
                         {displayImage ? (
                           <img src={displayImage} className="w-full h-full object-cover" alt={g.name} loading="lazy" decoding="async" />
                         ) : (
@@ -308,8 +308,8 @@ export default function Kpop() {
                             <span className="text-gray-400 text-[9px] text-center px-1">{t.noImage}</span>
                           </div>
                         )}
-                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center group-hover:bg-black/20 transition-all">
-                          <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-tighter drop-shadow-md leading-tight">
+                        <div className="absolute inset-0 bg-white/20 dark:bg-black/60 flex items-center justify-center p-1 text-center group-hover:bg-white/5 dark:group-hover:bg-black/20 transition-all">
+                          <span className="text-slate-900 dark:text-white text-[9px] md:text-[10px] font-black uppercase tracking-tighter drop-shadow-sm leading-tight">
                             {getText(g.assetKey) || g.name}
                           </span>
                         </div>
