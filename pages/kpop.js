@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { hasSupabaseConfig, supabase } from '../lib/supabaseClient'
 import { useLanguage } from '../context/LanguageContext'
 
-export default function Kpop(){
+export default function Kpop() {
   const { lang } = useLanguage()
-  const { assets, getUrl, getText } = useSiteAssets()
+  const { assets, getUrl, getText, loaded } = useSiteAssets()
   const [groups, setGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(0)
@@ -102,19 +102,30 @@ export default function Kpop(){
 
   useEffect(() => {
     async function loadGroups() {
-      // ── 1. Baca daftar grup dari localStorage (definisi admin) ──
-      // Key sama dengan yang dipakai di pages/admin/index.js
-      const STORAGE_TYPES = 'dorong_admin_type_options'
-      let adminKpopGroups = []
-      try {
-        const raw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          adminKpopGroups = Array.isArray(parsed?.kpop) ? parsed.kpop : []
-        }
-      } catch { /* abaikan error localStorage */ }
+      if (!loaded) return // Tunggu Site Assets (Cache) siap
 
-      // ── 2. Buat map dari grup admin (Gunakan normalisasi untuk hindari duplikat) ──
+      // ── 1. Ambil dari Cache Global (SUPER CEPAT) ──
+      const globalOptionsRaw = getText('global-category-options')
+      
+      let categories = []
+      try {
+        if (globalOptionsRaw) {
+          const parsed = JSON.parse(globalOptionsRaw)
+          categories = Array.isArray(parsed?.kpop) ? parsed.kpop : []
+        }
+      } catch (err) {
+        console.warn('Gagal membaca cache kategori K-pop:', err)
+      }
+
+      // Fallback ke localStorage jika cache global kosong
+      if (categories.length === 0) {
+        try {
+          const raw = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
+          if (raw) categories = JSON.parse(raw)?.kpop || []
+        } catch {}
+      }
+
+      // ── 2. Buat map dari grup (Gunakan normalisasi untuk hindari duplikat) ──
       const groupMap = new Map()
       const normalize = (name) => {
         if (!name) return ''
@@ -122,7 +133,7 @@ export default function Kpop(){
         return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
       }
 
-      adminKpopGroups.forEach(name => {
+      categories.forEach(name => {
         const norm = normalize(name)
         if (norm && !groupMap.has(norm)) {
           const slug = norm.toLowerCase().replace(/[^a-z0-9]+/g, '-')
@@ -130,13 +141,9 @@ export default function Kpop(){
         }
       })
 
-      // ── 3. Merge dengan grup yang ada di database ──
-      if (hasSupabaseConfig && supabase) {
-        const { data } = await supabase
-          .from('products')
-          .select('subcategory')
-          .eq('category', 'kpop')
-
+      // ── 3. Jalur Darurat: Scan Produk ──
+      if (groupMap.size === 0 && hasSupabaseConfig && supabase) {
+        const { data } = await supabase.from('products').select('subcategory').eq('category', 'kpop')
         if (data) {
           data.forEach(p => {
             if (p.subcategory && p.subcategory.includes(' - ')) {
@@ -170,7 +177,7 @@ export default function Kpop(){
       setLoading(false)
     }
     loadGroups()
-  }, [])
+  }, [loaded])
 
   const displayGroups = groups.slice(0, 10)
   const leftGroups = displayGroups.slice(0, 5)
@@ -187,7 +194,7 @@ export default function Kpop(){
           <button className="px-4 py-1.5 rounded-lg glass border border-[#9d4edd]/30 text-[#9d4edd] dark:text-neon-purple hover:bg-[#9d4edd] hover:text-white dark:hover:bg-neon-purple dark:hover:text-black transition-all font-bold tracking-wide text-[10px] uppercase">
             {t.bundle}
           </button>
-          <button 
+          <button
             onClick={() => setShowAllModal(true)}
             className="px-4 py-1.5 rounded-lg glass border border-[#00b4d8]/30 text-[#00b4d8] dark:text-neon-cyan hover:bg-[#00b4d8] hover:text-white dark:hover:bg-neon-cyan dark:hover:text-black transition-all font-bold tracking-wide text-[10px] uppercase"
           >
@@ -248,11 +255,11 @@ export default function Kpop(){
                       <div className="rounded-2xl overflow-hidden glass border border-[#00b4d8]/20 dark:border-neon-cyan/20 cinematic-glow-cyan relative flex items-center justify-center bg-gray-100 dark:bg-black h-full min-h-[300px]">
                         <div className="absolute inset-0 w-full h-full">
                           {displayImage ? (
-                            <img 
+                            <img
                               key={displayImage}
-                              src={displayImage} 
-                              alt={activeGroup.name} 
-                              className="w-full h-full object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
+                              src={displayImage}
+                              alt={activeGroup.name}
+                              className="w-full h-full object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 transform-gpu"
                               loading="eager"
                               decoding="async"
                             />
@@ -262,10 +269,10 @@ export default function Kpop(){
                             </div>
                           )}
                         </div>
-                        
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-6 z-10">
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
                           <div className="mb-2">
-                             <span className="px-2 py-0.5 bg-neon-cyan text-black text-[9px] font-black uppercase tracking-widest rounded">{t.topIdol}</span>
+                            <span className="px-2 py-0.5 bg-neon-cyan text-black text-[9px] font-black uppercase tracking-widest rounded">{t.topIdol}</span>
                           </div>
                           <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]">
                             {getText(activeGroup.assetKey) || activeGroup.name}
@@ -324,8 +331,8 @@ export default function Kpop(){
                     </div>
                     {/* Search Bar */}
                     <div className="relative">
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         placeholder={t.searchPlaceholder}
                         value={searchAll}
                         onChange={(e) => setSearchAll(e.target.value)}
@@ -334,28 +341,28 @@ export default function Kpop(){
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40">🔍</span>
                     </div>
                   </div>
-                  
+
                   <div className="p-2 overflow-y-auto custom-scrollbar flex-grow bg-black/20">
                     {groups
                       .filter(g => g.name.toLowerCase().includes(searchAll.toLowerCase()))
                       .map((g) => (
-                      <Link 
-                        key={g.slug} 
-                        href={`/kpop/${g.slug}`}
-                        className="flex items-center justify-between p-4 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all group mb-1"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="w-10 h-10 rounded-lg bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center text-neon-cyan font-bold text-xs uppercase">
-                            {g.name.charAt(0)}
+                        <Link
+                          key={g.slug}
+                          href={`/kpop/${g.slug}`}
+                          className="flex items-center justify-between p-4 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all group mb-1"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-lg bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center text-neon-cyan font-bold text-xs uppercase">
+                              {g.name.charAt(0)}
+                            </div>
+                            <div>
+                              <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-[#00b4d8] dark:group-hover:text-neon-cyan transition-colors">{g.name}</h3>
+                              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">{t.premiumPoster}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-bold text-gray-900 dark:text-white group-hover:text-[#00b4d8] dark:group-hover:text-neon-cyan transition-colors">{g.name}</h3>
-                            <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">{t.premiumPoster}</p>
-                          </div>
-                        </div>
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-neon-cyan text-sm">→</span>
-                      </Link>
-                    ))}
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-neon-cyan text-sm">→</span>
+                        </Link>
+                      ))}
                     {groups.filter(g => g.name.toLowerCase().includes(searchAll.toLowerCase())).length === 0 && (
                       <div className="text-center py-10 text-gray-500 text-sm italic">{t.notFound}</div>
                     )}

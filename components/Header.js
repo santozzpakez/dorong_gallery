@@ -27,12 +27,12 @@ export default function Header() {
     { name: lang === 'id' ? 'Beranda' : 'Home', href: '/' },
     { name: 'Anime', href: '/anime' },
     { name: 'K-pop', href: '/kpop' },
-    { name: 'Decor', href: '/decor' },
+    { name: 'Aesthetic', href: '/aesthetic' },
+    { name: 'Custom', href: '/custom' },
   ]
 
   useEffect(() => {
     if (showSearch) {
-      // ... (existing load logic)
       const STORAGE_TYPES = 'dorong_admin_type_options'
       try {
         const raw = localStorage.getItem(STORAGE_TYPES)
@@ -41,8 +41,7 @@ export default function Header() {
           const cats = []
           if (parsed.anime) parsed.anime.forEach(name => cats.push({ name, type: 'anime', slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }))
           if (parsed.kpop) parsed.kpop.forEach(name => cats.push({ name, type: 'kpop', slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }))
-          const decorCats = ['Japanese Street', 'Café Aesthetic', 'Gaming Room', 'Minimalist', 'Dark Luxury', 'Nature', 'Retro Vintage', 'Lofi & Music']
-          decorCats.forEach(name => cats.push({ name, type: 'decor', slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }))
+          if (parsed.aesthetic) parsed.aesthetic.forEach(name => cats.push({ name, type: 'aesthetic', slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-') }))
           setAllCategories(cats)
         }
       } catch (e) { console.error(e) }
@@ -57,10 +56,8 @@ export default function Header() {
       const query = searchQuery.trim().toLowerCase()
       if (!query) return
 
-      // Cari hasil yang mengandung query
       const matches = allCategories.filter(c => c.name.toLowerCase().includes(query))
       
-      // Jika ada yang match persis atau hanya ada 1 hasil
       if (matches.length > 0) {
         const exact = matches.find(c => c.name.toLowerCase() === query) || matches[0]
         setShowSearch(false)
@@ -76,18 +73,17 @@ export default function Header() {
   }
 
   const headerBg = getUrl('header-bg')
-// ... (existing translations and return)
 
   const translations = {
     id: {
       home: 'Beranda',
       anime: 'Anime',
       kpop: 'K-pop',
-      decor: 'Decor',
+      aesthetic: 'Aesthetic',
       custom: 'Custom',
       catalog: 'Katalog',
       cart: 'Keranjang',
-      searchPlaceholder: 'Cari anime, k-pop, atau decor...',
+      searchPlaceholder: 'Cari anime, k-pop, atau aesthetic...',
       noResults: 'Hasil tidak ditemukan...',
       logout: 'Keluar',
       adminPanel: 'Panel Admin'
@@ -96,11 +92,11 @@ export default function Header() {
       home: 'Home',
       anime: 'Anime',
       kpop: 'K-pop',
-      decor: 'Decor',
+      aesthetic: 'Aesthetic',
       custom: 'Custom',
       catalog: 'Catalog',
       cart: 'Cart',
-      searchPlaceholder: 'Search anime, k-pop, or decor...',
+      searchPlaceholder: 'Search anime, k-pop, or aesthetic...',
       noResults: 'No results found...',
       logout: 'Logout',
       adminPanel: 'Admin Panel'
@@ -109,11 +105,11 @@ export default function Header() {
       home: 'ホーム',
       anime: 'アニメ',
       kpop: 'K-POP',
-      decor: 'デコレーション',
+      aesthetic: 'エステティック',
       custom: 'カスタム',
       catalog: 'カタログ',
       cart: 'カート',
-      searchPlaceholder: 'アニメ、K-POP、デコを検索...',
+      searchPlaceholder: 'アニメ、K-POP、エステティックを検索...',
       noResults: '結果が見つかりません...',
       logout: 'ログアウト',
       adminPanel: '管理パネル'
@@ -122,12 +118,12 @@ export default function Header() {
       home: '홈',
       anime: '애니메이션',
       kpop: 'K-팝',
-      decor: '데코',
+      aesthetic: '에스테틱',
       custom: '커스텀',
       catalog: '카탈로그',
       cart: '장바구니',
-      searchPlaceholder: '애니메이션, K-팝, 데코 검색...',
-      noResults: '결과를 menemukan 수 없습니다...',
+      searchPlaceholder: '애니메이션, K-팝, 에스테틱 검색...',
+      noResults: '결과를 찾을 수 없습니다...',
       logout: '로그아웃',
       adminPanel: '관리 패널'
     },
@@ -135,11 +131,11 @@ export default function Header() {
       home: '首页',
       anime: '动漫',
       kpop: '韩流',
-      decor: '装饰',
+      aesthetic: '美学',
       custom: '定制',
       catalog: '目录',
       cart: '购物车',
-      searchPlaceholder: '搜索动漫、韩流或装饰...',
+      searchPlaceholder: '搜索动漫、韩流或美学...',
       noResults: '未找到结果...',
       logout: '登出',
       adminPanel: '管理面板'
@@ -425,9 +421,9 @@ export default function Header() {
                 >
                   {t.logout}
                 </button>
-                {user.email === 'admin@dorong.gallery' && (
+                {(user.email === 'admin@dorong.gallery' || adminRole) && (
                   <Link
-                    href="/admin/tema"
+                    href="/admin"
                     className="px-4 py-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all"
                   >
                     {t.adminPanel}
@@ -440,15 +436,6 @@ export default function Header() {
                 className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-white text-[10px] font-black tracking-widest border border-white/40 transition-all uppercase"
               >
                 Login
-              </Link>
-            )}
-
-            {adminRole && (
-              <Link
-                href="/admin"
-                className="px-3 py-1 rounded bg-purple-600/40 hover:bg-purple-600/60 text-white text-[10px] font-black tracking-widest border border-purple-500/60 transition-all uppercase shadow-lg shadow-purple-500/20"
-              >
-                Admin Panel
               </Link>
             )}
           </div>
@@ -536,19 +523,13 @@ export default function Header() {
       <div className="relative z-10 bg-gradient-to-r from-[#2d0050]/90 via-[#1a0033]/90 to-[#4a0030]/90 dark:from-black/80 dark:via-[#0d0020]/80 dark:to-black/80 backdrop-blur-md border-b border-[#ff007f]/30 dark:border-neon-purple/30">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <nav className="flex gap-6 text-sm items-center">
-            {[
-              { href: '/', label: t.home },
-              { href: '/anime', label: t.anime },
-              { href: '/kpop', label: t.kpop },
-              { href: '/decor', label: t.decor },
-              { href: '/custom', label: t.custom },
-            ].map(({ href, label }) => (
+            {navLinks.map(({ href, name }) => (
               <Link
                 key={href}
                 href={href}
                 className="text-white/80 hover:text-white transition-colors font-medium tracking-wide hover:drop-shadow-[0_0_6px_rgba(255,0,127,0.8)]"
               >
-                {label}
+                {name}
               </Link>
             ))}
           </nav>

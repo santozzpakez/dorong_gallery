@@ -37,7 +37,7 @@ export default function Home(){
             <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
               <CategoryCard title="Anime" image={getUrl('cover-anime')} href="/anime" />
               <CategoryCard title="K-pop" image={getUrl('cover-kpop')} href="/kpop" />
-              <CategoryCard title="Decor" image={getUrl('cover-decor')} href="/decor" />
+              <CategoryCard title="Aesthetic" image={getUrl('cover-aesthetic')} href="/aesthetic" />
               <CategoryCard title="Custom" image={getUrl('cover-custom')} href="/custom" />
             </div>
           </div>

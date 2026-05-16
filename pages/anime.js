@@ -8,12 +8,12 @@ import { useLanguage } from '../context/LanguageContext'
 
 export default function Anime() {
   const { lang } = useLanguage()
+  const { assets, getUrl, getText, loaded } = useSiteAssets()
   const [seriesList, setSeriesList] = useState([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(0)
   const [showAllModal, setShowAllModal] = useState(false)
   const [searchAll, setSearchAll] = useState('')
-  const { assets, getUrl, getText } = useSiteAssets()
 
   const translations = {
     id: {
@@ -87,40 +87,55 @@ export default function Anime() {
 
   useEffect(() => {
     async function loadSeries() {
-      // ── 1. Baca daftar series dari localStorage (definisi admin) ──
-      const STORAGE_TYPES = 'dorong_admin_type_options'
-      let adminAnimeSeries = []
-      try {
-        const raw = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
-        if (raw) {
-          const parsed = JSON.parse(raw)
-          adminAnimeSeries = Array.isArray(parsed?.anime) ? parsed.anime : []
-        }
-      } catch { /* abaikan */ }
+      if (!loaded) return // Tunggu Site Assets (Cache) siap
 
-      // ── 2. Buat map dari series (Gunakan normalisasi untuk hindari duplikat) ──
+      // ── 1. Ambil dari Cache Global (SUPER CEPAT) ──
+      const globalOptionsRaw = getText('global-category-options')
+      const globalCharsRaw = getText('global-character-options')
+      
+      let categories = []
+      let charsByType = {}
+      
+      try {
+        if (globalOptionsRaw) {
+          const parsed = JSON.parse(globalOptionsRaw)
+          categories = Array.isArray(parsed?.anime) ? parsed.anime : []
+        }
+        if (globalCharsRaw) {
+          charsByType = JSON.parse(globalCharsRaw)
+        }
+      } catch (err) {
+        console.warn('Gagal membaca cache kategori:', err)
+      }
+
+      // Fallback ke localStorage jika cache global kosong (untuk admin di browser yang sama)
+      if (categories.length === 0) {
+        try {
+          const raw = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
+          if (raw) categories = JSON.parse(raw)?.anime || []
+        } catch {}
+      }
+
+      // ── 2. Buat map dan hitung karakter ──
       const seriesMap = new Map()
       const normalize = (name) => {
         if (!name) return ''
-        // Bersihkan "Cover" dan format ke Title Case
         const clean = name.replace(/^cover\s*[—\-]?\s*/i, '').trim()
         return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
       }
 
-      adminAnimeSeries.forEach(name => {
+      categories.forEach(name => {
         const norm = normalize(name)
-        if (norm && !seriesMap.has(norm)) {
-          seriesMap.set(norm, new Set())
+        if (norm) {
+          // Ambil karakter dari cache global
+          const chars = charsByType?.anime?.[norm] || []
+          seriesMap.set(norm, new Set(chars))
         }
       })
 
-      // ── 3. Merge dengan data dari database ──
-      if (hasSupabaseConfig && supabase) {
-        const { data } = await supabase
-          .from('products')
-          .select('subcategory')
-          .eq('category', 'anime')
-
+      // ── 3. Jalur Darurat: Scan Produk (Hanya jika cache & local kosong) ──
+      if (seriesMap.size === 0 && hasSupabaseConfig && supabase) {
+        const { data } = await supabase.from('products').select('subcategory').eq('category', 'anime')
         if (data) {
           data.forEach(item => {
             if (item.subcategory && item.subcategory.includes(' - ')) {
@@ -128,9 +143,7 @@ export default function Anime() {
               const series = normalize(parts[0].trim())
               const char = parts[1].trim()
               if (series) {
-                if (!seriesMap.has(series)) {
-                  seriesMap.set(series, new Set())
-                }
+                if (!seriesMap.has(series)) seriesMap.set(series, new Set())
                 seriesMap.get(series).add(char)
               }
             }
@@ -250,7 +263,7 @@ export default function Anime() {
                               key={displayImage}
                               src={displayImage} 
                               alt={activeSeries.name} 
-                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" 
+                              className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 transform-gpu"
                               loading="eager"
                               decoding="async"
                             />
@@ -259,7 +272,7 @@ export default function Anime() {
                           )}
                         </div>
                         
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-6 z-10">
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
                           <div className="mb-2">
                              <span className="px-2 py-0.5 bg-neon-cyan text-black text-[9px] font-black uppercase tracking-widest rounded">Featured Selection</span>
                           </div>

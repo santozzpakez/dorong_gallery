@@ -16,13 +16,13 @@ function sanitizeFileName(name) {
 const defaultTypes = {
   anime: [],
   kpop: [],
-  decor: []
+  aesthetic: []
 }
 
 const defaultCharactersByType = {
   anime: {},
   kpop: {},
-  decor: {}
+  aesthetic: {}
 }
 
 function loadJson(key, fallback) {
@@ -59,6 +59,53 @@ function mergeCharsByType(saved, fallback) {
     }
   }
   return out
+}
+
+// --- COMPRESSION HELPER ---
+async function compressImage(file, maxWidth = 1200) {
+  if (!file) return null
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target.result
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+
+          if (width > maxWidth) {
+            height *= maxWidth / width
+            width = maxWidth
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, width, height)
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Gagal membuat blob gambar'))
+              return
+            }
+            const fileName = file?.name || 'upload.webp'
+            const newFileName = fileName.includes('.') 
+              ? fileName.split('.').slice(0, -1).join('.') + '.webp'
+              : fileName + '.webp'
+              
+            const compressedFile = new File([blob], newFileName, { type: 'image/webp' })
+            resolve(compressedFile)
+          }, 'image/webp', 0.8)
+        } catch (err) {
+          reject(err)
+        }
+      }
+      img.onerror = (err) => reject(new Error('Gagal memuat gambar ke canvas'))
+    }
+    reader.onerror = (err) => reject(new Error('Gagal membaca file gambar'))
+  })
 }
 
 // --- CROPPING HELPER ---
@@ -139,10 +186,10 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
     if (slot.key.includes('home-video')) {
       return 'aspect-[4/3]'
     }
-    if (slot.key.startsWith('anime-cover-') || slot.key === 'cover-anime' || slot.key === 'cover-kpop' || slot.key === 'cover-decor' || slot.key === 'cover-custom') {
+    if (slot.key.startsWith('anime-cover-') || slot.key === 'cover-anime' || slot.key === 'cover-kpop' || slot.key === 'cover-aesthetic' || slot.key === 'cover-custom') {
       return 'aspect-[16/9]'
     }
-    if (slot.key.startsWith('kpop-group-') || slot.key.startsWith('decor-')) {
+    if (slot.key.startsWith('kpop-group-') || slot.key.startsWith('aesthetic-')) {
       return 'aspect-[16/9]'
     }
     if (slot.key.startsWith('featured-') || slot.key.includes('-1') || slot.key.includes('-2') || slot.key.includes('-3')) {
@@ -173,7 +220,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
         let targetKey = slot.key
         if (slot.isLayoutSlot && layoutSeriesSlug) {
           if (slot.isKpop) targetKey = `kpop-${layoutSeriesSlug}`
-          else if (slot.isDecor) targetKey = `decor-${layoutSeriesSlug}`
+          else if (slot.isAesthetic) targetKey = `aesthetic-${layoutSeriesSlug}`
           else targetKey = `anime-cover-${layoutSeriesSlug}`
         }
         onStage(targetKey, { file, url: reader.result, aspect })
@@ -186,12 +233,12 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
   let activeKey = slot.key
   if (slot.isLayoutSlot && layoutSeriesSlug) {
     if (slot.isKpop) activeKey = `kpop-${layoutSeriesSlug}`
-    else if (slot.isDecor) activeKey = `decor-${layoutSeriesSlug}`
+    else if (slot.isAesthetic) activeKey = `aesthetic-${layoutSeriesSlug}`
     else activeKey = `anime-cover-${layoutSeriesSlug}`
   }
   const activeUrl = staged?.url || (slot.isLayoutSlot && stagedAssets?.[activeKey]?.url) || getUrl(activeKey) || slot.defaultUrl
 
-  const hasTextEdit = !slot.isLayoutSlot && (slot.key.startsWith('anime-cover-') || slot.key.startsWith('kpop-') || slot.key.startsWith('decor-'))
+  const hasTextEdit = !slot.isLayoutSlot && (slot.key.startsWith('anime-cover-') || slot.key.startsWith('kpop-') || slot.key.startsWith('aesthetic-'))
 
   return (
     <div className={`rounded-xl border transition-all overflow-hidden flex flex-col group ${staged || (slot.isLayoutSlot && stagedAssets[activeKey]) ? 'border-amber-500 shadow-lg shadow-amber-500/10 bg-amber-500/5' : 'border-white/10 bg-white/5 dark:bg-black/20'
@@ -375,7 +422,7 @@ export default function TemaAdmin() {
                 const parts = sub.split(' - ')
                 typeName = parts[0].trim()
                 charName = parts[1]?.trim() || ''
-              } else if (cat === 'decor') {
+              } else if (cat === 'aesthetic') {
                 typeName = sub.trim()
               }
 
@@ -401,8 +448,8 @@ export default function TemaAdmin() {
                 rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
               } else if (asset.key.startsWith('kpop-group-')) {
                 rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
-              } else if (asset.key.startsWith('decor-') && !asset.key.includes('sidebar')) {
-                rawName = asset.label || asset.key.replace('decor-', '').replace(/-/g, ' ')
+              } else if (asset.key.startsWith('aesthetic-') && !asset.key.includes('sidebar')) {
+                rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
               }
 
               if (rawName) {
@@ -411,9 +458,16 @@ export default function TemaAdmin() {
                 // Ubah ke Title Case (contoh: naruto -> Naruto)
                 const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
                 
-                const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : 'decor'
-                if (!types[cat].includes(formattedName)) {
-                  types[cat].push(formattedName)
+                let cat = ''
+                if (asset.key.includes('anime')) cat = 'anime'
+                else if (asset.key.includes('kpop')) cat = 'kpop'
+                else if (asset.key.includes('aesthetic')) cat = 'aesthetic'
+                else cat = 'custom'
+
+                if (cat && types[cat]) {
+                  if (!types[cat].includes(formattedName)) {
+                    types[cat].push(formattedName)
+                  }
                 }
               }
             })
@@ -441,12 +495,12 @@ export default function TemaAdmin() {
       const filteredGroups = ASSET_GROUPS.filter(g =>
         !g.id.startsWith('anime') &&
         !g.id.startsWith('kpop') &&
-        !g.id.startsWith('decor')
+        !g.id.startsWith('aesthetic')
       )
       const filteredSlots = ASSET_SLOTS.filter(s =>
         !s.group.startsWith('anime') &&
         !s.group.startsWith('kpop') &&
-        !s.group.startsWith('decor')
+        !s.group.startsWith('aesthetic')
       )
 
       const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
@@ -493,6 +547,21 @@ export default function TemaAdmin() {
         filteredSlots.push({ key: `decor-${slug}`, label: `Cover — ${name}`, group: 'decor-all-covers', defaultUrl: '' })
       })
 
+      // ─── AESTHETIC SECTION ───
+      filteredGroups.push({ id: 'aesthetic-sidebar-layout', label: '✨ Aesthetic — Sidebar Layout (10 Panels)' })
+      for (let i = 1; i <= 10; i++) {
+        const side = i <= 5 ? 'Kiri' : 'Kanan'
+        const pos = i <= 5 ? i : i - 5
+        filteredSlots.push({ key: `aesthetic-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'aesthetic-sidebar-layout', isLayoutSlot: true, isAesthetic: true })
+      }
+      filteredGroups.push({ id: 'aesthetic-all-covers', label: '✨ Aesthetic — All Theme Covers' })
+      const aestheticThemes = new Set(finalTypes.aesthetic || [])
+      const sortedAesthetic = Array.from(aestheticThemes).sort((a, b) => a.localeCompare(b))
+      sortedAesthetic.forEach(name => {
+        const slug = toSlug(name)
+        filteredSlots.push({ key: `aesthetic-${slug}`, label: `Cover — ${name}`, group: 'aesthetic-all-covers', defaultUrl: '' })
+      })
+
 
       setDynamicGroups(filteredGroups)
       setDynamicSlots(filteredSlots)
@@ -532,6 +601,10 @@ export default function TemaAdmin() {
     if (useCrop && croppedAreaPixels) {
       finalBlob = await getCroppedImg(cropData.url, croppedAreaPixels, rotation)
       finalUrl = URL.createObjectURL(finalBlob)
+    } else {
+      // Auto compress even if not cropped
+      finalBlob = await compressImage(cropData.file)
+      finalUrl = URL.createObjectURL(finalBlob)
     }
 
     setStagedAssets(prev => ({
@@ -564,14 +637,17 @@ export default function TemaAdmin() {
         const isVideo = item.type === 'video'
 
         if (item.file && hasSupabaseConfig && supabase) {
-          const safeName = sanitizeFileName(item.file.name || 'upload')
+          // KOMPRESI OTOMATIS: Kecilkan file sebelum upload (kecuali video)
+          // Pastikan item.file ada sebelum kompresi
+          const fileToUpload = isVideo ? item.file : await compressImage(item.file)
+          const safeName = sanitizeFileName(fileToUpload.name || 'upload')
           const folder = isVideo ? 'videos' : 'tema'
-          const ext = isVideo ? '.mp4' : '.webp'
+          const ext = isVideo ? '.mp4' : '' // compressImage already adds .webp
           const filePath = `${folder}/${key}-${Date.now()}-${safeName}${ext}`
 
-          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, item.file, {
+          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, fileToUpload, {
             upsert: false,
-            contentType: item.file.type || 'application/octet-stream'
+            contentType: fileToUpload.type || 'application/octet-stream'
           })
 
           if (upErr) throw new Error(`Gagal upload ${key}: ${upErr.message}`)
@@ -653,6 +729,7 @@ export default function TemaAdmin() {
 
   const [animeSearch, setAnimeSearch] = useState('')
   const [kpopSearch, setKpopSearch] = useState('')
+  const [aestheticSearch, setAestheticSearch] = useState('')
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)]">
@@ -823,40 +900,53 @@ export default function TemaAdmin() {
             </div>
           </div>
 
-          {/* 4. DECOR DROPDOWN */}
-          <div className="relative group/decor">
-            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('decor') ? 'bg-[#ff006e] border-[#ff006e] text-white shadow-lg shadow-pink-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#ff006e]/50'
+          {/* 4. AESTHETIC DROPDOWN */}
+          <div className="relative group/aesthetic">
+            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('aesthetic') ? 'bg-[#00f2fe] border-[#00f2fe] text-black shadow-lg shadow-cyan-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#00f2fe]/50'
               }`}>
-              🖼 Decor Categories
+              ✨ Aesthetic Themes
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
             </button>
-            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/decor:opacity-100 group-hover/decor:visible transition-all z-50 p-2 space-y-1">
-              {/* Fixed Layout Menus at Top */}
-              {dynamicGroups.filter(g => g.id === 'decor-sidebar-layout' || g.id === 'decor-all-covers').map(g => (
-                <button
-                  key={g.id}
-                  onClick={() => setOpenGroup(g.id)}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#ff006e]/20 border-[#ff006e]/50 text-[#ff006e]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
-                    }`}
-                >
-                  <span>✨ {g.label.replace('🖼 Decor — ', '')}</span>
-                </button>
-              ))}
-
-              {dynamicGroups.filter(g => g.id === 'decor').map(g => {
-                const isActive = openGroup === g.id
-                return (
+            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/aesthetic:opacity-100 group-hover/aesthetic:visible transition-all z-50 p-2 space-y-1">
+              <div className="p-2 border-b border-white/5 mb-2">
+                <input
+                  type="text"
+                  placeholder="Cari Tema Aesthetic..."
+                  value={aestheticSearch}
+                  onChange={(e) => setAestheticSearch(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-[#00f2fe]/50 transition-all"
+                />
+              </div>
+              <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                {/* Fixed Layout Menus at Top */}
+                {dynamicGroups.filter(g => g.id === 'aesthetic-sidebar-layout' || g.id === 'aesthetic-all-covers').map(g => (
                   <button
                     key={g.id}
                     onClick={() => setOpenGroup(g.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#ff006e]/20 text-[#ff006e]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#00f2fe]/20 border-[#00f2fe]/50 text-[#00f2fe]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
                       }`}
                   >
-                    <span className="truncate mr-2">Default Categories</span>
-                    <span className="opacity-40 flex-shrink-0">{dynamicSlots.filter(s => s.group === 'decor').length}</span>
+                    <span>✨ {g.label.replace('✨ Aesthetic — ', '')}</span>
                   </button>
-                )
-              })}
+                ))}
+
+                {dynamicGroups.filter(g => g.id.startsWith('aesthetic') && g.id !== 'aesthetic-sidebar-layout' && g.id !== 'aesthetic-all-covers' && g.label.toLowerCase().includes(aestheticSearch.toLowerCase())).map(g => {
+                  const count = dynamicSlots.filter(s => s.group === g.id).length
+                  if (count === 0) return null // Hide empty groups
+                  const isActive = openGroup === g.id
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => setOpenGroup(g.id)}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#00f2fe]/20 text-[#00f2fe]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                        }`}
+                    >
+                      <span className="truncate mr-2">{g.label.replace('Aesthetic — ', '')}</span>
+                      <span className="opacity-40 flex-shrink-0">{count}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           </div>
         </div>

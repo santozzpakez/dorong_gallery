@@ -9,6 +9,54 @@ import { useRouter } from 'next/router'
 import { useSiteAssets } from '../../lib/siteAssets'
 import { motion, AnimatePresence } from 'framer-motion'
 
+// --- COMPRESSION HELPER ---
+async function compressImage(file, maxWidth = 1200) {
+  if (!file) return null
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.readAsDataURL(file)
+    reader.onload = (event) => {
+      const img = new Image()
+      img.src = event.target.result
+      img.onload = () => {
+        try {
+          const canvas = document.createElement('canvas')
+          let width = img.width
+          let height = img.height
+
+          if (width > maxWidth) {
+            height *= maxWidth / width
+            width = maxWidth
+          }
+
+          canvas.width = width
+          canvas.height = height
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0, width, height)
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              reject(new Error('Gagal membuat blob gambar'))
+              return
+            }
+            // Fallback name jika file.name tidak ada
+            const fileName = file?.name || 'upload.webp'
+            const newFileName = fileName.includes('.') 
+              ? fileName.split('.').slice(0, -1).join('.') + '.webp'
+              : fileName + '.webp'
+              
+            const compressedFile = new File([blob], newFileName, { type: 'image/webp' })
+            resolve(compressedFile)
+          }, 'image/webp', 0.8)
+        } catch (err) {
+          reject(err)
+        }
+      }
+      img.onerror = (err) => reject(new Error('Gagal memuat gambar ke canvas'))
+    }
+    reader.onerror = (err) => reject(new Error('Gagal membaca file gambar'))
+  })
+}
+
 // --- CROPPING HELPER ---
 async function getCroppedImg(imageSrc, pixelCrop) {
   const image = await new Promise((resolve, reject) => {
@@ -59,14 +107,14 @@ const STORAGE_CHARS = 'dorong_admin_characters_by_type'
 const defaultTypes = {
   anime: [],
   kpop: [],
-  decor: []
+  aesthetic: []
 }
 
 /** Karakter / member / item tergantung pilihan "jenis" di atas (mis. One Piece → Zoro) */
 const defaultCharactersByType = {
   anime: {},
   kpop: {},
-  decor: {}
+  aesthetic: {}
 }
 
 // Palette warna untuk button tidak aktif — bergantian agar bervariasi
@@ -87,7 +135,7 @@ const TAG_COLORS = [
 const CAT_COLORS = {
   anime: { inactive: 'bg-violet-100 text-violet-800 border border-violet-300 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-600/50 dark:hover:bg-violet-800/60' },
   kpop: { inactive: 'bg-pink-100 text-pink-800 border border-pink-300 hover:bg-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-600/50 dark:hover:bg-pink-800/60' },
-  decor: { inactive: 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-600/50 dark:hover:bg-emerald-800/60' },
+  aesthetic: { inactive: 'bg-cyan-100 text-cyan-800 border border-cyan-300 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-600/50 dark:hover:bg-cyan-800/60' },
 }
 
 function slugify(value) {
@@ -233,7 +281,7 @@ export default function Admin() {
   }
 
   const handleResetLocalStorage = () => {
-    if (confirm('Sapu bersih semua memori browser (pilihan anime/kpop/decor)? Ini akan menghapus data contoh yang masih tersangkut.')) {
+    if (confirm('Sapu bersih semua memori browser (pilihan anime/kpop/aesthetic)? Ini akan menghapus data contoh yang masih tersangkut.')) {
       window.localStorage.removeItem(STORAGE_TYPES)
       window.localStorage.removeItem(STORAGE_CHARS)
       window.location.reload()
@@ -283,8 +331,8 @@ export default function Admin() {
     if (form.category === 'kpop') {
       return { step1: 'Grup K-pop', step2: 'Member', addType: 'Tambah grup baru', addChar: 'Tambah member baru' }
     }
-    if (form.category === 'decor') {
-      return { step1: 'Jenis / Tema Decor', step2: null, addType: 'Tambah tema baru', addChar: null }
+    if (form.category === 'aesthetic') {
+      return { step1: 'Tema Aesthetic', step2: null, addType: 'Tambah tema baru', addChar: null }
     }
     return { step1: 'Jenis Produk', step2: 'Varian / Nama', addType: 'Tambah jenis', addChar: 'Tambah varian' }
   }, [form.category])
@@ -321,7 +369,7 @@ export default function Admin() {
                 const parts = sub.split(' - ')
                 typeName = parts[0].trim()
                 charName = parts[1]?.trim() || ''
-              } else if (cat === 'decor') {
+              } else if (cat === 'aesthetic') {
                 typeName = sub.trim()
               }
 
@@ -341,32 +389,33 @@ export default function Admin() {
                 }
               }
             })
-          }
-          // B. Sync from Site Assets (Agar kategori yang baru ada cover-nya juga muncul)
-          const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label')
+              // B. Sync from Site Assets (Hanya jika kategori tersebut punya data valid)
+          // Kita tidak lagi otomatis menambahkan kategori dari Site Assets jika produknya sudah dihapus,
+          // kecuali kategori tersebut memang punya aset gambar yang terdaftar.
+          const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label, image_url')
           if (!aErr && aData) {
             aData.forEach(asset => {
+              if (!asset.image_url) return // Lewati jika tidak ada gambarnya
+
               let rawName = ''
               if (asset.key.startsWith('anime-cover-')) {
                 rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
               } else if (asset.key.startsWith('kpop-group-')) {
                 rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
-              } else if (asset.key.startsWith('decor-') && !asset.key.includes('sidebar')) {
-                rawName = asset.label || asset.key.replace('decor-', '').replace(/-/g, ' ')
+              } else if (asset.key.startsWith('aesthetic-') && !asset.key.includes('sidebar')) {
+                rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
               }
 
               if (rawName) {
-                // Bersihkan "Cover — " atau "Cover " dari nama agar tidak dobel
                 const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-                // Ubah ke Title Case (contoh: naruto -> Naruto)
                 const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                
-                const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : 'decor'
+                const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : asset.key.startsWith('aesthetic') ? 'aesthetic' : 'custom'
                 if (!types[cat].includes(formattedName)) {
                   types[cat].push(formattedName)
                 }
               }
             })
+          }
           }
         } catch (err) {
           console.error('Failed to sync categories from DB:', err)
@@ -406,12 +455,38 @@ export default function Admin() {
   useEffect(() => {
     if (!listsReady || typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_TYPES, JSON.stringify(typeOptions))
-  }, [typeOptions, listsReady])
+    
+    // Sync ke Supabase agar User Biasa (Public) bisa memuat lebih cepat (Tanpa scan ribuan produk)
+    if (hasSupabaseConfig && supabase && adminRole) {
+      supabase.from('site_assets').upsert({
+        key: 'global-category-options',
+        text_value: JSON.stringify(typeOptions),
+        label: 'Global Category List Cache',
+        category: 'system',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' }).then(({ error }) => {
+        if (error) console.error('Failed to sync global categories:', error)
+      })
+    }
+  }, [typeOptions, listsReady, adminRole])
 
   useEffect(() => {
     if (!listsReady || typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_CHARS, JSON.stringify(charactersByType))
-  }, [charactersByType, listsReady])
+    
+    // Sync characters juga agar public tetap punya daftar karakter lengkap
+    if (hasSupabaseConfig && supabase && adminRole) {
+       supabase.from('site_assets').upsert({
+        key: 'global-character-options',
+        text_value: JSON.stringify(charactersByType),
+        label: 'Global Character List Cache',
+        category: 'system',
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'key' }).then(({ error }) => {
+        if (error) console.error('Failed to sync global characters:', error)
+      })
+    }
+  }, [charactersByType, listsReady, adminRole])
 
   useEffect(() => {
     // Tunggu sampai status login & role benar-benar selesai dimuat
@@ -435,6 +510,34 @@ export default function Admin() {
   const [whatsappContacts, setWhatsappContacts] = useState([])
   const [newWaName, setNewWaName] = useState('')
   const [newWaPhone, setNewWaPhone] = useState('')
+
+  async function resetAllDecor() {
+    if (!window.confirm("PERINGATAN: Ini akan MENGHAPUS SEMUA PRODUK dan SEMUA GAMBAR di kategori DECOR secara permanen. Anda yakin ingin mulai dari nol?")) return
+    
+    setStatusMessage("Sedang membersihkan seluruh data Decor...")
+    try {
+      if (hasSupabaseConfig && supabase) {
+        // 1. Hapus Produk
+        await supabase.from('products').delete().eq('category', 'decor')
+        // 2. Hapus Aset
+        const { data: assets } = await supabase.from('site_assets').select('key')
+        const decorKeys = assets?.filter(a => a.key.startsWith('decor-')).map(a => a.key) || []
+        if (decorKeys.length > 0) {
+          await supabase.from('site_assets').delete().in('key', decorKeys)
+        }
+        
+        // 3. Update State & LocalStorage
+        window.localStorage.removeItem('dorong_admin_type_options')
+        setTypeOptions(prev => ({ ...prev, decor: [] }))
+        setCharactersByType(prev => ({ ...prev, decor: {} }))
+        
+        setStatusMessage("BERHASIL! Seluruh data Decor telah dihapus secara total (Database & Browser).")
+        fetchProducts()
+      }
+    } catch (err) {
+      setStatusMessage("Gagal reset: " + err.message)
+    }
+  }
 
   const fetchAdmins = async () => {
     const { data } = await supabase.from('site_admins').select('*').order('created_at', { ascending: false })
@@ -604,7 +707,7 @@ export default function Admin() {
     const cat = form.category
     const oldSlug = oldName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
     const newSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-group-' : 'decor-'
+    const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-group-' : 'aesthetic-'
     
     setStatusMessage(`Sedang memigrasi data dari "${oldName}" ke "${newName}"...`)
 
@@ -673,10 +776,10 @@ export default function Admin() {
     setStatusMessage(`Berhasil! "${oldName}" telah digabungkan ke "${newName}".`)
   }
 
-  function deleteType(name) {
+  async function deleteType(name) {
     const cat = form.category
-    const subcatName = `${name}` 
     
+    // Cek apakah ada produk
     const hasProducts = savedProducts.some(p => {
       if (p.category !== cat) return false
       if (!p.subcategory) return false
@@ -684,27 +787,57 @@ export default function Admin() {
       return typePart === name
     })
     
+    let deleteProds = false
     if (hasProducts) {
-      setStatusMessage(`❌ Tidak bisa hapus "${name}": masih ada produk di dalamnya. Hapus produknya dulu.`)
-      return
+      const confirmDelete = window.confirm(`"${name}" masih memiliki produk. Apakah Anda ingin MENGHAPUS SEMUA PRODUK di dalam kategori ini secara permanen?`)
+      if (!confirmDelete) return
+      deleteProds = true
+    } else {
+      if (!window.confirm(`Hapus kategori "${name}"?`)) return
     }
 
-    triggerSecurityCheck(async () => {
-      setTypeOptions(prev => {
-        const list = (prev[cat] || []).filter(n => n !== name)
-        return { ...prev, [cat]: list }
-      })
-      setCharactersByType(prev => {
-        const catMap = { ...(prev[cat] || {}) }
-        delete catMap[name]
-        return { ...prev, [cat]: catMap }
-      })
-      if (form.typeName === name) {
-        const remaining = (typeOptions[cat] || []).filter(n => n !== name)
-        setForm(prev => ({ ...prev, typeName: remaining[0] || '', characterName: '' }))
+    setStatusMessage(`Sedang menghapus "${name}" secara permanen...`)
+
+    if (hasSupabaseConfig && supabase) {
+      try {
+        // 1. Hapus Produk (jika disetujui)
+        if (deleteProds) {
+          const { data: prodsToDelete } = await supabase.from('products').select('id, subcategory').eq('category', cat)
+          const targetIds = prodsToDelete?.filter(p => p.subcategory?.split(' - ')[0].trim() === name).map(p => p.id) || []
+          
+          if (targetIds.length > 0) {
+            await supabase.from('products').delete().in('id', targetIds)
+          }
+        }
+
+        // 2. Hapus Aset (Cover) dari site_assets
+        const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        const assetKey = cat === 'anime' ? `anime-cover-${slug}` : cat === 'kpop' ? `kpop-group-${slug}` : `aesthetic-${slug}`
+        await supabase.from('site_assets').delete().eq('key', assetKey)
+
+        // 3. Update State Lokal
+        setTypeOptions(prev => {
+          const list = (prev[cat] || []).filter(n => n !== name)
+          return { ...prev, [cat]: list }
+        })
+        setCharactersByType(prev => {
+          const catMap = { ...(prev[cat] || {}) }
+          delete catMap[name]
+          return { ...prev, [cat]: catMap }
+        })
+        
+        if (form.typeName === name) {
+          const remaining = (typeOptions[cat] || []).filter(n => n !== name)
+          setForm(prev => ({ ...prev, typeName: remaining[0] || '', characterName: '' }))
+        }
+        
+        setStatusMessage(`"${name}" dan seluruh datanya berhasil dihapus permanen.`)
+        fetchProducts() 
+      } catch (err) {
+        console.error('Delete failed:', err)
+        setStatusMessage(`Gagal menghapus: ${err.message}`)
       }
-      setStatusMessage(`"${name}" berhasil dihapus.`)
-    })
+    }
   }
 
   // ── Rename / Delete Character (Karakter / Member) ──
@@ -769,6 +902,10 @@ export default function Admin() {
     if (useCrop && croppedAreaPixels) {
       finalBlob = await getCroppedImg(cropData.url, croppedAreaPixels)
       finalUrl = URL.createObjectURL(finalBlob)
+    } else {
+      // Jika tidak di-crop, tetap kompres
+      finalBlob = await compressImage(cropData.file)
+      finalUrl = URL.createObjectURL(finalBlob)
     }
 
     setImageFile(finalBlob)
@@ -808,8 +945,8 @@ export default function Admin() {
       setStatusMessage('Pilih judul/series dulu, lalu pilih karakter (atau tambah baru).')
       return
     }
-    if (form.category === 'decor' && !form.typeName) {
-      setStatusMessage('Pilih jenis decor dulu ya.')
+    if (form.category === 'aesthetic' && !form.typeName) {
+      setStatusMessage('Pilih jenis/tema dulu ya.')
       return
     }
 
@@ -817,9 +954,9 @@ export default function Admin() {
     setStatusMessage('Menyiapkan pengunggahan...')
 
     try {
-      const seriesName = (needsHierarchy || form.category === 'decor') ? form.typeName : '-'
+      const seriesName = (needsHierarchy || form.category === 'aesthetic') ? form.typeName : '-'
       const characterName = needsHierarchy ? form.characterName : null
-      const subcategory = needsHierarchy ? `${seriesName} - ${characterName}` : (form.category === 'decor' ? seriesName : form.category)
+      const subcategory = needsHierarchy ? `${seriesName} - ${characterName}` : (form.category === 'aesthetic' ? seriesName : form.category)
 
       if (uploadMode === 'batch') {
         const imageFiles = Array.from(batchFiles).filter(file =>
@@ -842,10 +979,12 @@ export default function Admin() {
 
         // Fungsi helper untuk upload satu file
         const uploadOneFile = async (file, index) => {
-          const safeName = sanitizeFileName(file.name)
-          const filePath = `products/${Date.now()}-${index}-${safeName}.webp`
+          // KOMPRESI OTOMATIS: Kecilkan ukuran file sebelum upload
+          const compressed = await compressImage(file)
+          const safeName = sanitizeFileName(compressed.name)
+          const filePath = `products/${Date.now()}-${index}-${safeName}`
           
-          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, file, {
+          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, compressed, {
             upsert: false,
             contentType: 'image/webp'
           })
@@ -997,7 +1136,7 @@ export default function Admin() {
     }
   }
 
-  const showHierarchy = form.category === 'anime' || form.category === 'kpop' || form.category === 'decor'
+  const showHierarchy = form.category === 'anime' || form.category === 'kpop' || form.category === 'aesthetic'
 
   // Logika Folder View
   const categories = [...new Set(savedProducts.map(p => p.category))]
@@ -1157,7 +1296,7 @@ export default function Admin() {
             <div>
               <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">Langkah 1 — Kategori</p>
               <div className="flex flex-wrap gap-2 mb-3">
-                {['anime', 'kpop', 'decor'].map((cat) => (
+                {['anime', 'kpop', 'aesthetic'].map((cat) => (
                   <button
                     key={cat}
                     type="button"
@@ -1167,13 +1306,13 @@ export default function Admin() {
                         : CAT_COLORS[cat]?.inactive || 'bg-white/10 text-gray-300'
                       }`}
                   >
-                    {cat === 'anime' ? '🎌 Anime' : cat === 'kpop' ? '🎵 K-pop' : '🏠 Decor'}
+                    {cat === 'anime' ? '🎌 Anime' : cat === 'kpop' ? '🎵 K-pop' : '✨ Aesthetic'}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Langkah 2 — Pilih Jenis / Series (hanya untuk anime, kpop, decor) */}
+            {/* Langkah 2 — Pilih Jenis / Series (hanya untuk anime, kpop, aesthetic) */}
             {showHierarchy && (
               <div className="rounded-lg border border-white/10 bg-black/20 p-4 space-y-4">
                 {/* Langkah 2 — Pilih Jenis */}
@@ -1344,10 +1483,14 @@ export default function Admin() {
             
             <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded bg-black/20" />
 
+            {/* Tombol Simpan Produk */}
             <button
-              type="submit"
+              onClick={handleSubmit}
               disabled={isSubmitting}
-              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-4 rounded-2xl shadow-xl shadow-blue-500/20 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2"
+              className={`w-full py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${isSubmitting
+                  ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                  : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-purple-500/20 active:scale-[0.98]'
+                }`}
             >
               {isSubmitting ? (
                 <>
@@ -1356,6 +1499,19 @@ export default function Admin() {
                 </>
               ) : '✨ Save Product'}
             </button>
+
+            {/* DANGER ZONE (Hanya untuk Reset Decor) */}
+            <div className="mt-12 p-6 rounded-2xl border border-red-500/20 bg-red-500/5">
+              <p className="text-[10px] uppercase tracking-[0.3em] text-red-500 font-black mb-4">Danger Zone / Area Bahaya</p>
+              <button
+                type="button"
+                onClick={resetAllDecor}
+                className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs font-bold tracking-widest"
+              >
+                🔥 RESET TOTAL SEMUA DATA DECOR
+              </button>
+              <p className="text-[9px] text-gray-500 mt-2 text-center italic">Gunakan ini untuk menghapus semua produk & gambar Decor agar bisa mulai dari nol.</p>
+            </div>
           </form>
 
           <aside className="glass p-5 rounded">
