@@ -1,6 +1,7 @@
 import Head from 'next/head'
+import Link from 'next/link'
 import Header from '../components/Header'
-import CategoryCard from '../components/CategoryCard'
+import Hero from '../components/Hero'
 import FeaturedCarousel from '../components/FeaturedCarousel'
 import ShopGallery from '../components/ShopGallery'
 import Footer from '../components/Footer'
@@ -8,47 +9,190 @@ import { useSiteAssets } from '../lib/siteAssets'
 
 export default function Home(){
   const { getUrl } = useSiteAssets()
-  const homeBg = getUrl('home-bg')
 
   return (
     <>
       <Head>
-        <title>Dorong Gallery — Premium Wall Art</title>
+        <title>LUMI FORGE — Premium Collectible Metal Prints</title>
         <meta name="description" content="Premium anime, k-pop, decor posters & sublimation printing" />
       </Head>
       <Header />
       <main className="pt-28 bg-[var(--bg)] min-h-screen transition-colors duration-300">
-        {/* <Hero /> */}
+        <Hero />
 
-        {/* Section Koleksi dengan Background Khusus & Garis Pembatas */}
-        <section id="categories" className="relative overflow-hidden border-b border-white/5">
-          {/* Background Image Layer - Hanya di section ini */}
-          {homeBg && (
-            <div 
-              className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat opacity-60 dark:opacity-30"
-              style={{ backgroundImage: `url(${homeBg})` }}
-            />
-          )}
+        {/* Section Koleksi dengan Background Adaptif & Garis Pembatas */}
+        <section id="categories" className="relative overflow-hidden border-b border-zinc-900/10 dark:border-zinc-900 bg-[var(--bg)] py-20">
+          
+          {/* Polished Dark Desk Metallic Ground Surface Shadow */}
+          <div className="absolute bottom-0 left-0 w-full h-80 bg-gradient-to-t from-transparent via-[#d4af37]/3 to-transparent pointer-events-none z-0" />
 
-          <div className="relative z-10 max-w-6xl mx-auto px-6 py-16">
-            <h2 className="text-5xl font-black mb-12 uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-[#ff00ff] via-[#9d4edd] to-[#ff00ff] drop-shadow-[0_0_15px_rgba(157,78,221,0.8)] neon-text-purple">
-              Collections
+          {/* Premium Serif Ribbon Header Bar */}
+          <div className="w-full mb-16 flex flex-col justify-center items-center relative overflow-hidden z-10 px-4">
+            <div className="absolute left-1/2 -translate-x-1/2 w-96 h-96 bg-[#d4af37]/5 rounded-full filter blur-3xl pointer-events-none"></div>
+            
+            <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-[#d4af37] mb-2 font-serif">
+              🏛️ META-GRAPHICS PREMIUM COLLECTION 🏛️
+            </span>
+            <h2 className="relative z-10 text-4xl sm:text-5xl md:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#b39359] font-serif text-center filter drop-shadow-[0_2px_10px_rgba(212,175,55,0.15)]">
+              COLLECTIONS
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-              <CategoryCard title="Anime" image={getUrl('cover-anime')} href="/anime" />
-              <CategoryCard title="K-pop" image={getUrl('cover-kpop')} href="/kpop" />
-              <CategoryCard title="Aesthetic" image={getUrl('cover-aesthetic')} href="/aesthetic" />
-              <CategoryCard title="Custom" image={getUrl('cover-custom')} href="/custom" />
+            <div className="h-[2px] w-24 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mt-4" />
+          </div>
+
+          {/* 3D Skewed Brushed-Metal Cards Deck */}
+          <div className="relative z-10 max-w-7xl mx-auto px-6 md:px-8">
+            <div className="flex flex-col md:flex-row justify-center items-center gap-8 md:gap-4 lg:gap-8 py-10">
+              
+              {/* CARD 1: ANIME (Art & Craft) */}
+              <Link 
+                href="/anime" 
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[-1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+              >
+                {/* Visual Accent Sheen Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+                
+                {/* Card Artwork Image Container */}
+                <div className="h-[68%] w-full overflow-hidden relative rounded-t-[23px] border-b border-zinc-800 bg-zinc-950">
+                  {getUrl('cover-anime') ? (
+                    <img 
+                      src={getUrl('cover-anime')} 
+                      alt="Anime Artwork" 
+                      className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                  )}
+                  {/* Subtle inner metallic shadow */}
+                  <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
+                </div>
+
+                {/* Card Engraved Golden Text Bottom Section */}
+                <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
+                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                    - ANIME -
+                  </h3>
+                  <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
+                    ART & CRAFT
+                  </span>
+                </div>
+              </Link>
+
+              {/* CARD 2: K-POP (Music & Performance) */}
+              <Link 
+                href="/kpop" 
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[-0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+              >
+                {/* Visual Accent Sheen Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+                
+                {/* Card Artwork Image Container */}
+                <div className="h-[68%] w-full overflow-hidden relative rounded-t-[23px] border-b border-zinc-800 bg-zinc-950">
+                  {getUrl('cover-kpop') ? (
+                    <img 
+                      src={getUrl('cover-kpop')} 
+                      alt="K-Pop Artwork" 
+                      className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                  )}
+                  {/* Subtle inner metallic shadow */}
+                  <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
+                </div>
+
+                {/* Card Engraved Golden Text Bottom Section */}
+                <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
+                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                    - K-POP -
+                  </h3>
+                  <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
+                    MUSIC & PERFORMANCE
+                  </span>
+                </div>
+              </Link>
+
+              {/* CARD 3: AESTHETIC (Art & Decor) */}
+              <Link 
+                href="/aesthetic" 
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+              >
+                {/* Visual Accent Sheen Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+                
+                {/* Card Artwork Image Container */}
+                <div className="h-[68%] w-full overflow-hidden relative rounded-t-[23px] border-b border-zinc-800 bg-zinc-950">
+                  {getUrl('cover-aesthetic') ? (
+                    <img 
+                      src={getUrl('cover-aesthetic')} 
+                      alt="Aesthetic Artwork" 
+                      className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                  )}
+                  {/* Subtle inner metallic shadow */}
+                  <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
+                </div>
+
+                {/* Card Engraved Golden Text Bottom Section */}
+                <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
+                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                    - AESTHETIC -
+                  </h3>
+                  <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
+                    ART & DECOR
+                  </span>
+                </div>
+              </Link>
+
+              {/* CARD 4: CUSTOM (Craft & Design) */}
+              <Link 
+                href="/custom" 
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+              >
+                {/* Visual Accent Sheen Overlay */}
+                <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
+                
+                {/* Card Artwork Image Container */}
+                <div className="h-[68%] w-full overflow-hidden relative rounded-t-[23px] border-b border-zinc-800 bg-zinc-950">
+                  {getUrl('cover-custom') ? (
+                    <img 
+                      src={getUrl('cover-custom')} 
+                      alt="Custom Artwork" 
+                      className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
+                    />
+                  ) : (
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                  )}
+                  {/* Subtle inner metallic shadow */}
+                  <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
+                </div>
+
+                {/* Card Engraved Golden Text Bottom Section */}
+                <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
+                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                    - CUSTOM -
+                  </h3>
+                  <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
+                    CRAFT & DESIGN
+                  </span>
+                </div>
+              </Link>
+
             </div>
           </div>
 
-          {/* Garis Pembatas Neon Bawah */}
-          <div className="h-px w-full bg-gradient-to-r from-transparent via-[#ff007f]/50 to-transparent shadow-[0_0_10px_rgba(255,0,127,0.5)]" />
+          {/* Brushed Platinum Elegant Bottom Divider Line */}
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent shadow-[0_1px_4px_rgba(212,175,55,0.2)] mt-12" />
         </section>
 
         <div className="relative z-10">
-          <FeaturedCarousel />
           <ShopGallery />
+          <FeaturedCarousel />
           <Footer />
         </div>
       </main>

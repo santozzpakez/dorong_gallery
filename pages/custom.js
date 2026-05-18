@@ -78,7 +78,17 @@ export default function Custom(){
     <div className="min-h-screen bg-gradient-to-b from-[#07090b] to-[#0b0f12] text-white">
       <Header />
       <main className="pt-28 max-w-4xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-6">{t.title}</h1>
+        {/* Banner Box */}
+        <div className="mb-8 p-6 md:p-8 rounded-2xl bg-gradient-to-r from-[#6d0099] via-[#9d4edd] to-[#ff007f] dark:from-[#3a0066] dark:via-[#7b00cc] dark:to-[#cc0066] text-white shadow-xl relative overflow-hidden border border-[#ff007f]/30 dark:border-[#b026ff]/30">
+          {/* Subtle cyber grid pattern background */}
+          <div className="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:16px_16px] pointer-events-none"></div>
+          
+          <div className="relative z-10">
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-widest text-white drop-shadow-[0_0_12px_rgba(255,255,255,0.7)]">
+              {t.title}
+            </h1>
+          </div>
+        </div>
 
         <div className="glass rounded-lg p-6">
           <div onDragOver={(e)=>e.preventDefault()} onDrop={handleDrop} className="border-2 border-dashed border-gray-700 p-8 rounded-md text-center">

@@ -1,228 +1,256 @@
-import { useState, useRef, useEffect } from 'react'
-import { useSiteAssets } from '../lib/siteAssets'
-import { motion, AnimatePresence } from 'framer-motion'
-
+import { useRef, useState, useEffect } from 'react'
 import { useLanguage } from '../context/LanguageContext'
+import { useSiteAssets } from '../lib/siteAssets'
+import Link from 'next/link'
 
 export default function FeaturedCarousel() {
-  const { getUrl } = useSiteAssets()
   const { lang } = useLanguage()
-  const [currentIndex, setCurrentIndex] = useState(0)
-  // Menyimpan referensi (ref) untuk setiap elemen video
-  const videoRefs = useRef([])
+  const { getUrl } = useSiteAssets()
+  const scrollRef = useRef(null)
+
+  // Ambil URL video "Katalog/Preview Galeri" dari slot kedua ('home-video-2')
+  const videoUrl = getUrl('home-video-2') || '/sublimation-intro.mp4'
 
   const translations = {
     id: {
-      title: 'Preview Galeri',
-      playing: 'SEDANG DIPUTAR',
-      preview: 'PREVIEW'
+      title: 'Galeri Karakter & Artis',
+      playing: 'Sedang Diputar',
+      preview: 'Preview Produk',
+      exploreTitle: 'Jelajahi Berdasarkan Karakter / Artis K-Pop',
+      exploreDesc: 'Temukan ratusan opsi visual premium berdasarkan karakter anime favorit dan artis K-pop paling hits. Cetakan sublimasi logam murni berkualitas tinggi.',
+      exploreAll: 'Jelajahi Semua',
+      anime: 'Anime',
+      kpop: 'K-Pop'
     },
     en: {
-      title: 'Gallery Preview',
-      playing: 'NOW PLAYING',
-      preview: 'PREVIEW'
+      title: 'Character & Artist Gallery',
+      playing: 'Now Playing',
+      preview: 'Product Preview',
+      exploreTitle: 'Explore By Character / K-Pop Artist',
+      exploreDesc: 'Discover hundreds of premium visual options based on your favorite anime characters and the hottest K-pop artists. High-quality pure metal sublimation prints.',
+      exploreAll: 'Explore All',
+      anime: 'Anime',
+      kpop: 'K-Pop'
     },
     jp: {
-      title: 'ギャラリープレビュー',
+      title: 'キャラクター＆アーティストギャラリー',
       playing: '再生中',
-      preview: 'プレビュー'
+      preview: '製品プレビュー',
+      exploreTitle: 'キャラクター/K-POPアーティストで探す',
+      exploreDesc: 'お気に入りのアニメキャラクターや最も人気のあるK-POPアーティストに基づいた、何百ものプレミアムなビジュアルオプションをご覧ください。高品質な純金属昇華プリント。',
+      exploreAll: 'すべてを見る',
+      anime: 'アニメ',
+      kpop: 'K-POP'
     },
     kr: {
-      title: '갤러리 미리보기',
+      title: '캐릭터 & 아티스트 갤러리',
       playing: '현재 재생 중',
-      preview: '미리보기'
+      preview: '제품 미리보기',
+      exploreTitle: '캐릭터 / K-Pop 아티스트별 탐색',
+      exploreDesc: '좋아하는 애니메이션 캐릭터와 가장 핫한 K-pop 아티스트를 기반으로 한 수백 가지 프리미엄 비주얼 옵션을 찾아보세요. 고품질 순수 금속 승화 인쇄.',
+      exploreAll: '모두 탐색',
+      anime: '애니메이션',
+      kpop: 'K-팝'
     },
     cn: {
-      title: '画廊预览',
+      title: '角色与艺人画廊',
       playing: '正在播放',
-      preview: '预览'
+      preview: '产品预览',
+      exploreTitle: '按角色/韩流艺人探索',
+      exploreDesc: '根据您喜爱的动漫角色和最炙手可热的韩流艺人，探索数百种优质视觉选择。高品质纯金属升华印刷。',
+      exploreAll: '探索全部',
+      anime: '动漫',
+      kpop: '韩流组合'
     }
   }
 
   const t = translations[lang] || translations.id
 
-  // Ambil URL video yang valid (mendukung hingga 10 slot)
-  const rawVideos = [
-    getUrl('home-video'),
-    ...Array.from({ length: 9 }).map((_, i) => getUrl(`home-video-${i + 2}`))
-  ].filter(url => !!url)
+  // Curated list of characters & K-Pop artists with premium themed portrait photography
+  const items = [
+    {
+      name: 'Sasuke Uchiha',
+      category: t.anime,
+      image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/anime/naruto'
+    },
+    {
+      name: 'Mikasa Ackerman',
+      category: t.anime,
+      image: 'https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/anime/attack-on-titan'
+    },
+    {
+      name: 'Lisa (Blackpink)',
+      category: t.kpop,
+      image: 'https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/kpop/blackpink'
+    },
+    {
+      name: 'Roronoa Zoro',
+      category: t.anime,
+      image: 'https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/anime/one-piece'
+    },
+    {
+      name: 'Jungkook (BTS)',
+      category: t.kpop,
+      image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/kpop/bts'
+    },
+    {
+      name: 'Gojo Satoru',
+      category: t.anime,
+      image: 'https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/anime/jujutsu-kaisen'
+    },
+    {
+      name: 'Karina (aespa)',
+      category: t.kpop,
+      image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3',
+      href: '/kpop/aespa'
+    }
+  ]
 
-  // Trik agar Carousel berbentuk "lingkaran penuh" meskipun hanya ada 2 video:
-  // Kita gandakan array-nya menjadi 4, sehingga sisi kiri dan kanan selalu terisi.
-  const videos = rawVideos.length === 2 ? [...rawVideos, ...rawVideos] : rawVideos
-
-  useEffect(() => {
-    // Jalankan video yang ada di tengah (currentIndex)
-    videos.forEach((_, idx) => {
-      const vid = videoRefs.current[idx]
-      if (vid) {
-        if (idx === currentIndex) {
-          vid.currentTime = 0
-          vid.play().catch(e => console.log('Autoplay dicegah browser:', e))
-        } else {
-          vid.pause()
-        }
-      }
-    })
-  }, [currentIndex, videos.length])
-
-  if (videos.length === 0) return null
-
-  const handleNext = () => {
-    setCurrentIndex((prev) => (prev + 1) % videos.length)
-  }
-
-  const handlePrev = () => {
-    setCurrentIndex((prev) => (prev - 1 + videos.length) % videos.length)
-  }
-
-  const handleVideoEnded = (idx) => {
-    // Hanya pindah jika video yang sedang aktif yang selesai
-    if (idx === currentIndex) {
-      handleNext()
+  const handleScroll = (direction) => {
+    if (scrollRef.current) {
+      const { scrollLeft, clientWidth } = scrollRef.current
+      const offset = clientWidth * 0.65
+      const scrollTo = direction === 'left' ? scrollLeft - offset : scrollLeft + offset
+      scrollRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' })
     }
   }
 
-  const getPosition = (index) => {
-    if (videos.length === 1) return 'center'
-    // Karena jika 2 video sudah digandakan menjadi 4, logika di bawah ini akan menangani semuanya.
-    if (index === currentIndex) return 'center'
-    if (index === (currentIndex + 1) % videos.length) return 'right'
-    if (index === (currentIndex - 1 + videos.length) % videos.length) return 'left'
-    return 'hidden'
-  }
-
-  const variants = {
-    center: { x: "0%", scale: 1, zIndex: 20, opacity: 1, filter: "blur(0px)", transition: { duration: 0.5, ease: "easeOut" } },
-    right: { x: "50%", scale: 0.85, zIndex: 10, opacity: 0.5, filter: "blur(3px)", transition: { duration: 0.5, ease: "easeOut" } },
-    left: { x: "-50%", scale: 0.85, zIndex: 10, opacity: 0.5, filter: "blur(3px)", transition: { duration: 0.5, ease: "easeOut" } },
-    hidden: { x: "0%", scale: 0.5, zIndex: 0, opacity: 0, filter: "blur(8px)", transition: { duration: 0.5 } }
-  }
-
   return (
-    <section className="py-24 px-6 overflow-hidden relative bg-[#0a0514]">
+    <section className="py-20 px-4 md:px-6 relative bg-[var(--bg)] overflow-hidden border-t border-zinc-900/10 dark:border-zinc-900">
       {/* BACKGROUND DECORATIONS */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Neon Glows - Refined to match deep purple theme */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[1000px] h-[700px] bg-purple-600/20 blur-[150px] rounded-full"></div>
-        <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full"></div>
-        
-        {/* Subtle Grid Pattern - Adjusted opacity */}
-        <div 
-          className="absolute inset-0 opacity-[0.02]" 
-          style={{ 
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)`,
-            backgroundSize: '50px 50px' 
-          }}
-        ></div>
-        
-        {/* Top Fade - Seamless transition from hero image */}
-        <div className="absolute top-0 left-0 right-0 h-40 bg-gradient-to-b from-black to-transparent opacity-40"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#d4af37]/3 blur-[130px] rounded-full"></div>
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
-        <div className="flex flex-col items-center text-center mb-16">
-          <motion.h2 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            className="text-5xl font-black uppercase tracking-[0.2em] text-white drop-shadow-[0_0_15px_rgba(0,243,255,0.5)]"
-          >
+        
+        {/* Section Header */}
+        <div className="flex flex-col items-center text-center mb-12">
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
             {t.title}
-          </motion.h2>
-          <div className="h-1 w-32 bg-gradient-to-r from-neon-purple to-neon-cyan mt-6 rounded-full shadow-[0_0_20px_rgba(157,78,221,0.6)]"></div>
+          </h2>
+          <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mt-4" />
         </div>
 
-        {/* Carousel Wrapper - Full width relative container */}
-        <div className="relative w-full max-w-5xl mx-auto h-[300px] sm:h-[400px] md:h-[500px] flex items-center justify-center">
+        {/* Premium Grid Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
           
-          {videos.map((url, idx) => {
-            const pos = getPosition(idx)
-            return (
-              <motion.div
-                key={`${url}-${idx}`}
-                variants={variants}
-                initial={false}
-                animate={pos}
-                className={`absolute w-[80%] max-w-[600px] aspect-[4/3] rounded-3xl overflow-hidden border ${
-                  pos === 'center' 
-                    ? 'border-white/20 shadow-[0_0_50px_rgba(255,255,255,0.1)]' 
-                    : 'border-white/5 shadow-xl'
-                } bg-black`}
-                onClick={() => {
-                  if (pos === 'right') handleNext()
-                  if (pos === 'left') handlePrev()
-                }}
-                style={{ cursor: pos !== 'center' ? 'pointer' : 'default' }}
-              >
-                <video
-                  ref={el => videoRefs.current[idx] = el}
-                  src={url}
-                  className="w-full h-full object-cover"
-                  playsInline
-                  muted
-                  onEnded={() => handleVideoEnded(idx)}
-                  // Hanya video tengah yang bisa di-klik untuk play/pause browser native jika diperlukan
-                  // Tapi karena kita autoPlay, kita biarkan saja.
-                />
+          {/* KOLOM KIRI: Big Video Box */}
+          <div className="lg:col-span-5 h-[320px] sm:h-[400px] lg:h-auto rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-black relative flex items-center justify-center shadow-[0_10px_35px_rgba(0,0,0,0.06)] dark:shadow-[0_10px_35px_rgba(0,0,0,0.85)]">
+            {videoUrl ? (
+              <video
+                src={videoUrl}
+                className="w-full h-full object-cover opacity-75"
+                autoPlay
+                loop
+                muted
+                playsInline
+              />
+            ) : (
+              <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950" />
+            )}
+            
+            {/* Dark glass overlay with gold text info */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/10 to-transparent flex flex-col justify-end p-6 pointer-events-none">
+              <div className="flex items-center gap-2.5 mb-1.5">
+                <div className="w-2 h-2 rounded-full bg-[#d4af37] animate-pulse shadow-[0_0_8px_rgba(212,175,55,0.8)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">
+                  {t.playing} — {t.preview}
+                </span>
+              </div>
+              <h3 className="text-white font-black text-2xl uppercase tracking-[0.1em] font-serif">LUMI FORGE</h3>
+              <p className="text-zinc-500 text-[9px] font-sans uppercase tracking-[0.25em] mt-2 font-bold">PREMIUM COLLECTIBLE METAL PRINTS</p>
+            </div>
+          </div>
 
-                {/* Info Overlay (Hanya muncul di video yang aktif / tengah) */}
-                {pos === 'center' && (
-                  <motion.div 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    transition={{ delay: 0.3 }}
-                    className="absolute bottom-6 left-8 right-8 flex items-end justify-between pointer-events-none"
-                  >
-                    <div className="flex flex-col gap-2">
-                      <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
-                        <span className="text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-white/90 drop-shadow-md">
-                          {t.playing} — {t.preview} {currentIndex + 1}/{videos.length}
-                        </span>
-                      </div>
-                      <h3 className="text-white font-black text-xl sm:text-2xl uppercase tracking-widest opacity-40">DORONG GALLERY</h3>
+          {/* KOLOM KANAN: Exploration & Horizontal Card Carousel */}
+          <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl bg-zinc-950/5 dark:bg-zinc-950/20 border border-zinc-200/50 dark:border-zinc-900 p-6 sm:p-8 backdrop-blur-md relative overflow-hidden h-full">
+            
+            {/* Header Column Detail */}
+            <div className="mb-6">
+              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif leading-tight">
+                {t.exploreTitle}
+              </h3>
+              <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-2.5 leading-relaxed font-sans font-bold">
+                {t.exploreDesc}
+              </p>
+            </div>
+
+            {/* Bronze Gold Button */}
+            <div className="flex justify-between items-center mb-6">
+              <Link href="/anime" className="bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black font-black uppercase tracking-[0.15em] py-3 px-8 rounded-lg text-xs md:text-sm shadow-md shadow-[#d4af37]/15 transition-all hover:scale-105 inline-block">
+                {t.exploreAll}
+              </Link>
+
+              {/* Navigation Arrows for desktop scroll */}
+              <div className="flex gap-2">
+                <button 
+                  onClick={() => handleScroll('left')}
+                  className="w-10 h-10 rounded-full border border-zinc-350 dark:border-zinc-800 bg-white/40 dark:bg-black/40 text-zinc-700 dark:text-zinc-400 flex items-center justify-center hover:bg-[#d4af37]/10 hover:border-[#d4af37] hover:text-[#d4af37] transition-all"
+                >
+                  &larr;
+                </button>
+                <button 
+                  onClick={() => handleScroll('right')}
+                  className="w-10 h-10 rounded-full border border-zinc-350 dark:border-zinc-800 bg-white/40 dark:bg-black/40 text-zinc-700 dark:text-zinc-400 flex items-center justify-center hover:bg-[#d4af37]/10 hover:border-[#d4af37] hover:text-[#d4af37] transition-all"
+                >
+                  &rarr;
+                </button>
+              </div>
+            </div>
+
+            {/* Horizontal Slider of Characters & Artists */}
+            <div 
+              ref={scrollRef}
+              className="flex gap-4 overflow-x-auto pb-3 scrollbar-none scroll-smooth snap-x snap-mandatory"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+            >
+              {items.map((item, idx) => (
+                <Link
+                  key={idx}
+                  href={item.href}
+                  className="group snap-start flex-none w-[130px] sm:w-[155px] cursor-pointer"
+                >
+                  {/* Portrait Card */}
+                  <div className="aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-800 bg-black relative shadow-lg transition-all duration-300 group-hover:border-[#d4af37]/50 group-hover:shadow-[0_10px_20px_rgba(212,175,55,0.15)]">
+                    <img 
+                      src={item.image} 
+                      alt={item.name} 
+                      className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-500"
+                      loading="lazy"
+                    />
+                    {/* Shadow overlay */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
+                    
+                    {/* Tiny gold arrow that pops up on hover */}
+                    <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/75 dark:bg-black/75 border border-zinc-800 flex items-center justify-center text-[#d4af37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      &rarr;
                     </div>
-                  </motion.div>
-                )}
-              </motion.div>
-            )
-          })}
+                  </div>
 
-          {/* Navigation Arrows */}
-          {videos.length > 1 && (
-            <>
-              <button 
-                onClick={handlePrev}
-                className="absolute left-0 sm:left-4 z-30 w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-neon-purple/80 hover:border-neon-purple transition-all group/nav shadow-[0_0_20px_rgba(0,0,0,0.5)]"
-              >
-                <svg className="w-6 h-6 transition-transform group-hover/nav:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <button 
-                onClick={handleNext}
-                className="absolute right-0 sm:right-4 z-30 w-12 h-12 rounded-full bg-black/60 border border-white/20 flex items-center justify-center text-white hover:bg-neon-cyan/80 hover:border-neon-cyan transition-all group/nav shadow-[0_0_20px_rgba(0,0,0,0.5)]"
-              >
-                <svg className="w-6 h-6 transition-transform group-hover/nav:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </>
-          )}
+                  {/* Character/Artist Labels Underneath Card */}
+                  <div className="mt-3 text-left">
+                    <span className="text-[8px] text-[#d4af37] font-sans uppercase tracking-[0.1em] font-black block">
+                      {item.category}
+                    </span>
+                    <h4 className="text-[var(--text-main)] font-bold text-[11px] sm:text-xs uppercase tracking-wider mt-0.5 truncate group-hover:text-[#d4af37] transition-colors leading-tight font-sans">
+                      {item.name}
+                    </h4>
+                  </div>
+                </Link>
+              ))}
+            </div>
+
+          </div>
+
         </div>
 
-        {/* Pagination Dots */}
-        {videos.length > 1 && (
-          <div className="flex justify-center gap-3 mt-12 relative z-30">
-            {videos.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentIndex(idx)}
-                className={`h-1.5 rounded-full transition-all duration-500 ${
-                  idx === currentIndex 
-                    ? 'w-12 bg-gradient-to-r from-neon-purple to-neon-cyan shadow-[0_0_10px_rgba(157,78,221,0.5)]' 
-                    : 'w-3 bg-white/20 hover:bg-white/40'
-                }`}
-              />
-            ))}
-          </div>
-        )}
       </div>
     </section>
   )

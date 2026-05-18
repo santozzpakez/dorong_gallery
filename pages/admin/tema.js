@@ -169,7 +169,7 @@ async function getCroppedImg(imageSrc, pixelCrop, rotation = 0) {
 }
 
 // --- CARD COMPONENT ---
-function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesList }) {
+function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelStaged, seriesList }) {
   const { assets, getUrl, getText } = useSiteAssets()
   const isVideo = slot.key.includes('video')
 
@@ -288,7 +288,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
             <select
               value={layoutSeriesSlug}
               onChange={(e) => onStage(slot.key, { text: e.target.value })}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-neon-cyan transition-all"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-[#d4af37]/60 transition-all"
             >
               <option value="">-- Kosongkan Slot --</option>
               {seriesList?.map(s => (
@@ -311,7 +311,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
                     if (e.key === 'Enter') { onStage(slot.key, { text: textVal.trim() }); setEditingText(false) }
                     if (e.key === 'Escape') setEditingText(false)
                   }}
-                  className="flex-1 text-xs px-2 py-1 rounded bg-black/40 border border-[#9d4edd]/40 text-white outline-none"
+                  className="flex-1 text-xs px-2 py-1 rounded bg-black/40 border border-[#d4af37]/45 text-white outline-none"
                 />
               </div>
             ) : (
@@ -336,13 +336,30 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, seriesLis
           Max: {isVideo ? '20MB' : '5MB'}
         </p>
 
-        <button
-          onClick={() => onReset(activeKey)}
-          className="w-full py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-red-500 border border-red-500/10 hover:bg-red-500/10 transition-all"
-          title="Kembalikan ke gambar asli (hapus kustom)"
-        >
-          🗑 Hapus / Reset
-        </button>
+        {(staged || (slot.isLayoutSlot && stagedAssets[activeKey])) ? (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation()
+              if (onCancelStaged) onCancelStaged(activeKey)
+            }}
+            className="w-full py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-amber-500 border border-amber-500/20 hover:bg-amber-500/10 transition-all"
+            title="Batalkan perubahan yang belum disimpan"
+          >
+            ✕ Batalkan
+          </button>
+        ) : (
+          activeUrl && (
+            <button
+              type="button"
+              onClick={() => onReset(activeKey)}
+              className="w-full py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest text-red-500 border border-red-500/10 hover:bg-red-500/10 transition-all"
+              title="Kembalikan ke gambar asli (hapus kustom)"
+            >
+              🗑 Hapus / Reset
+            </button>
+          )
+        )}
       </div>
     </div>
   )
@@ -368,8 +385,15 @@ export default function TemaAdmin() {
 
     try {
       setIsSaving(true)
-      const { error } = await supabase.from('site_assets').delete().eq('key', key)
-      if (error) throw error
+      setTotalSaveItems(0) // Prevent NaN% calculation in overlay
+      
+      if (hasSupabaseConfig && supabase) {
+        // Safe, bulletproof reset using upsert (avoids DELETE Row-Level Security policies that could block or hang)
+        const { error } = await supabase
+          .from('site_assets')
+          .upsert({ key, image_url: '', updated_at: new Date().toISOString() }, { onConflict: 'key' })
+        if (error) throw error
+      }
 
       setStagedAssets(prev => {
         const next = { ...prev }
@@ -570,6 +594,14 @@ export default function TemaAdmin() {
     loadDynamicSlots()
   }, [loaded])
 
+  const handleCancelStaged = (key) => {
+    setStagedAssets(prev => {
+      const next = { ...prev }
+      delete next[key]
+      return next
+    })
+  }
+
   const onStage = (key, data) => {
     if (data.file) {
       const isVideo = key.includes('video')
@@ -703,10 +735,14 @@ export default function TemaAdmin() {
     if (!window.confirm(`⚠️ Hapus gambar untuk "${key}" secara permanen?`)) return
 
     setIsSaving(true)
+    setTotalSaveItems(0) // Prevent NaN% calculation in overlay
     setSaveStatus('Menghapus...')
     try {
       if (hasSupabaseConfig && supabase) {
-        const { error } = await supabase.from('site_assets').delete().eq('key', key)
+        // Safe, bulletproof reset using upsert (avoids DELETE Row-Level Security policies that could block or hang)
+        const { error } = await supabase
+          .from('site_assets')
+          .upsert({ key, image_url: '', updated_at: new Date().toISOString() }, { onConflict: 'key' })
         if (error) throw error
       }
       
@@ -737,7 +773,7 @@ export default function TemaAdmin() {
       <main className="pt-28 max-w-6xl mx-auto px-4 pb-16">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
           <div>
-            <h1 className="text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#9d4edd] to-[#00b4d8]">Tema & Aset</h1>
+            <h1 className="text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">Tema & Aset</h1>
             <p className="text-xs text-gray-500 mt-1">Kelola gambar, video, dan teks dekoratif website.</p>
           </div>
 
@@ -792,7 +828,7 @@ export default function TemaAdmin() {
                 <button
                   key={g.id}
                   onClick={() => setOpenGroup(g.id)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${openGroup === g.id ? 'bg-gradient-to-r from-[#9d4edd] to-[#00b4d8] text-white shadow-lg shadow-purple-500/20' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${openGroup === g.id ? 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black shadow-md shadow-[#d4af37]/15' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
                 >
                   {g.id === 'layout' ? '🎨 General' : g.id === 'homepage-videos' ? '🎬 Videos' : '🏠 Covers'} ({count})
                 </button>
@@ -802,7 +838,7 @@ export default function TemaAdmin() {
 
           {/* 2. ANIME DROPDOWN */}
           <div className="relative group/anime">
-            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('anime') ? 'bg-[#9d4edd] border-[#9d4edd] text-white shadow-lg shadow-purple-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#9d4edd]/50'
+            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('anime') ? 'bg-[#d4af37] border-[#d4af37] text-black shadow-md shadow-[#d4af37]/15' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#d4af37]/50'
               }`}>
               🎌 Anime Series
               <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
@@ -814,7 +850,7 @@ export default function TemaAdmin() {
                   placeholder="Cari Series..."
                   value={animeSearch}
                   onChange={(e) => setAnimeSearch(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-[#9d4edd]/50 transition-all"
+                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37]/50 transition-all"
                 />
               </div>
               <div className="max-h-60 overflow-y-auto custom-scrollbar">
@@ -823,8 +859,8 @@ export default function TemaAdmin() {
                   <button
                     key={g.id}
                     onClick={() => setOpenGroup(g.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#9d4edd]/20 border-[#9d4edd]/50 text-[#9d4edd]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
-                      }`}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#d4af37]/15 border-[#d4af37]/50 text-[#d4af37]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
+                       }`}
                   >
                     <span>✨ {g.label.replace('🎌 Anime — ', '')}</span>
                   </button>
@@ -838,8 +874,8 @@ export default function TemaAdmin() {
                     <button
                       key={g.id}
                       onClick={() => setOpenGroup(g.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#9d4edd]/20 text-[#9d4edd]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                        }`}
+                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#d4af37]/15 text-[#d4af37]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
+                         }`}
                     >
                       <span className="truncate mr-2">{g.label.replace('Karakter — ', '')}</span>
                       <span className="opacity-40 flex-shrink-0">{count}</span>
@@ -957,7 +993,7 @@ export default function TemaAdmin() {
             <div key={group.id} className="space-y-6">
               <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
                 <h2 className="text-xl font-black uppercase tracking-widest text-white flex items-center gap-3">
-                  <span className="w-2 h-8 bg-gradient-to-b from-[#9d4edd] to-[#00b4d8] rounded-full"></span>
+                  <span className="w-2 h-8 bg-gradient-to-b from-[#f3e5ab] to-[#aa7c11] rounded-full"></span>
                   {group.label}
                 </h2>
                 <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">ID: {group.id}</span>
@@ -972,6 +1008,7 @@ export default function TemaAdmin() {
                     onStage={onStage}
                     stagedAssets={stagedAssets}
                     onReset={handleDeleteAsset}
+                    onCancelStaged={handleCancelStaged}
                     seriesList={seriesList}
                   />
                 ))}
@@ -1031,6 +1068,13 @@ export default function TemaAdmin() {
                 </div>
               </div>
               <div className="flex gap-3 w-full md:w-auto">
+                <button 
+                  type="button" 
+                  onClick={() => setCropData(null)} 
+                  className="flex-1 md:flex-none px-6 py-2 rounded-full border border-red-500/20 text-red-500 text-[10px] font-bold uppercase hover:bg-red-500/10"
+                >
+                  Batal
+                </button>
                 <button type="button" onClick={() => handleFinishCrop(false)} className="flex-1 md:flex-none px-6 py-2 rounded-full border border-white/20 text-white text-[10px] font-bold uppercase hover:bg-white/10">Tanpa Crop</button>
                 <button type="button" onClick={() => handleFinishCrop(true)} className="flex-1 md:flex-none px-8 py-2 rounded-full bg-gradient-to-r from-purple-500 to-blue-500 text-white text-[10px] font-bold uppercase shadow-lg shadow-purple-500/20">Terapkan Crop</button>
               </div>
@@ -1039,27 +1083,53 @@ export default function TemaAdmin() {
         </div>
       )}
 
-      {/* LOADING OVERLAY */}
+      {/* STICKY FLOATING BOTTOM SAVE BAR */}
+      {Object.keys(stagedAssets).length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-between gap-6 px-6 py-3.5 bg-black/90 backdrop-blur-md rounded-full border border-amber-500/30 shadow-[0_10px_30px_rgba(245,158,11,0.2)] animate-in fade-in slide-in-from-bottom-4 duration-300">
+          <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+            ⚠️ Ada {Object.keys(stagedAssets).length} perubahan yang belum disimpan!
+          </span>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => {
+                if (confirm("Batalkan semua perubahan yang belum disimpan?")) {
+                  setStagedAssets({})
+                }
+              }}
+              className="px-4 py-1.5 rounded-full border border-red-500/20 hover:border-red-500/60 text-red-500 font-bold text-[9px] uppercase tracking-widest transition-all"
+            >
+              Batal
+            </button>
+            <button
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="px-5 py-1.5 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-black text-[9px] uppercase tracking-widest hover:scale-105 active:scale-95 transition-all shadow-md shadow-amber-500/20 disabled:opacity-50"
+            >
+              {isSaving ? 'Menyimpan...' : 'Simpan Sekarang ✓'}
+            </button>
+          </div>
+        </div>
+      )}
       {isSaving && (
         <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
           <div className="relative flex items-center justify-center mb-10">
-            <div className="absolute w-28 h-28 border-4 border-t-neon-purple border-r-neon-cyan border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-            <div className="w-20 h-20 border-4 border-b-neon-purple border-l-neon-cyan border-t-transparent border-r-transparent rounded-full animate-spin direction-reverse"></div>
+            <div className="absolute w-28 h-28 border-4 border-t-[#d4af37] border-r-[#d4af37] border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div className="w-20 h-20 border-4 border-b-[#d4af37] border-l-[#d4af37] border-t-transparent border-r-transparent rounded-full animate-spin direction-reverse"></div>
             <div className="absolute text-white font-black text-xl font-mono">
-              {Math.round((saveProgress / totalSaveItems) * 100)}%
+              {totalSaveItems > 0 ? `${Math.round((saveProgress / totalSaveItems) * 100)}%` : '...'}
             </div>
           </div>
           
           <div className="w-full max-w-sm px-6">
-            <h3 className="text-white text-xl font-black uppercase tracking-[0.2em] mb-4 text-center neon-text-purple">
+            <h3 className="text-[#d4af37] text-xl font-black uppercase tracking-[0.2em] mb-4 text-center animate-pulse">
               MEMPROSES...
             </h3>
             
             {/* Progress Bar Container */}
             <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 mb-4">
               <div 
-                className="h-full bg-gradient-to-r from-neon-purple via-neon-cyan to-neon-purple bg-[length:200%_100%] animate-shimmer transition-all duration-500 ease-out"
-                style={{ width: `${(saveProgress / totalSaveItems) * 100}%` }}
+                className="h-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] bg-[length:200%_100%] animate-shimmer transition-all duration-500 ease-out"
+                style={{ width: `${totalSaveItems > 0 ? (saveProgress / totalSaveItems) * 100 : 100}%` }}
               />
             </div>
 

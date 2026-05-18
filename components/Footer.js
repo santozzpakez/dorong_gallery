@@ -77,27 +77,26 @@ export default function Footer() {
       {/* Background image layer */}
       {footerBg && (
         <div
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-30"
+          className="absolute inset-0 bg-cover bg-center z-0 opacity-15"
           style={{ backgroundImage: `url(${footerBg})` }}
         />
       )}
 
-      {/* Row 1: Top accent bar — neon pink-purple */}
-      <div className="relative z-10 h-1 bg-gradient-to-r from-[#ff007f] via-[#9d4edd] to-[#00b4d8] dark:from-neon-pink dark:via-neon-purple dark:to-neon-cyan" />
+      {/* Row 1: Top accent bar — thin golden divider */}
+      <div className="relative z-10 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/35 to-transparent" />
 
       {/* Row 2: Main footer content */}
-      <div className="relative z-10 bg-gradient-to-b from-[#1a0033] to-[#0d001a] dark:from-[#0a0012] dark:to-[#050008] py-10 px-6">
+      <div className="relative z-10 bg-gradient-to-b from-[#08080a] to-[#020203] py-12 px-6">
         <div className="max-w-6xl mx-auto">
           {/* Brand row */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
             <div>
-              <span
-                className="text-3xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#ff007f] via-[#9d4edd] to-[#00b4d8]"
-                style={{ WebkitTextFillColor: 'transparent' }}
-              >
-                DORONG
+              <span className="text-2xl font-black tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif">
+                LUMI FORGE
               </span>
-              <p className="text-xs text-purple-300/70 mt-1 font-mono tracking-widest">Premium Wall Art Gallery</p>
+              <p className="text-[9px] text-zinc-500 mt-1.5 uppercase tracking-[0.25em] font-sans">
+                PREMIUM COLLECTIBLE METAL PRINTS
+              </p>
             </div>
 
             {/* Nav links */}
@@ -106,7 +105,7 @@ export default function Footer() {
                 <Link
                   key={href}
                   href={href}
-                  className="text-purple-300/70 hover:text-[#ff007f] dark:hover:text-neon-pink transition-colors hover:drop-shadow-[0_0_6px_rgba(255,0,127,0.7)]"
+                  className="text-zinc-400 hover:text-[#d4af37] transition-all font-black tracking-widest text-[10px] uppercase font-sans"
                 >
                   {label}
                 </Link>
@@ -115,27 +114,27 @@ export default function Footer() {
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gradient-to-r from-transparent via-[#9d4edd]/40 to-transparent mb-6" />
+          <div className="h-px bg-zinc-900 mb-8" />
 
           {/* Row 3: Social & contact */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3 text-sm">
-            <div className="flex gap-5 text-purple-300/60">
-              <a href="#" className="hover:text-[#ff007f] dark:hover:text-neon-pink transition-colors hover:drop-shadow-[0_0_6px_rgba(255,0,127,0.7)]">Instagram</a>
-              <a href="#" className="hover:text-[#9d4edd] dark:hover:text-neon-purple transition-colors hover:drop-shadow-[0_0_6px_rgba(157,78,221,0.7)]">Twitter</a>
-              <a href="#" className="hover:text-[#00b4d8] dark:hover:text-neon-cyan transition-colors hover:drop-shadow-[0_0_6px_rgba(0,180,216,0.7)]">Facebook</a>
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm">
+            <div className="flex gap-6 text-zinc-500">
+              <a href="#" className="hover:text-[#d4af37] transition-colors font-black text-[9px] tracking-widest uppercase font-sans">Instagram</a>
+              <a href="#" className="hover:text-[#d4af37] transition-colors font-black text-[9px] tracking-widest uppercase font-sans">Twitter</a>
+              <a href="#" className="hover:text-[#d4af37] transition-colors font-black text-[9px] tracking-widest uppercase font-sans">Facebook</a>
             </div>
-            <div className="text-purple-300/60 text-xs">
-              Contact: <a href="mailto:hello@dorong.gallery" className="hover:text-white transition-colors">hello@dorong.gallery</a>
+            <div className="text-zinc-500 text-[10px] font-black tracking-widest uppercase font-sans">
+              Contact: <a href="mailto:hello@lumiforge.com" className="hover:text-[#d4af37] text-zinc-400 transition-colors ml-1">hello@lumiforge.com</a>
             </div>
           </div>
 
           {/* Row 4: Copyright */}
-          <div className="mt-6 text-center">
-            <p className="text-xs text-purple-400/40 font-mono">
-              © {new Date().getFullYear()} Dorong Gallery — {t.rights}
+          <div className="mt-8 text-center">
+            <p className="text-[10px] text-zinc-600 font-sans tracking-wide">
+              © {new Date().getFullYear()} LUMI FORGE — {t.rights}
             </p>
-            {/* Glow line bottom */}
-            <div className="mt-4 h-px bg-gradient-to-r from-transparent via-[#ff007f]/30 to-transparent" />
+            {/* Elegant thin bronze line */}
+            <div className="mt-6 h-[1px] bg-gradient-to-r from-transparent via-[#d4af37]/15 to-transparent" />
           </div>
         </div>
       </div>

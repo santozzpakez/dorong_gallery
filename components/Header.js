@@ -173,20 +173,20 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsSidebarOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60]"
             />
             <motion.div 
               initial={{ x: '-100%' }}
               animate={{ x: 0 }}
               exit={{ x: '-100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`fixed top-0 left-0 bottom-0 w-[280px] z-[70] shadow-2xl flex flex-col ${theme === 'dark' ? 'bg-[#0d031a] border-r border-white/5' : 'bg-white border-r border-slate-200'}`}
+              className={`fixed top-0 left-0 bottom-0 w-[280px] z-[70] shadow-2xl flex flex-col bg-[#08080a] border-r border-zinc-800`}
             >
-              <div className="p-6 flex items-center justify-between border-b border-white/5">
-                <span className={`text-xl font-black tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>MENU</span>
+              <div className="p-6 flex items-center justify-between border-b border-zinc-900">
+                <span className="text-xl font-black tracking-widest text-[#d4af37] font-serif">MENU</span>
                 <button 
                   onClick={() => setIsSidebarOpen(false)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-900 text-zinc-400 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -198,32 +198,32 @@ export default function Header() {
                     key={link.href} 
                     href={link.href}
                     onClick={() => setIsSidebarOpen(false)}
-                    className={`flex items-center gap-4 px-4 py-3 rounded-xl font-bold transition-all ${theme === 'dark' ? 'text-white/70 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                    className="flex items-center gap-4 px-4 py-3 rounded-xl font-black uppercase text-[10px] tracking-widest text-zinc-400 hover:text-[#d4af37] hover:bg-zinc-900/40 transition-all font-sans"
                   >
-                    <span className="w-1.5 h-1.5 rounded-full bg-neon-cyan/40"></span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37]/45"></span>
                     {link.name}
                   </Link>
                 ))}
               </nav>
 
-              <div className="p-6 border-t border-white/5 space-y-4">
+              <div className="p-6 border-t border-zinc-900 space-y-4">
                 {user ? (
-                  <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/5 border border-white/5">
-                    <div className="w-10 h-10 rounded-full bg-neon-cyan/20 flex items-center justify-center text-neon-cyan font-black uppercase">
+                  <div className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                    <div className="w-10 h-10 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/35 flex items-center justify-center text-[#d4af37] font-black uppercase">
                       {user.email ? user.email.charAt(0) : (user.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0) : 'U')}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-black truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                      <p className="text-xs font-black truncate text-white">
                         {user.user_metadata?.full_name || user.email || user.phone}
                       </p>
-                      <button onClick={logout} className="text-[9px] text-red-400 font-black uppercase tracking-widest hover:text-red-300">Logout</button>
+                      <button onClick={logout} className="text-[9px] text-red-500 font-black uppercase tracking-widest hover:text-red-400 mt-0.5">Logout</button>
                     </div>
                   </div>
                 ) : (
                   <Link 
                     href="/login" 
                     onClick={() => setIsSidebarOpen(false)}
-                    className="flex items-center justify-center w-full py-4 rounded-2xl bg-gradient-to-r from-neon-purple to-neon-cyan text-white font-black uppercase tracking-widest shadow-lg shadow-neon-purple/20"
+                    className="flex items-center justify-center w-full py-4 rounded-2xl bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black font-black uppercase tracking-widest shadow-lg shadow-[#d4af37]/10"
                   >
                     Login
                   </Link>
@@ -243,23 +243,23 @@ export default function Header() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsCartOpen(false)}
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60]"
+              className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60]"
             />
             <motion.div 
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              className={`fixed top-0 right-0 bottom-0 w-[350px] max-w-[90vw] z-[70] shadow-2xl flex flex-col ${theme === 'dark' ? 'bg-[#0d031a] border-l border-white/5' : 'bg-white border-l border-slate-200'}`}
+              className={`fixed top-0 right-0 bottom-0 w-[350px] max-w-[90vw] z-[70] shadow-2xl flex flex-col bg-[#08080a] border-l border-zinc-800`}
             >
-              <div className="p-6 flex items-center justify-between border-b border-white/5">
+              <div className="p-6 flex items-center justify-between border-b border-zinc-900">
                 <div className="flex items-center gap-3">
                   <span className="text-xl">🛒</span>
-                  <span className={`text-xl font-black tracking-widest ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>CART</span>
+                  <span className="text-xl font-black tracking-widest text-[#d4af37] font-serif">CART</span>
                 </div>
                 <button 
                   onClick={() => setIsCartOpen(false)}
-                  className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${theme === 'dark' ? 'bg-white/5 hover:bg-white/10 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'}`}
+                  className="w-8 h-8 rounded-full flex items-center justify-center bg-zinc-900 text-zinc-400 hover:text-white transition-colors"
                 >
                   ✕
                 </button>
@@ -268,33 +268,33 @@ export default function Header() {
               <div className="flex-grow overflow-y-auto p-4 space-y-4 custom-scrollbar">
                 {cart.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center p-6">
-                    <div className="text-5xl mb-4 opacity-20">🛒</div>
-                    <p className={`text-sm font-bold opacity-40 ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>
+                    <div className="text-5xl mb-4 opacity-25">🛒</div>
+                    <p className="text-sm font-black opacity-60 text-zinc-400">
                       {lang === 'id' ? 'Keranjangmu masih kosong' : 'Your cart is empty'}
                     </p>
                     <button 
                       onClick={() => setIsCartOpen(false)}
-                      className="mt-6 text-[10px] font-black uppercase tracking-widest text-neon-cyan hover:underline"
+                      className="mt-6 text-[10px] font-black uppercase tracking-widest text-[#d4af37] hover:underline"
                     >
                       {lang === 'id' ? 'Mulai Belanja' : 'Start Shopping'}
                     </button>
                   </div>
                 ) : (
                   cart.map((item) => (
-                    <div key={item.id} className={`flex gap-4 p-3 rounded-2xl border ${theme === 'dark' ? 'bg-white/5 border-white/5' : 'bg-slate-50 border-slate-100'}`}>
+                    <div key={item.id} className="flex gap-4 p-3 rounded-2xl border bg-zinc-900/60 border-zinc-800/80">
                       <div className="w-16 h-20 rounded-lg overflow-hidden bg-black flex-shrink-0">
                         <img src={item.image_url} alt={item.title} className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0 flex flex-col justify-between">
                         <div>
-                          <h4 className={`text-[11px] font-black uppercase tracking-tight truncate ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>{item.title}</h4>
-                          <p className="text-[10px] font-bold text-neon-pink">Rp {item.price.toLocaleString('id-ID')}</p>
+                          <h4 className="text-[11px] font-black uppercase tracking-tight truncate text-white">{item.title}</h4>
+                          <p className="text-[10px] font-bold text-[#d4af37]">Rp {item.price.toLocaleString('id-ID')}</p>
                         </div>
                         <div className="flex items-center justify-between mt-2">
-                          <div className="flex items-center gap-3 bg-black/20 rounded-lg px-2 py-1">
-                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-white hover:text-neon-cyan transition-colors">−</button>
+                          <div className="flex items-center gap-3 bg-black/50 rounded-lg px-2 py-1 border border-zinc-800">
+                            <button onClick={() => updateQuantity(item.id, item.quantity - 1)} className="text-zinc-400 hover:text-white transition-colors">−</button>
                             <span className="text-[10px] font-black text-white w-4 text-center">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-white hover:text-neon-cyan transition-colors">+</button>
+                            <button onClick={() => updateQuantity(item.id, item.quantity + 1)} className="text-zinc-400 hover:text-white transition-colors">+</button>
                           </div>
                           <button onClick={() => removeItem(item.id)} className="text-[9px] font-black uppercase text-red-500/60 hover:text-red-500 transition-colors">Hapus</button>
                         </div>
@@ -305,13 +305,13 @@ export default function Header() {
               </div>
 
               {cart.length > 0 && (
-                <div className={`p-6 border-t ${theme === 'dark' ? 'border-white/5 bg-black/40' : 'border-slate-100 bg-slate-50'}`}>
+                <div className="p-6 border-t border-zinc-900 bg-zinc-950/60">
                   <div className="flex items-center justify-between mb-6">
-                    <span className={`text-[10px] font-black uppercase tracking-widest ${theme === 'dark' ? 'text-white/40' : 'text-slate-400'}`}>Total</span>
-                    <span className={`text-xl font-black ${theme === 'dark' ? 'text-white' : 'text-slate-900'}`}>Rp {totalPrice.toLocaleString('id-ID')}</span>
+                    <span className="text-[10px] font-black uppercase tracking-widest text-zinc-500">Total</span>
+                    <span className="text-xl font-black text-white">Rp {totalPrice.toLocaleString('id-ID')}</span>
                   </div>
                   <button 
-                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-neon-purple to-neon-cyan text-white font-black uppercase tracking-widest shadow-xl shadow-neon-purple/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    className="w-full py-4 rounded-2xl bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black font-black uppercase tracking-widest shadow-xl shadow-[#d4af37]/10 hover:scale-[1.02] active:scale-[0.98] transition-all"
                     onClick={() => {
                       setIsCartOpen(false);
                       router.push('/checkout');
@@ -327,30 +327,30 @@ export default function Header() {
       </AnimatePresence>
 
       {/* Row 1: Brand bar */}
-      <div className="relative z-30 bg-gradient-to-r from-[#6d0099] via-[#9d4edd] to-[#ff007f] dark:from-[#3a0066] dark:via-[#7b00cc] dark:to-[#cc0066]">
-        <div className="max-w-6xl mx-auto px-6 py-1.5 flex items-center justify-between">
+      <div className="relative z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900/65 shadow-lg">
+        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-6">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-1.5 hover:bg-white/20 rounded-lg transition-colors group"
+              className="p-1.5 hover:bg-zinc-900 rounded-lg transition-colors group border border-zinc-800/40"
             >
               <div className="space-y-1.5">
-                <span className="block w-5 h-0.5 bg-white rounded-full transition-transform group-hover:w-6"></span>
-                <span className="block w-6 h-0.5 bg-white rounded-full transition-transform"></span>
-                <span className="block w-4 h-0.5 bg-white rounded-full transition-transform group-hover:w-6"></span>
+                <span className="block w-5 h-0.5 bg-[#d4af37] rounded-full transition-transform group-hover:w-6"></span>
+                <span className="block w-6 h-0.5 bg-[#d4af37] rounded-full transition-transform"></span>
+                <span className="block w-4 h-0.5 bg-[#d4af37] rounded-full transition-transform group-hover:w-6"></span>
               </div>
             </button>
 
             {/* Animated Slide Toggle for Theme */}
             <button
               onClick={toggleTheme}
-              className={`relative w-10 h-5 rounded-full p-0.5 transition-colors duration-500 focus:outline-none flex-shrink-0 ${theme === 'dark' ? 'bg-[#1a0033] border border-neon-purple/50 shadow-[0_0_10px_rgba(176,38,255,0.2)]' : 'bg-slate-200 border border-slate-300 shadow-sm'}`}
+              className="relative w-10 h-5 rounded-full p-0.5 transition-colors duration-500 focus:outline-none flex-shrink-0 bg-zinc-900 border border-zinc-800"
               title="Toggle Light/Dark Mode"
             >
               <motion.div
                 animate={{ x: theme === 'dark' ? 20 : 0 }}
                 transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className={`w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] shadow-lg ${theme === 'dark' ? 'bg-neon-purple text-white shadow-[0_0_10px_rgba(176,38,255,0.8)]' : 'bg-white text-slate-600 shadow-md'}`}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] bg-[#d4af37] text-black shadow-md font-bold"
               >
                 {theme === 'dark' ? '🌙' : '☀️'}
               </motion.div>
@@ -358,17 +358,16 @@ export default function Header() {
 
             <Link
               href="/"
-              className="text-xl md:text-2xl font-black tracking-widest text-white drop-shadow-[0_0_10px_rgba(255,255,255,0.6)]"
-              style={{ textShadow: '0 0-12px rgba(255,255,255,0.8), 0 0 24px rgba(255,0,127,0.6)' }}
+              className="text-2xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif"
             >
-              DORONG
+              LUMI FORGE
             </Link>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className={`p-1.5 rounded-full transition-all text-sm ${showSearch ? 'bg-white text-black scale-110 shadow-[0_0_15px_rgba(255,255,255,0.5)]' : 'bg-white/20 text-white hover:bg-white/30'}`}
+              className={`p-1.5 rounded-full transition-all text-sm border ${showSearch ? 'bg-[#d4af37] text-black border-[#d4af37] scale-110 shadow-md shadow-[#d4af37]/25' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
               title="Search"
             >
               🔍
@@ -378,7 +377,7 @@ export default function Header() {
             <div className="relative">
               <button
                 onClick={() => setIsLangOpen(!isLangOpen)}
-                className={`flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black transition-all bg-black/20 border border-white/10 text-white hover:bg-white/10`}
+                className="flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black transition-all bg-zinc-900 border border-zinc-800 text-zinc-400 hover:text-white"
               >
                 <span>{currentLangObj.flag}</span>
                 <span className="uppercase">{currentLangObj.code}</span>
@@ -391,7 +390,7 @@ export default function Header() {
                     initial={{ opacity: 0, y: 10, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-36 bg-[#1a0033]/95 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl z-[100]"
+                    className="absolute right-0 mt-2 w-36 bg-zinc-950/95 backdrop-blur-xl border border-zinc-800 rounded-2xl overflow-hidden shadow-2xl z-[100]"
                   >
                     {langOptions.map((opt) => (
                       <button
@@ -400,8 +399,8 @@ export default function Header() {
                           switchLanguage(opt.code)
                           setIsLangOpen(false)
                         }}
-                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold transition-all hover:bg-white/10 ${
-                          lang === opt.code ? 'text-neon-cyan bg-white/5' : 'text-white/70'
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 text-xs font-bold transition-all hover:bg-zinc-900 ${
+                          lang === opt.code ? 'text-[#d4af37] bg-zinc-900/60' : 'text-zinc-400'
                         }`}
                       >
                         <span>{opt.flag}</span>
@@ -417,14 +416,14 @@ export default function Header() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={logout}
-                  className="px-4 py-1.5 rounded-full bg-white/10 border border-white/20 text-white text-[10px] font-black uppercase tracking-widest hover:bg-white/20 transition-all"
+                  className="px-4 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] font-black uppercase tracking-widest hover:bg-zinc-800 transition-all hover:text-white"
                 >
                   {t.logout}
                 </button>
                 {(user.email === 'admin@dorong.gallery' || adminRole) && (
                   <Link
                     href="/admin"
-                    className="px-4 py-1.5 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-purple-500/30 hover:scale-105 active:scale-95 transition-all"
+                    className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-[10px] font-black uppercase tracking-widest shadow-md shadow-[#d4af37]/10 hover:scale-105 transition-all"
                   >
                     {t.adminPanel}
                   </Link>
@@ -433,7 +432,7 @@ export default function Header() {
             ) : (
               <Link
                 href="/login"
-                className="px-3 py-1 rounded bg-white/20 hover:bg-white/30 text-white text-[10px] font-black tracking-widest border border-white/40 transition-all uppercase"
+                className="px-3 py-1 rounded bg-zinc-900 hover:bg-zinc-800 text-zinc-400 hover:text-white text-[10px] font-black tracking-widest border border-zinc-850 transition-all uppercase"
               >
                 Login
               </Link>
@@ -449,11 +448,11 @@ export default function Header() {
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: -50, opacity: 0 }}
-            className="relative z-10 bg-[#1a0033]/95 dark:bg-black/90 backdrop-blur-2xl border-b border-white/10 shadow-2xl"
+            className="relative z-10 bg-zinc-950/95 backdrop-blur-2xl border-b border-zinc-900 shadow-2xl"
           >
             <div className="max-w-6xl mx-auto px-6 py-4">
-              <div className="flex items-center gap-4 bg-white/5 rounded-2xl px-4 py-3 border border-white/10 focus-within:border-neon-cyan transition-all">
-                <span className="text-white opacity-40">🔍</span>
+              <div className="flex items-center gap-4 bg-zinc-900 rounded-2xl px-4 py-3 border border-zinc-800 focus-within:border-[#d4af37]/50 transition-all">
+                <span className="text-zinc-500">🔍</span>
                 <input 
                   autoFocus
                   type="text" 
@@ -461,10 +460,10 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={handleSearch}
-                  className="flex-1 bg-transparent border-none text-white placeholder-white/40 text-base font-bold focus:outline-none"
+                  className="flex-1 bg-transparent border-none text-white placeholder-zinc-650 text-base font-bold focus:outline-none"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-white/40 hover:text-white text-xs font-black">✕</button>
+                  <button onClick={() => setSearchQuery('')} className="text-zinc-500 hover:text-white text-xs font-black">✕</button>
                 )}
               </div>
 
@@ -490,27 +489,23 @@ export default function Header() {
                         key={`${c.type}-${c.slug}`} 
                         href={`/${c.type}/${c.slug}`}
                         onClick={() => setShowSearch(false)}
-                        className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all group"
+                        className="flex items-center justify-between p-3 rounded-xl hover:bg-zinc-900 border border-transparent hover:border-zinc-800 transition-all group"
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] uppercase ${
-                            c.type === 'anime' ? 'bg-neon-cyan/20 text-neon-cyan border border-neon-cyan/30' :
-                            c.type === 'kpop' ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/30' :
-                            'bg-neon-pink/20 text-neon-pink border border-neon-pink/30'
-                          }`}>
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center font-bold text-[10px] uppercase bg-zinc-900 border border-zinc-800 text-[#d4af37]">
                             {c.type.charAt(0)}
                           </div>
                           <div>
-                            <h3 className="font-bold text-white group-hover:text-neon-cyan transition-colors text-sm">{c.name}</h3>
-                            <p className="text-[9px] text-white/40 uppercase tracking-widest mt-0.5">{c.type}</p>
+                            <h3 className="font-bold text-white group-hover:text-[#d4af37] transition-colors text-sm">{c.name}</h3>
+                            <p className="text-[9px] text-zinc-500 uppercase tracking-widest mt-0.5 font-bold">{c.type}</p>
                           </div>
                         </div>
-                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-neon-cyan text-xs">→</span>
+                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#d4af37] text-xs">→</span>
                       </Link>
                     ))}
                   </div>
                   {allCategories.filter(c => c.name.toLowerCase().includes(searchQuery.toLowerCase())).length === 0 && (
-                    <div className="text-center py-8 text-white/40 text-sm italic">{t.noResults}</div>
+                    <div className="text-center py-8 text-zinc-500 text-sm italic">{t.noResults}</div>
                   )}
                 </div>
               )}
@@ -520,14 +515,14 @@ export default function Header() {
       </AnimatePresence>
 
       {/* Row 2: Nav bar — semi-transparent dengan backdrop blur */}
-      <div className="relative z-10 bg-gradient-to-r from-[#2d0050]/90 via-[#1a0033]/90 to-[#4a0030]/90 dark:from-black/80 dark:via-[#0d0020]/80 dark:to-black/80 backdrop-blur-md border-b border-[#ff007f]/30 dark:border-neon-purple/30">
+      <div className="relative z-10 bg-black/90 backdrop-blur-md border-b border-[#d4af37]/20 shadow-md">
         <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
           <nav className="flex gap-6 text-sm items-center">
             {navLinks.map(({ href, name }) => (
               <Link
                 key={href}
                 href={href}
-                className="text-white/80 hover:text-white transition-colors font-medium tracking-wide hover:drop-shadow-[0_0_6px_rgba(255,0,127,0.8)]"
+                className="text-zinc-400 hover:text-[#d4af37] transition-all font-black tracking-widest text-[10px] uppercase font-sans"
               >
                 {name}
               </Link>
@@ -536,12 +531,12 @@ export default function Header() {
 
           <button
             onClick={() => setIsCartOpen(true)}
-            className="relative text-white/80 hover:text-white transition-colors text-sm font-medium flex items-center gap-1"
+            className="relative text-zinc-400 hover:text-[#d4af37] transition-all text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5"
           >
-            <span className="text-lg">🛒</span>
+            <span>🛒</span>
             <span>{t.cart}</span>
             {totalItems > 0 && (
-              <span className="absolute -top-2 -right-3 rounded-full bg-[#ff007f] dark:bg-neon-pink px-1.5 py-0.5 text-[10px] text-white font-bold shadow-[0_0_8px_rgba(255,0,127,0.6)]">
+              <span className="absolute -top-2 -right-3 rounded-full bg-[#d4af37] px-1.5 py-0.5 text-[9px] text-black font-black shadow-md shadow-[#d4af37]/20">
                 {totalItems}
               </span>
             )}

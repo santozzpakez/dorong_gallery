@@ -1,32 +1,47 @@
-import { motion } from 'framer-motion'
 import Link from 'next/link'
 
-export default function CategoryCard({title, image, href}){
+export default function CategoryCard({ title, image, href, clipPath, textLeft }) {
   return (
-    <Link href={href} className="group">
-      <motion.div 
-        whileHover={{ scale: 1.05 }} 
-        className="relative rounded-2xl overflow-hidden bg-white dark:bg-black/40 border border-gray-200 dark:border-neon-cyan/20 shadow-xl shadow-gray-200/50 dark:shadow-none cinematic-glow-cyan transition-all duration-300"
-      >
-        <div className="h-56 md:h-80 bg-gray-100 dark:bg-black">
+    <Link 
+      href={href} 
+      className="absolute inset-0 group overflow-hidden cursor-pointer transition-all duration-500 ease-out hover:z-30 hover:scale-[1.015] hover:shadow-[0_0_50px_rgba(0,243,255,0.3)]"
+      style={{ 
+        clipPath: clipPath, 
+        WebkitClipPath: clipPath 
+      }}
+    >
+      
+      {/* Background Image Container */}
+      <div className="w-full h-full relative bg-black">
+        {image ? (
           <img 
             src={image} 
             alt={title} 
-            className="w-full h-full object-cover opacity-100 dark:opacity-80 group-hover:scale-110 transition-transform duration-700" 
+            className="w-full h-full object-cover opacity-70 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700" 
             loading="lazy" 
           />
-          {/* Gradient Overlay: Darker bottom for better text legibility in both modes */}
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-80 group-hover:opacity-100 transition-opacity"></div>
-        </div>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-purple-500/20 to-cyan-500/20" />
+        )}
         
-        <div className="absolute bottom-0 w-full p-6 z-10">
-          <h3 className="text-2xl font-black uppercase tracking-widest text-white drop-shadow-md group-hover:text-[#00f3ff] transition-all">
-            {title}
-          </h3>
-          <div className="h-1 w-10 bg-gradient-to-r from-[#00b4d8] to-[#9d4edd] mt-2 group-hover:w-20 transition-all duration-300"></div>
-          <p className="text-xs text-gray-200 mt-2 font-mono uppercase tracking-tighter">Premium collection</p>
-        </div>
-      </motion.div>
+        {/* Cyberpunk dark gradient overlay for text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/30 to-black/60 opacity-95 group-hover:opacity-90 transition-opacity"></div>
+      </div>
+      
+      {/* Typography details positioned absolutely in the exact Center Point of the Frame */}
+      <div className={`absolute top-1/2 ${textLeft} -translate-y-1/2 -translate-x-1/2 z-20 flex flex-col items-center text-center pointer-events-none transition-all duration-500 group-hover:scale-105`}>
+        <span className="text-[9px] text-[#00f3ff] font-mono uppercase tracking-[0.25em] block mb-1 drop-shadow-md">
+          Category
+        </span>
+        <h3 className="text-2xl sm:text-3xl lg:text-4xl font-black uppercase tracking-widest text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.85)] group-hover:text-[#00f3ff] transition-all leading-none">
+          {title}
+        </h3>
+        <div className="h-1.5 w-10 bg-gradient-to-r from-[#00f3ff] to-[#9d4edd] mt-3 group-hover:w-24 transition-all duration-500"></div>
+        <p className="text-[9px] text-slate-200 mt-4 font-mono uppercase tracking-widest opacity-70 group-hover:opacity-100 transition-opacity">
+          Explore Collection
+        </p>
+      </div>
+      
     </Link>
   )
 }

@@ -68,18 +68,18 @@ export default function ShopGallery() {
 
   if (!hasSupabaseConfig) {
     return (
-      <section className="max-w-6xl mx-auto px-6 py-12 border-t border-white/5">
-        <h2 className="text-3xl font-black mb-2 uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Produk dari Admin</h2>
-        <p className="text-gray-500 text-sm">Supabase belum terkonfigurasi.</p>
+      <section className="max-w-6xl mx-auto px-6 py-12 border-t border-zinc-200 dark:border-zinc-900">
+        <h2 className="text-3xl font-black mb-2 uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">Produk dari Admin</h2>
+        <p className="text-zinc-500 text-sm">Supabase belum terkonfigurasi.</p>
       </section>
     )
   }
 
   if (loading) {
     return (
-      <section className="max-w-6xl mx-auto px-6 py-12 border-t border-white/5">
+      <section className="max-w-6xl mx-auto px-6 py-12 border-t border-zinc-200 dark:border-zinc-900">
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin"></div>
         </div>
       </section>
     )
@@ -88,26 +88,26 @@ export default function ShopGallery() {
   if (error || products.length === 0) return null // Sembunyikan jika kosong/error agar tidak merusak layout
 
   return (
-    <section className="max-w-6xl mx-auto px-6 py-20 border-t border-white/5">
-      {/* Tampilan Grid Foto Kecil (6 kolom di desktop agar lebih besar) */}
+    <section className="max-w-6xl mx-auto px-6 py-20 border-t border-zinc-200 dark:border-zinc-900">
+      {/* Tampilan Grid Foto Kecil */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
         {products.map((p) => (
-          <Link key={p.id} href={`/product/${p.id}`} className="group relative aspect-square overflow-hidden rounded-md bg-black/20 border border-white/5 hover:border-purple-500/50 transition-all">
+          <Link key={p.id} href={`/product/${p.id}`} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-200/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 hover:border-[#d4af37]/50 transition-all duration-300">
             {p.image_url ? (
               <Image 
                 src={p.image_url} 
                 alt={p.title} 
                 fill
                 sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
-                className="object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-500" 
+                className="object-cover opacity-70 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500" 
               />
             ) : (
-              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-gray-700">NA</div>
+              <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-700">NA</div>
             )}
             
             {/* Hover Overlay Simple */}
-            <div className="absolute inset-0 bg-purple-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <span className="text-[10px] font-bold text-white uppercase tracking-tighter">View</span>
+            <div className="absolute inset-0 bg-black/75 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+              <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-[0.2em] font-sans">View</span>
             </div>
           </Link>
         ))}
@@ -117,7 +117,7 @@ export default function ShopGallery() {
       <div className="flex justify-center mt-12">
         <Link 
           href="/katalog" 
-          className="px-10 py-3 rounded-full bg-gradient-to-r from-[#6d0099] via-[#9d4edd] to-[#ff007f] text-white text-xs font-black uppercase tracking-[0.2em] shadow-lg shadow-purple-500/25 hover:scale-105 active:scale-95 transition-all"
+          className="px-10 py-3 rounded-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-xs font-black uppercase tracking-[0.2em] shadow-md shadow-[#d4af37]/10 hover:scale-105 active:scale-95 transition-all"
         >
           {t.viewAll} &rarr;
         </Link>

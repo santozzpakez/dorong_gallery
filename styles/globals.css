@@ -7,8 +7,8 @@
   --bg: #F9FAFB;
   --text-main: #111827;
   --panel: rgba(255, 255, 255, 0.8);
-  --accent: #00b4d8;
-  --accent-purple: #9d4edd;
+  --accent: #d4af37;
+  --accent-purple: #b39359;
 }
 
 html.dark {
@@ -16,8 +16,8 @@ html.dark {
   --bg: #050505;
   --text-main: #e6eef8;
   --panel: rgba(15, 15, 20, 0.6);
-  --accent: #00f3ff;
-  --accent-purple: #b026ff;
+  --accent: #d4af37;
+  --accent-purple: #b39359;
 }
 
 html, body, #__next {
@@ -42,51 +42,51 @@ body {
 
 html.dark .glass {
   background: rgba(10, 10, 15, 0.5);
-  border: 1px solid rgba(0, 243, 255, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.1);
   box-shadow: none;
 }
 
 .glass-purple {
   background: var(--panel);
   backdrop-filter: blur(12px) saturate(1.2);
-  border: 1px solid rgba(157, 78, 221, 0.2);
-  box-shadow: 0 4px 6px -1px rgba(157, 78, 221, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 0 4px 6px -1px rgba(212, 175, 55, 0.1);
 }
 
 html.dark .glass-purple {
   background: rgba(10, 10, 15, 0.5);
-  border: 1px solid rgba(176, 38, 255, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.15);
   box-shadow: none;
 }
 
 /* DARK MODE NEON GLOWS */
 html.dark .neon-text-cyan {
-  text-shadow: 0 0 10px rgba(0, 243, 255, 0.8), 0 0 20px rgba(0, 243, 255, 0.4);
+  text-shadow: 0 0 10px rgba(212, 175, 55, 0.8), 0 0 20px rgba(212, 175, 55, 0.4);
 }
 
 html.dark .neon-text-purple {
-  text-shadow: 0 0 10px rgba(176, 38, 255, 0.8), 0 0 20px rgba(176, 38, 255, 0.4);
+  text-shadow: 0 0 10px rgba(179, 147, 89, 0.8), 0 0 20px rgba(179, 147, 89, 0.4);
 }
 
 html.dark .cinematic-glow-cyan:hover {
-  box-shadow: 0 0 25px rgba(0, 243, 255, 0.5), 0 0 60px rgba(0, 243, 255, 0.2);
-  border-color: rgba(0, 243, 255, 0.8);
+  box-shadow: 0 0 25px rgba(212, 175, 55, 0.3), 0 0 60px rgba(212, 175, 55, 0.1);
+  border-color: rgba(212, 175, 55, 0.6);
 }
 
 html.dark .cinematic-glow-purple:hover {
-  box-shadow: 0 0 25px rgba(176, 38, 255, 0.5), 0 0 60px rgba(176, 38, 255, 0.2);
-  border-color: rgba(176, 38, 255, 0.8);
+  box-shadow: 0 0 25px rgba(179, 147, 89, 0.3), 0 0 60px rgba(179, 147, 89, 0.1);
+  border-color: rgba(179, 147, 89, 0.6);
 }
 
 /* LIGHT MODE GLOW FALLBACKS */
 .cinematic-glow-cyan:hover {
-  box-shadow: 0 10px 25px rgba(0, 180, 216, 0.2);
-  border-color: rgba(0, 180, 216, 0.5);
+  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.4);
 }
 
 .cinematic-glow-purple:hover {
-  box-shadow: 0 10px 25px rgba(157, 78, 221, 0.2);
-  border-color: rgba(157, 78, 221, 0.5);
+  box-shadow: 0 10px 25px rgba(179, 147, 89, 0.15);
+  border-color: rgba(179, 147, 89, 0.4);
 }
 
 /* Custom Scrollbar */
@@ -97,14 +97,14 @@ html.dark .cinematic-glow-purple:hover {
   background: var(--bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(157, 78, 221, 0.3);
+  background: rgba(212, 175, 55, 0.25);
   border-radius: 10px;
 }
 html.dark ::-webkit-scrollbar-thumb {
-  background: rgba(0, 243, 255, 0.3);
+  background: rgba(212, 175, 55, 0.2);
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-purple);
+  background: var(--accent);
 }
 
 /* reduce motion for prefers-reduced-motion */

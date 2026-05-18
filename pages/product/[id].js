@@ -98,18 +98,18 @@ export default function ProductDetail() {
       notFound: '未找到产品',
       backHome: '返回首页',
       zoom: '放大图片',
-      defaultNotes: '✨ 高级墙绘 - Dorong Gallery 独家 ✨\n\n采用最先进的高压热升华技术制作，呈现超鲜艳的色彩和超清晰的细节。高品质、防褪色且耐用的材料，为您的房间角落增添优雅奢华的氛围。世界级装饰的最佳选择！'
+      defaultNotes: '✨ 高级墙绘 - LUMI FORGE 独家 ✨\n\n采用最先进的高压热升华技术制作，呈现超鲜艳的色彩和超清晰的细节。高品质、防褪色且耐用的材料，为您的房间角落增添优雅奢华的氛围。世界级装饰的最佳选择！'
     }
   }
 
   // Teks default bahasa Indonesia untuk dicocokkan
-  const INDONESIAN_DEFAULT_NOTES = '✨ Premium Wall Art - Dorong Gallery Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
+  const INDONESIAN_DEFAULT_NOTES = '✨ Premium Collectible Metal Prints - LUMI FORGE Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
 
   // Tambahkan terjemahan notes ke dalam object terjemahan yang ada
   translations.id.defaultNotes = INDONESIAN_DEFAULT_NOTES
-  translations.en.defaultNotes = '✨ Premium Wall Art - Dorong Gallery Exclusive ✨\n\nCrafted with advanced High Press Sublimation technology for super vibrant colors and ultra-sharp details. High-quality, fade-resistant, and durable materials that provide an elegant, luxurious touch to any corner of your room. The best choice for world-class decoration!'
-  translations.jp.defaultNotes = '✨ プレミアムウォールアート - Dorong Gallery 限定 ✨\n\n最先端のハイプレス昇華技術で作られ、超鮮やかな色彩と超鮮明なディテールを実現。色あせにくく耐久性に優れた高品質の素材が、お部屋の隅々にエレガントで豪華な印象を与えます。ワールドクラスの装飾に最適な選択です！'
-  translations.kr.defaultNotes = '✨ 프리미엄 월 아트 - Dorong Gallery 독점 ✨\n\n초고화질의 생생한 색상과 디테일을 위한 최첨단 하이프레스 승화 기술로 제작되었습니다. 변색 방지 및 내구성이 뛰어난 고품질 소재로 공간 구석구석에 우아하고 고급스러운 느낌을 더해줍니다. 세계적인 수준의 장식을 위한 최고의 선택!'
+  translations.en.defaultNotes = '✨ Premium Collectible Metal Prints - LUMI FORGE Exclusive ✨\n\nCrafted with advanced High Press Sublimation technology for super vibrant colors and ultra-sharp details. High-quality, fade-resistant, and durable materials that provide an elegant, luxurious touch to any corner of your room. The best choice for world-class decoration!'
+  translations.jp.defaultNotes = '✨ プレミアムウォールアート - LUMI FORGE 限定 ✨\n\n最先端のハイプレス昇華技術で作られ、超鮮やかな色彩と超鮮明なディテールを実現。色あせにくく耐久性に優れた高品質の素材が、お部屋の隅々にエレガントで豪華な印象を与えます。ワールドクラスの装飾に最適な選択です！'
+  translations.kr.defaultNotes = '✨ 프리미엄 월 아트 - LUMI FORGE 독점 ✨\n\n초고화질의 생생한 색상과 디테일을 위한 최첨단 하이프레스 승화 기술로 제작되었습니다. 변색 방지 및 내구성이 뛰어난 고품질 소재로 공간 구석구석에 우아하고 고급스러운 느낌을 더해줍니다. 세계적인 수준의 장식을 위한 최고의 선택!'
 
   const t = translations[lang] || translations.id
 
@@ -198,7 +198,7 @@ export default function ProductDetail() {
         <Header />
         <main className="flex-grow pt-32 text-center">
           <h1 className="text-2xl font-bold">{t.notFound}</h1>
-          <Link href="/" className="text-purple-500 mt-4 inline-block hover:underline">{t.backHome}</Link>
+          <Link href="/" className="text-[#d4af37] mt-4 inline-block hover:underline uppercase font-black tracking-widest text-xs">{t.backHome}</Link>
         </main>
       </div>
     )
@@ -209,7 +209,7 @@ export default function ProductDetail() {
       <Header />
       <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 pb-16 w-full">
         <div className="mb-6">
-          <button onClick={() => router.back()} className="text-sm opacity-50 hover:opacity-100 transition-all flex items-center gap-2">
+          <button onClick={() => router.back()} className="text-xs text-[#d4af37]/80 hover:text-[#d4af37] font-bold uppercase tracking-widest transition-all flex items-center gap-2">
             ← {t.back}
           </button>
         </div>
@@ -218,14 +218,14 @@ export default function ProductDetail() {
           {/* Bagian Kiri: Gambar Utama & Deskripsi */}
           <div className="lg:col-span-7 space-y-8">
             <div 
-              className="rounded-2xl overflow-hidden glass border border-white/10 dark:border-white/5 shadow-2xl relative cursor-zoom-in group"
+              className="rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative cursor-zoom-in group"
               onClick={() => setIsPreviewOpen(true)}
             >
               {product.image_url ? (
                 <>
                   <img src={product.image_url} alt={product.title} className="w-full h-auto object-cover max-h-[85vh] group-hover:scale-[1.02] transition-transform duration-700" />
                   <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="bg-white/20 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-full border border-white/20 shadow-xl">
+                    <span className="bg-black/40 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-full border border-white/10 shadow-xl">
                       🔍 {t.zoom}
                     </span>
                   </div>
@@ -236,9 +236,9 @@ export default function ProductDetail() {
             </div>
 
             {/* Deskripsi Produk di bawah Foto */}
-            <div className="glass p-8 rounded-2xl border border-white/10 dark:border-white/5 shadow-xl">
+            <div className="glass p-8 rounded-2xl border border-zinc-200/80 dark:border-zinc-850/40 shadow-xl">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-1 h-6 bg-pink-500 rounded-full"></span>
+                <span className="w-1 h-6 bg-[#d4af37] rounded-full"></span>
                 {t.description}
               </h3>
               <div className="text-[var(--text-main)] opacity-80 leading-relaxed space-y-4">
@@ -253,12 +253,12 @@ export default function ProductDetail() {
 
           {/* Bagian Kanan: Info Sticky */}
           <div className="lg:col-span-5">
-            <div className="glass p-8 rounded-2xl border border-white/10 dark:border-white/5 sticky top-28 shadow-2xl">
-              <div className="uppercase tracking-[0.2em] text-[10px] text-purple-500 dark:text-purple-400 font-black mb-3">
+            <div className="glass p-8 rounded-2xl border border-zinc-200/80 dark:border-zinc-850/40 sticky top-28 shadow-2xl">
+              <div className="uppercase tracking-[0.2em] text-[10px] text-[#d4af37] font-black mb-3">
                 {product.category} {product.subcategory && product.subcategory !== product.category ? `• ${product.subcategory}` : ''}
               </div>
               <h1 className="text-4xl font-black mb-4 tracking-tight leading-tight">{product.title}</h1>
-              <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 dark:from-pink-400 dark:to-purple-400 mb-8">
+              <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] mb-8 font-serif">
                 Rp {Number(product.price).toLocaleString('id-ID')}
               </p>
               
@@ -266,8 +266,8 @@ export default function ProductDetail() {
                 onClick={handleAddToCart}
                 className={`w-full py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all transform active:scale-95 ${
                   added 
-                    ? 'bg-green-500 text-white shadow-[0_0_30px_rgba(34,197,94,0.4)]'
-                    : 'bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 shadow-[0_0_30px_rgba(168,85,247,0.3)] hover:shadow-[0_0_50px_rgba(168,85,247,0.5)] text-white'
+                    ? 'bg-green-600 text-white shadow-[0_0_30px_rgba(22,163,74,0.4)]'
+                    : 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] hover:brightness-110 shadow-[0_0_30px_rgba(212,175,55,0.25)] hover:shadow-[0_0_50px_rgba(212,175,55,0.4)] text-black'
                 }`}
               >
                 {added ? `✓ ${t.added}` : t.addToCart}
@@ -291,14 +291,14 @@ export default function ProductDetail() {
         {recommendations.length > 0 && (
           <div className="mt-20 pt-20 border-t border-black/5 dark:border-white/5">
             <h3 className="text-2xl font-black mb-10 flex items-center gap-3 uppercase tracking-tighter">
-              <span className="w-2 h-8 bg-purple-500 rounded-full"></span>
+              <span className="w-2 h-8 bg-[#d4af37] rounded-full"></span>
               {t.recommendations}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {recommendations.map((rec) => (
                 <Link key={rec.id} href={`/product/${rec.id}`}>
                   <div className="group cursor-pointer">
-                    <div className="aspect-[3/4] rounded-2xl overflow-hidden glass border border-white/10 dark:border-white/5 relative shadow-lg group-hover:border-purple-500/50 transition-all duration-500">
+                    <div className="aspect-[3/4] rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 relative shadow-lg group-hover:border-[#d4af37]/50 transition-all duration-500">
                       {rec.image_url && (
                         <img 
                           src={rec.image_url} 
@@ -307,13 +307,13 @@ export default function ProductDetail() {
                         />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                        <span className="w-full py-2 bg-white/10 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-white/20 text-center">
+                        <span className="w-full py-2 bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md text-center">
                           {t.view}
                         </span>
                       </div>
                     </div>
-                    <h4 className="font-bold text-sm mt-4 line-clamp-1 group-hover:text-purple-400 transition-colors uppercase tracking-tight">{rec.title}</h4>
-                    <p className="text-xs text-pink-500 dark:text-pink-400 font-black mt-1">Rp {Number(rec.price).toLocaleString('id-ID')}</p>
+                    <h4 className="font-bold text-sm mt-4 line-clamp-1 group-hover:text-[#d4af37] transition-colors uppercase tracking-tight">{rec.title}</h4>
+                    <p className="text-xs text-[#d4af37] font-black mt-1">Rp {Number(rec.price).toLocaleString('id-ID')}</p>
                   </div>
                 </Link>
               ))}

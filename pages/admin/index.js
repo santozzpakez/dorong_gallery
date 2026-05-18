@@ -323,7 +323,7 @@ export default function Admin() {
     category: 'anime',
     typeName: defaultTypes.anime?.[0] || '',
     characterName: defaultCharactersByType.anime?.[defaultTypes.anime?.[0]]?.[0] || '',
-    notes: '✨ Premium Wall Art - Dorong Gallery Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
+    notes: '✨ Premium Collectible Metal Prints - LUMI FORGE Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
   })
 
   const labels = useMemo(() => {
@@ -1121,7 +1121,7 @@ export default function Admin() {
         price: '',
         typeName: typeOptions[form.category]?.[0] || '',
         characterName: pickFirstCharacter(form.category, typeOptions[form.category]?.[0] || ''),
-        notes: '✨ Premium Wall Art - Dorong Gallery Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
+        notes: '✨ Premium Collectible Metal Prints - LUMI FORGE Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
       }))
       setImageFile(null)
       setImagePreview('')

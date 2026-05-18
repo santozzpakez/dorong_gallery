@@ -58,21 +58,21 @@ export default function Aesthetic() {
 
       // 1. Ambil dari Cache Global
       const globalOptionsRaw = getText('global-category-options')
-      
+
       let categories = []
       try {
         if (globalOptionsRaw) {
           const parsed = JSON.parse(globalOptionsRaw)
           categories = Array.isArray(parsed?.aesthetic) ? parsed.aesthetic : []
         }
-      } catch (err) {}
+      } catch (err) { }
 
       // Fallback ke localStorage
       if (categories.length === 0) {
         try {
           const raw = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
           if (raw) categories = JSON.parse(raw)?.aesthetic || []
-        } catch {}
+        } catch { }
       }
 
       // 2. Buat map dari tema
@@ -122,147 +122,164 @@ export default function Aesthetic() {
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
       <main className="flex-grow pt-32 max-w-6xl mx-auto px-4 w-full pb-16">
-        <h1 className="text-3xl font-black mb-1 uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-[#00f2fe] to-[#4facfe] dark:from-neon-cyan dark:to-blue-500 dark:neon-text-cyan">{t.title}</h1>
-        <p className="text-[#4facfe] dark:text-neon-cyan mb-8 text-sm font-mono tracking-wide">{t.desc}</p>
+        
+        {/* Banner Box - Premium Brushed Metal style */}
+        <div className="mb-8 p-6 md:p-8 rounded-3xl bg-gradient-to-br from-zinc-800 via-zinc-950 to-black text-white shadow-[0_15px_35px_rgba(0,0,0,0.7)] relative overflow-hidden border border-zinc-850">
+          {/* Accent golden blur spot */}
+          <div className="absolute right-0 top-0 w-80 h-80 bg-[#d4af37]/3 rounded-full filter blur-[80px] pointer-events-none" />
+          
+          <div className="relative z-10">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+              {t.title}
+            </h1>
+            <p className="text-zinc-400 mt-2 text-xs md:text-sm font-sans tracking-widest uppercase font-bold">
+              {t.desc}
+            </p>
+          </div>
+        </div>
 
-        <div className="flex justify-end gap-3 mb-4">
-          <button className="px-4 py-1.5 rounded-lg glass border border-[#4facfe]/30 text-[#4facfe] dark:text-neon-cyan hover:bg-[#4facfe] hover:text-white transition-all font-bold tracking-wide text-[10px] uppercase">
+        <div className="flex justify-end gap-3 mb-6">
+          <button className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950/60 text-zinc-555 dark:text-zinc-400 hover:text-[#d4af37] hover:border-[#d4af37]/60 hover:bg-[#d4af37]/5 transition-all font-black tracking-widest text-[9px] uppercase font-sans">
             {t.bundle}
           </button>
           <button
             onClick={() => setShowAllModal(true)}
-            className="px-4 py-1.5 rounded-lg glass border border-[#4facfe]/30 text-[#4facfe] dark:text-neon-cyan hover:bg-[#4facfe] hover:text-white transition-all font-bold tracking-wide text-[10px] uppercase"
+            className="px-4 py-2 rounded-lg border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-zinc-950/60 text-zinc-555 dark:text-zinc-400 hover:text-[#d4af37] hover:border-[#d4af37]/60 hover:bg-[#d4af37]/5 transition-all font-black tracking-widest text-[9px] uppercase font-sans"
           >
             {t.all}
           </button>
         </div>
 
         {loading ? (
-          <div className="text-center py-20 text-gray-500 flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-cyan-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+          <div className="text-center py-20 text-zinc-500 flex flex-col items-center">
+            <div className="w-8 h-8 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin mb-4"></div>
             {t.loading}
           </div>
         ) : themes.length === 0 ? (
-          <div className="text-center py-20 text-gray-500 border border-dashed border-gray-700 rounded-xl bg-white/5">
+          <div className="text-center py-20 text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-100 dark:bg-zinc-950/20">
             {t.empty}
           </div>
         ) : (
           <>
-            <div className="flex flex-col md:flex-row gap-4 items-stretch">
-              {/* Left Column */}
-              <div className="w-full md:w-[15%] space-y-2 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
-                {leftThemes.map((g, i) => {
-                  const displayImage = assets[g.assetKey] || getUrl(g.assetKey) || ''
-                  const isActive = active === i
-                  return (
-                    <div
-                      key={g.slug}
-                      onMouseEnter={() => setActive(i)}
-                      className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-neon-cyan shadow-[0_0_10px_rgba(0,243,255,0.4)] scale-105 opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                    >
-                      <Link href={`/aesthetic/${g.slug}`}>
-                        <div className="h-16 md:h-20 bg-slate-300 dark:bg-gray-800 border border-gray-200 dark:border-white/5 shadow-sm relative">
-                          {displayImage ? (
-                            <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-                              <span className="text-gray-400 text-[9px] text-center px-1">{t.noImage}</span>
+            {/* Charcoal Premium Container */}
+            <div className="p-4 md:p-8 rounded-3xl bg-zinc-950/5 dark:bg-zinc-950/30 border border-zinc-200/50 dark:border-zinc-900 shadow-[0_15px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_15px_40px_rgba(0,0,0,0.8)] backdrop-blur-md">
+              <div className="flex flex-col md:flex-row gap-6 items-stretch">
+                
+                {/* Left Column */}
+                <div className="w-full md:w-[15%] space-y-2 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+                  {leftThemes.map((g, i) => {
+                    const displayImage = assets[g.assetKey] || getUrl(g.assetKey) || ''
+                    const isActive = active === i
+                    return (
+                      <div
+                        key={g.slug}
+                        onMouseEnter={() => setActive(i)}
+                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-[#d4af37] shadow-[0_4px_15px_rgba(212,175,55,0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                      >
+                        <Link href={`/aesthetic/${g.slug}`}>
+                          <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                            {displayImage ? (
+                              <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center">
+                                <span className="text-zinc-400 dark:text-zinc-650 text-[9px] text-center px-1 font-bold">{t.noImage}</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
+                              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                                {getText(g.assetKey) || g.name}
+                              </span>
                             </div>
-                          )}
-                          <div className="absolute inset-0 bg-white/20 dark:bg-black/60 flex items-center justify-center p-1 text-center group-hover:bg-white/5 dark:group-hover:bg-black/20 transition-all">
-                            <span className="text-slate-900 dark:text-white text-[9px] md:text-[10px] font-black uppercase tracking-tighter drop-shadow-sm leading-tight">
-                              {getText(g.assetKey) || g.name}
-                            </span>
                           </div>
-                        </div>
-                      </Link>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Center Column */}
-              <div className="w-full md:w-[70%] flex">
-                {themes[active] && (() => {
-                  const activeTheme = themes[active]
-                  const displayImage = assets[activeTheme.assetKey] || getUrl(activeTheme.assetKey) || ''
-                  return (
-                    <Link href={`/aesthetic/${activeTheme.slug}`} className="block group w-full h-full">
-                      <div className="rounded-2xl overflow-hidden glass border border-neon-cyan/20 cinematic-glow-cyan relative flex items-center justify-center bg-gray-100 dark:bg-black h-full min-h-[300px]">
-                        <div className="absolute inset-0 w-full h-full">
-                          {displayImage ? (
-                            <img
-                              key={displayImage}
-                              src={displayImage}
-                              alt={activeTheme.name}
-                              className="w-full h-full object-cover opacity-90 dark:opacity-80 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 transform-gpu"
-                            />
-                          ) : (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-gray-400 text-sm text-center px-4">{t.uploadAdmin}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
-                          <div className="mb-2">
-                            <span className="px-2 py-0.5 bg-neon-cyan text-black text-[9px] font-black uppercase tracking-widest rounded">{t.topTheme}</span>
-                          </div>
-                          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter text-white drop-shadow-[0_0_10px_rgba(0,243,255,0.5)]">
-                            {getText(activeTheme.assetKey) || activeTheme.name}
-                          </h2>
-                          <div className="mt-4 flex gap-4">
-                            <span className="px-6 py-2 rounded-full bg-neon-cyan text-black font-black text-xs uppercase tracking-widest hover:scale-110 transition-all shadow-[0_0_20px_rgba(0,243,255,0.4)]">{t.viewCollection} &rarr;</span>
-                          </div>
-                        </div>
+                        </Link>
                       </div>
-                    </Link>
-                  )
-                })()}
-              </div>
+                    )
+                  })}
+                </div>
 
-              {/* Right Column */}
-              <div className="w-full md:w-[15%] space-y-2 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
-                {rightThemes.map((g, idx) => {
-                  const i = idx + 5
-                  const displayImage = assets[g.assetKey] || getUrl(g.assetKey) || ''
-                  const isActive = active === i
-                  return (
-                    <div
-                      key={g.slug}
-                      onMouseEnter={() => setActive(i)}
-                      className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-blue-500 shadow-[0_0_10px_rgba(79,172,254,0.4)] scale-105 opacity-100' : 'opacity-60 hover:opacity-100'}`}
-                    >
-                      <Link href={`/aesthetic/${g.slug}`}>
-                        <div className="h-16 md:h-20 bg-slate-300 dark:bg-gray-800 border border-gray-200 dark:border-white/5 shadow-sm relative">
-                          {displayImage ? (
-                            <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-cyan-500/20 to-blue-500/20 flex items-center justify-center">
-                              <span className="text-gray-400 text-[9px] text-center px-1">{t.noImage}</span>
+                {/* Center Column */}
+                <div className="w-full md:w-[70%] flex">
+                  {themes[active] && (() => {
+                    const activeTheme = themes[active]
+                    const displayImage = assets[activeTheme.assetKey] || getUrl(activeTheme.assetKey) || ''
+                    return (
+                      <Link href={`/aesthetic/${activeTheme.slug}`} className="block group w-full h-full">
+                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-[#d4af37]/45">
+                          <div className="absolute inset-0 w-full h-full">
+                            {displayImage ? (
+                              <img
+                                key={displayImage}
+                                src={displayImage}
+                                alt={activeTheme.name}
+                                className="w-full h-full object-cover opacity-60 dark:opacity-85 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700 transform-gpu"
+                              />
+                            ) : (
+                              <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-405 dark:text-zinc-555 text-sm text-center px-4 font-bold">
+                                {t.uploadAdmin}
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/15 to-transparent flex flex-col justify-end p-6 z-10 pointer-events-none">
+                            <div className="mb-2">
+                              <span className="px-2 py-0.5 bg-[#d4af37] text-black text-[9px] font-black uppercase tracking-widest rounded">{t.topTheme}</span>
                             </div>
-                          )}
-                          <div className="absolute inset-0 bg-white/20 dark:bg-black/60 flex items-center justify-center p-1 text-center group-hover:bg-white/5 dark:group-hover:bg-black/20 transition-all">
-                            <span className="text-slate-900 dark:text-white text-[9px] md:text-[10px] font-black uppercase tracking-tighter drop-shadow-sm leading-tight">
-                              {getText(g.assetKey) || g.name}
-                            </span>
+                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+                              {getText(activeTheme.assetKey) || activeTheme.name}
+                            </h2>
+                            <div className="mt-4 flex gap-4">
+                              <span className="px-6 py-2 rounded-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black font-black text-xs uppercase tracking-widest hover:scale-105 transition-all shadow-md shadow-[#d4af37]/15">{t.viewCollection} &rarr;</span>
+                            </div>
                           </div>
                         </div>
                       </Link>
-                    </div>
-                  )
-                })}
+                    )
+                  })()}
+                </div>
+
+                {/* Right Column */}
+                <div className="w-full md:w-[15%] space-y-2 flex flex-row md:flex-col overflow-x-auto md:overflow-x-visible pb-2 md:pb-0">
+                  {rightThemes.map((g, idx) => {
+                    const i = idx + 5
+                    const displayImage = assets[g.assetKey] || getUrl(g.assetKey) || ''
+                    const isActive = active === i
+                    return (
+                      <div
+                        key={g.slug}
+                        onMouseEnter={() => setActive(i)}
+                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-[#d4af37] shadow-[0_4px_15px_rgba(212,175,55,0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                      >
+                        <Link href={`/aesthetic/${g.slug}`}>
+                          <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                            {displayImage ? (
+                              <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center">
+                                <span className="text-zinc-400 dark:text-zinc-650 text-[9px] text-center px-1 font-bold">{t.noImage}</span>
+                              </div>
+                            )}
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
+                              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                                {getText(g.assetKey) || g.name}
+                              </span>
+                            </div>
+                          </div>
+                        </Link>
+                      </div>
+                    )
+                  })}
+                </div>
               </div>
             </div>
 
             {/* Modal All Themes */}
             {showAllModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-                <div className="bg-[var(--bg)] border border-neon-cyan/50 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col cinematic-glow-cyan overflow-hidden shadow-2xl">
-                  <div className="p-6 border-b border-white/10 bg-white/5">
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-sm">
+                <div className="bg-[var(--bg)] border border-zinc-200 dark:border-zinc-850 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col overflow-hidden shadow-2xl">
+                  <div className="p-6 border-b border-zinc-200 dark:border-zinc-900 bg-zinc-100/50 dark:bg-zinc-950/40">
                     <div className="flex justify-between items-center mb-4">
-                      <h2 className="text-xl font-black uppercase tracking-widest text-neon-cyan">{t.allTitle}</h2>
-                      <button onClick={() => { setShowAllModal(false); setSearchAll(''); }} className="text-gray-500 hover:text-red-500 transition-colors text-2xl font-bold">&times;</button>
+                      <h2 className="text-xl font-black uppercase tracking-widest text-[#d4af37] font-serif">{t.allTitle}</h2>
+                      <button onClick={() => { setShowAllModal(false); setSearchAll(''); }} className="text-zinc-555 hover:text-red-500 transition-colors text-2xl font-bold">&times;</button>
                     </div>
                     <div className="relative">
                       <input
@@ -270,31 +287,31 @@ export default function Aesthetic() {
                         placeholder={t.searchPlaceholder}
                         value={searchAll}
                         onChange={(e) => setSearchAll(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-sm focus:border-neon-cyan focus:outline-none transition-all pl-10 text-white"
+                        className="w-full bg-white/40 dark:bg-black/40 border border-zinc-200 dark:border-zinc-850 rounded-xl px-4 py-3 text-sm focus:border-[#d4af37]/50 focus:outline-none transition-all pl-10 text-[var(--text-main)]"
                       />
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40">🔍</span>
                     </div>
                   </div>
 
-                  <div className="p-2 overflow-y-auto custom-scrollbar flex-grow bg-black/20">
+                  <div className="p-2 overflow-y-auto custom-scrollbar flex-grow bg-black/10">
                     {themes
                       .filter(g => g.name.toLowerCase().includes(searchAll.toLowerCase()))
                       .map((g) => (
                         <Link
                           key={g.slug}
                           href={`/aesthetic/${g.slug}`}
-                          className="flex items-center justify-between p-4 rounded-xl hover:bg-white/5 border border-transparent hover:border-white/10 transition-all group mb-1"
+                          className="flex items-center justify-between p-4 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-transparent hover:border-zinc-200 dark:hover:border-zinc-850 transition-all group mb-1"
                         >
                           <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-lg bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center text-neon-cyan font-bold text-xs uppercase">
+                            <div className="w-10 h-10 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center text-[#d4af37] font-bold text-xs uppercase">
                               {g.name.charAt(0)}
                             </div>
                             <div>
-                              <h3 className="font-bold text-white group-hover:text-neon-cyan transition-colors">{g.name}</h3>
-                              <p className="text-[10px] text-gray-500 uppercase tracking-widest mt-0.5">{t.premiumPoster}</p>
+                              <h3 className="font-bold text-[var(--text-main)] group-hover:text-[#d4af37] transition-colors">{g.name}</h3>
+                              <p className="text-[10px] text-zinc-500 uppercase tracking-widest mt-0.5 font-bold">{t.premiumPoster}</p>
                             </div>
                           </div>
-                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-neon-cyan text-sm">→</span>
+                          <span className="opacity-0 group-hover:opacity-100 transition-opacity text-[#d4af37] text-sm">→</span>
                         </Link>
                       ))}
                   </div>

@@ -134,7 +134,7 @@ export default function KatalogPage() {
   return (
     <>
       <Head>
-        <title>Katalog — Dorong Gallery</title>
+        <title>Katalog — LUMI FORGE</title>
         <meta name="description" content="Katalog produk dari admin" />
       </Head>
       <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] transition-colors duration-300">

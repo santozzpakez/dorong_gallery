@@ -5,7 +5,7 @@ export default function NotFoundPage() {
   return (
     <>
       <Head>
-        <title>Halaman tidak ditemukan — Dorong Gallery</title>
+        <title>Halaman tidak ditemukan — LUMI FORGE</title>
       </Head>
       <div className="min-h-screen bg-gradient-to-b from-[#07090b] to-[#0b0f12] text-white flex flex-col items-center justify-center px-6">
         <p className="text-sm uppercase tracking-[0.3em] text-gray-500 mb-2">404</p>

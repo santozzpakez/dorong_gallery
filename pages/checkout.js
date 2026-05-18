@@ -182,7 +182,7 @@ export default function Checkout(){
     }
 
     const baseUrl = window.location.origin;
-    let message = `Halo Dorong Gallery, saya ingin memesan:\n\n`
+    let message = `Halo LUMI FORGE, saya ingin memesan:\n\n`
     
     items.forEach((item, index) => {
       const itemName = item.title || item.name || 'Produk'
@@ -210,44 +210,44 @@ export default function Checkout(){
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#07090b] to-[#0b0f12] text-white">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] transition-colors duration-300">
       <Header />
       <main className="pt-28 max-w-6xl mx-auto px-4 pb-20">
-        <h1 className="text-4xl font-black mb-10 text-glow tracking-tighter uppercase">Checkout</h1>
+        <h1 className="text-4xl font-black mb-10 tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif uppercase">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-8">
             {/* Form Pengiriman */}
-            <div className="glass p-8 md:p-10 rounded-[2.5rem] border border-white/10 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-600/10 blur-[60px] rounded-full"></div>
-              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 uppercase tracking-widest">Informasi Pengiriman</h2>
+            <div className="glass p-8 md:p-10 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 blur-[60px] rounded-full"></div>
+              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] uppercase tracking-widest font-serif">Informasi Pengiriman</h2>
               
               <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Nama Lengkap</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Nama Lengkap</label>
                   <input
                     placeholder="Masukkan nama lengkap"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all placeholder:text-gray-600 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Nomor Telepon (WA)</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Nomor Telepon (WA)</label>
                   <input
                     placeholder="0812..."
                     type="tel"
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all placeholder:text-gray-600 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Provinsi</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Provinsi</label>
                   <select
                     required
                     value={selectedProvince.id}
@@ -255,15 +255,15 @@ export default function Checkout(){
                       const opt = e.target.options[e.target.selectedIndex]
                       setSelectedProvince({ id: e.target.value, name: opt.text })
                     }}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all text-white font-bold cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold cursor-pointer"
                   >
-                    <option value="" className="bg-[#0b0f12]">Pilih Provinsi</option>
-                    {provinces.map(p => <option key={p.id} value={p.id} className="bg-[#0b0f12]">{p.name}</option>)}
+                    <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">Pilih Provinsi</option>
+                    {provinces.map(p => <option key={p.id} value={p.id} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">{p.name}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Kota / Kabupaten</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Kota / Kabupaten</label>
                   <select
                     required
                     disabled={!selectedProvince.id}
@@ -272,15 +272,15 @@ export default function Checkout(){
                       const opt = e.target.options[e.target.selectedIndex]
                       setSelectedCity({ id: e.target.value, name: opt.text })
                     }}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all text-white font-bold disabled:opacity-30 cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
                   >
-                    <option value="" className="bg-[#0b0f12]">Pilih Kota</option>
-                    {cities.map(c => <option key={c.id} value={c.id} className="bg-[#0b0f12]">{c.name}</option>)}
+                    <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">Pilih Kota</option>
+                    {cities.map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">{c.name}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Kecamatan</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Kecamatan</label>
                   <select
                     required
                     disabled={!selectedCity.id}
@@ -289,15 +289,15 @@ export default function Checkout(){
                       const opt = e.target.options[e.target.selectedIndex]
                       setSelectedDistrict({ id: e.target.value, name: opt.text })
                     }}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all text-white font-bold disabled:opacity-30 cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
                   >
-                    <option value="" className="bg-[#0b0f12]">Pilih Kecamatan</option>
-                    {districts.map(d => <option key={d.id} value={d.id} className="bg-[#0b0f12]">{d.name}</option>)}
+                    <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">Pilih Kecamatan</option>
+                    {districts.map(d => <option key={d.id} value={d.id} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">{d.name}</option>)}
                   </select>
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">
                     Kode Pos {selectedDistrict.name && postalCodes.length === 0 ? '(Mencari...)' : ''}
                   </label>
                   {postalCodes.length > 0 ? (
@@ -305,11 +305,11 @@ export default function Checkout(){
                       required
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
-                      className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all text-white font-bold cursor-pointer"
+                      className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold cursor-pointer"
                     >
-                      <option value="" className="bg-[#0b0f12]">Pilih Kode Pos</option>
+                      <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">Pilih Kode Pos</option>
                       {postalCodes.map((pc, idx) => (
-                        <option key={`${pc.postalcode}-${idx}`} value={pc.postalcode} className="bg-[#0b0f12]">
+                        <option key={`${pc.postalcode}-${idx}`} value={pc.postalcode} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">
                           {pc.postalcode} ({pc.urban})
                         </option>
                       ))}
@@ -321,33 +321,33 @@ export default function Checkout(){
                       disabled={!selectedDistrict.name}
                       value={postalCode}
                       onChange={(e) => setPostalCode(e.target.value)}
-                      className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all placeholder:text-gray-600 font-bold disabled:opacity-30"
+                      className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold disabled:opacity-30"
                     />
                   )}
                   {selectedDistrict.name && postalCodes.length === 0 && (
-                    <p className="text-[9px] text-gray-500 mt-1 italic">*Jika tidak muncul, silakan ketik manual</p>
+                    <p className="text-[9px] text-zinc-500 mt-1 italic">*Jika tidak muncul, silakan ketik manual</p>
                   )}
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Alamat Lengkap (Jalan, Gedung, No. Rumah)</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Alamat Lengkap (Jalan, Gedung, No. Rumah)</label>
                   <textarea
                     placeholder="Nama Jalan, Gedung, No. Rumah"
                     required
                     rows={2}
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all resize-none placeholder:text-gray-600 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all resize-none placeholder:text-gray-400 font-bold"
                   />
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] ml-1">Detail Lainnya (Optional)</label>
+                  <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Detail Lainnya (Optional)</label>
                   <input
                     placeholder="Contoh: Patokan depan masjid, warna pagar, dll"
                     value={extraDetail}
                     onChange={(e) => setExtraDetail(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 focus:bg-white/10 outline-none transition-all placeholder:text-gray-600 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
                   />
                 </div>
               </form>
@@ -355,23 +355,23 @@ export default function Checkout(){
 
             {/* Pilihan Admin & Ukuran */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="glass p-8 rounded-[2.5rem] border border-white/10">
-                <label className="block text-[10px] font-black text-gray-500 mb-4 uppercase tracking-[0.2em] ml-1">Kirim Order ke:</label>
+              <div className="glass p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-xl">
+                <label className="block text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-[0.2em] ml-1">Kirim Order ke:</label>
                 <select
                   value={adminPhone}
                   onChange={(e) => setAdminPhone(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-white/5 border border-white/10 focus:border-purple-500 outline-none transition-all text-white font-bold cursor-pointer"
+                  className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] outline-none transition-all text-[var(--text-main)] font-bold cursor-pointer"
                 >
                   {admins.map((adm) => (
-                    <option key={adm.phone} value={adm.phone} className="bg-[#0b0f12]">
+                    <option key={adm.phone} value={adm.phone} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">
                       {adm.name} ({adm.phone})
                     </option>
                   ))}
                 </select>
               </div>
 
-              <div className="glass p-8 rounded-[2.5rem] border border-white/10">
-                <label className="block text-[10px] font-black text-gray-500 mb-4 uppercase tracking-[0.2em] ml-1">Pilih Ukuran Cetak:</label>
+              <div className="glass p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-xl">
+                <label className="block text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-[0.2em] ml-1">Pilih Ukuran Cetak:</label>
                 <div className="grid grid-cols-3 gap-3">
                   {['A4', 'A3', 'F4'].map((s) => (
                     <button
@@ -380,8 +380,8 @@ export default function Checkout(){
                       onClick={() => setSelectedSize(s)}
                       className={`py-4 rounded-2xl border font-black transition-all ${
                         selectedSize === s
-                          ? 'bg-gradient-to-r from-purple-600 to-pink-600 border-transparent shadow-[0_0_20px_rgba(168,85,247,0.4)] text-white'
-                          : 'bg-white/5 border-white/10 hover:border-white/30 text-gray-500'
+                          ? 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] border-transparent shadow-[0_4px_15px_rgba(212,175,55,0.25)] text-black'
+                          : 'bg-zinc-100 dark:bg-white/5 border border-zinc-250 dark:border-white/10 hover:border-[#d4af37]/50 text-zinc-500'
                       }`}
                     >
                       {s}
@@ -394,29 +394,29 @@ export default function Checkout(){
 
           {/* Ringkasan Pesanan (Sidebar) */}
           <div className="space-y-8">
-            <div className="glass p-8 rounded-[2.5rem] border border-white/10 sticky top-28 shadow-2xl relative overflow-hidden">
-               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-pink-600/10 blur-[60px] rounded-full"></div>
-              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-purple-400 uppercase tracking-widest">Detail Pesanan</h2>
+            <div className="glass p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 sticky top-28 shadow-2xl relative overflow-hidden">
+               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#d4af37]/5 blur-[60px] rounded-full"></div>
+              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] uppercase tracking-widest font-serif">Detail Pesanan</h2>
               
               <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 bg-white/5 p-4 rounded-2xl border border-white/5 group hover:border-white/20 transition-all">
+                  <div key={item.id} className="flex gap-4 bg-zinc-100/50 dark:bg-white/5 p-4 rounded-2xl border border-zinc-250/30 dark:border-white/5 group hover:border-[#d4af37]/35 transition-all">
                     <div className="w-14 h-18 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
                       <img src={item.image_url} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <div className="text-xs font-black uppercase tracking-tight truncate mb-1">{item.title}</div>
-                      <div className="text-[10px] text-gray-500 font-bold uppercase">Jumlah: {item.quantity}</div>
-                      <div className="text-sm font-black text-purple-400 mt-2">{priceFormatter.format(item.price * item.quantity)}</div>
+                      <div className="text-[10px] text-zinc-500 font-bold uppercase">Jumlah: {item.quantity}</div>
+                      <div className="text-sm font-black text-[#d4af37] mt-2 font-sans">{priceFormatter.format(item.price * item.quantity)}</div>
                     </div>
                   </div>
                 ))}
               </div>
               
-              <div className="mt-8 pt-8 border-t border-white/10">
+              <div className="mt-8 pt-8 border-t border-zinc-200/80 dark:border-zinc-850/40">
                 <div className="flex justify-between items-center mb-8">
-                  <span className="text-gray-500 font-black uppercase text-[10px] tracking-[0.2em]">Total Tagihan</span>
-                  <span className="text-3xl font-black text-pink-500 drop-shadow-[0_0_15px_rgba(236,72,153,0.3)]">{priceFormatter.format(subtotal)}</span>
+                  <span className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em]">Total Tagihan</span>
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">{priceFormatter.format(subtotal)}</span>
                 </div>
 
                 <button
@@ -428,8 +428,8 @@ export default function Checkout(){
                 </button>
                 
                 {(!selectedDistrict.name || !streetAddress || !selectedSize) && items.length > 0 && (
-                  <div className="mt-6 p-4 rounded-xl bg-pink-500/10 border border-pink-500/20">
-                    <p className="text-[9px] text-pink-400 text-center font-black uppercase tracking-widest leading-relaxed">
+                  <div className="mt-6 p-4 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/20">
+                    <p className="text-[9px] text-[#d4af37] text-center font-black uppercase tracking-widest leading-relaxed">
                       ⚠️ Silakan lengkapi data pengiriman & pilih ukuran cetak untuk melanjutkan.
                     </p>
                   </div>
