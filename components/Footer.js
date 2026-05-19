@@ -128,8 +128,20 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Row 4: Copyright */}
-          <div className="mt-8 text-center">
+          {/* Row 4: Parent Company Branding & Copyright */}
+          <div className="mt-10 flex flex-col items-center justify-center gap-4">
+            {getUrl('parent-logo') && (
+              <div className="flex flex-col items-center gap-2 mb-2">
+                <span className="text-[8px] uppercase tracking-[0.3em] text-zinc-600 font-sans font-bold">
+                  A Division of
+                </span>
+                <img 
+                  src={getUrl('parent-logo')} 
+                  alt="Parent Company Logo" 
+                  className="h-8 md:h-10 w-auto object-contain opacity-60 hover:opacity-100 transition-opacity duration-300"
+                />
+              </div>
+            )}
             <p className="text-[10px] text-zinc-600 font-sans tracking-wide">
               © {new Date().getFullYear()} LUMI FORGE — {t.rights}
             </p>
