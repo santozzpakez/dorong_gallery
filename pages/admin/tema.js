@@ -716,12 +716,8 @@ export default function TemaAdmin() {
         const isVideo = item.type === 'video'
 
         if (item.file && hasSupabaseConfig && supabase) {
-          if (!isVideo) {
-            setSaveStatus(`Mengompresi gambar "${key}"...`)
-          } else {
-            setSaveStatus(`Menyiapkan video "${key}"...`)
-          }
-          const fileToUpload = isVideo ? item.file : await compressImage(item.file)
+          setSaveStatus(`Menyiapkan "${key}"...`)
+          const fileToUpload = item.file
           
           setSaveStatus(`Mengupload "${key}" ke Storage...`)
           const originalName = item.file.name || 'upload'
