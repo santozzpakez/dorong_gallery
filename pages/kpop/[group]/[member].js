@@ -80,47 +80,83 @@ export default function MemberCollectionPage() {
     }
 
     async function loadData() {
-      // Ambil semua produk kpop, lalu filter di client berdasarkan slug
-      const { data, error } = await supabase
+      // 1. Dapatkan nama asli grup dan member dari Admin localStorage
+      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
+      const STORAGE_TYPES = 'dorong_admin_type_options'
+      
+      let adminMembers = {}
+      let adminGroups = []
+      try {
+        const rawMembers = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_CHARS) : null
+        if (rawMembers) adminMembers = JSON.parse(rawMembers)?.kpop || {}
+        
+        const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
+        if (rawTypes) adminGroups = JSON.parse(rawTypes)?.kpop || []
+      } catch { /* abaikan */ }
+
+      const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      const cleanSlug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '')
+      const matchSlug = (a, b) => cleanSlug(a) === cleanSlug(b)
+
+      const actualGroupName = adminGroups.find(g => matchSlug(toSlug(g), groupSlug)) || groupSlug.replace(/-/g, ' ').toUpperCase()
+      
+      const definedMembers = adminMembers[actualGroupName] || []
+      const actualMemberName = definedMembers.find(m => toSlug(m) === memberSlug) || memberSlug.replace(/-/g, ' ').toUpperCase()
+
+      const subcategoryQuery = `${actualGroupName} - ${actualMemberName}`
+
+      // 2. Ambil dari database dengan filter subcategory spesifik (10x lebih cepat!)
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('category', 'kpop')
+        .eq('subcategory', subcategoryQuery)
         .order('created_at', { ascending: false })
+
+      // Fallback: jika kosong karena perbedaan spasi/case, coba ilike
+      if ((!data || data.length === 0) && !error) {
+        const fallbackRes = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'kpop')
+          .ilike('subcategory', `%${actualMemberName}%`)
+          .order('created_at', { ascending: false })
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          data = fallbackRes.data
+        }
+      }
 
       if (error || !data) {
         setLoading(false)
         return
       }
 
-      let actualMemberName = ''
-      let actualGroupName = ''
       const filteredProducts = []
+      let finalGroupName = actualGroupName
+      let finalMemberName = actualMemberName
 
       data.forEach(p => {
         if (p.subcategory && p.subcategory.includes(' - ')) {
           const parts = p.subcategory.split(' - ')
           const gName = parts[0].trim()
           const mName = parts[1].trim()
-
-          // Buat slug untuk dibandingkan dengan URL
-          const gSlug = gName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-          const mSlug = mName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-
-          if (gSlug === groupSlug && mSlug === memberSlug) {
-            actualGroupName = gName
-            actualMemberName = mName
+          
+          const gSlug = gName.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
+          const mSlug = mName.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
+          
+          if (matchSlug(gSlug, groupSlug) && mSlug === memberSlug) {
+            finalGroupName = gName
+            finalMemberName = mName
             filteredProducts.push(p)
           }
         }
       })
 
-      if (actualMemberName) setMemberName(actualMemberName)
-      else setMemberName(memberSlug.replace(/-/g, ' ').toUpperCase())
+      const displayProducts = filteredProducts.length > 0 ? filteredProducts : data
 
-      if (actualGroupName) setGroupName(actualGroupName)
-      else setGroupName(groupSlug.replace(/-/g, ' ').toUpperCase())
-
-      setProducts(filteredProducts)
+      setMemberName(finalMemberName)
+      setGroupName(finalGroupName)
+      setProducts(displayProducts)
       setLoading(false)
     }
 

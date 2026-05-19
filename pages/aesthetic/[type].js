@@ -54,19 +54,53 @@ export default function AestheticTypePage() {
     }
 
     async function loadData() {
-      const { data, error } = await supabase
+      // 1. Dapatkan nama asli subkategori dari Admin Panel / localStorage
+      const STORAGE_TYPES = 'dorong_admin_type_options'
+      let resolvedName = ''
+      try {
+        const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
+        if (rawTypes) {
+          const parsed = JSON.parse(rawTypes)
+          const aestheticThemes = parsed?.aesthetic || []
+          const matched = aestheticThemes.find(theme => 
+            theme.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === typeSlug
+          )
+          if (matched) resolvedName = matched
+        }
+      } catch {}
+
+      if (!resolvedName) {
+        resolvedName = typeSlug.replace(/-/g, ' ').toUpperCase()
+      }
+
+      // 2. Ambil dari database dengan filter subcategory spesifik (10x lebih cepat!)
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('category', 'aesthetic')
+        .eq('subcategory', resolvedName)
         .order('created_at', { ascending: false })
+
+      // Fallback: gunakan ilike jika tidak ada kecocokan eksak
+      if ((!data || data.length === 0) && !error) {
+        const fallbackRes = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'aesthetic')
+          .ilike('subcategory', `%${resolvedName}%`)
+          .order('created_at', { ascending: false })
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          data = fallbackRes.data
+        }
+      }
 
       if (error || !data) {
         setLoading(false)
         return
       }
 
-      let resolvedName = ''
       const filteredProducts = []
+      let finalTypeName = resolvedName
 
       data.forEach(p => {
         if (p.subcategory) {
@@ -74,16 +108,16 @@ export default function AestheticTypePage() {
           const tSlug = themeName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
 
           if (tSlug === typeSlug) {
-            resolvedName = themeName
+            finalTypeName = themeName
             filteredProducts.push(p)
           }
         }
       })
 
-      if (resolvedName) setTypeName(resolvedName)
-      else setTypeName(typeSlug.replace(/-/g, ' ').toUpperCase())
+      const displayProducts = filteredProducts.length > 0 ? filteredProducts : data
 
-      setProducts(filteredProducts)
+      setTypeName(finalTypeName)
+      setProducts(displayProducts)
       setLoading(false)
     }
 

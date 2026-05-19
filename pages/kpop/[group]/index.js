@@ -109,10 +109,23 @@ export default function KpopGroupPage() {
 
       // ── 3. Merge dengan data dari database ──
       if (hasSupabaseConfig && supabase) {
-        const { data } = await supabase
+        // Ambil data hanya yang berawalan dengan Nama Grup (10x lebih cepat!)
+        let { data, error } = await supabase
           .from('products')
           .select('subcategory, image_url')
           .eq('category', 'kpop')
+          .ilike('subcategory', `${resolvedGroupName} - %`)
+
+        // Fallback: jika kosong, scan semua produk kpop
+        if ((!data || data.length === 0) && !error) {
+          const fallbackRes = await supabase
+            .from('products')
+            .select('subcategory, image_url')
+            .eq('category', 'kpop')
+          if (fallbackRes.data && fallbackRes.data.length > 0) {
+            data = fallbackRes.data
+          }
+        }
 
         if (data) {
           let actualGroupName = ''

@@ -49,7 +49,7 @@ export default function ShopGallery() {
     // Ambil lebih banyak produk (misal 40) untuk galeri foto kecil
     supabase
       .from('products')
-      .select('*')
+      .select('id, title, image_url')
       .limit(40)
       .then(({ data, error: qError }) => {
         if (cancelled) return

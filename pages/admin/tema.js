@@ -188,7 +188,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelS
     if (slot.key.startsWith('kpop-group-') || slot.key.startsWith('aesthetic-')) {
       return 'aspect-[16/9]'
     }
-    if (slot.key.startsWith('featured-') || slot.key.includes('-1') || slot.key.includes('-2') || slot.key.includes('-3')) {
+    if (slot.key.startsWith('featured-') || slot.key.includes('-1') || slot.key.includes('-2') || slot.key.includes('-3') || slot.key.startsWith('mockup-studio-')) {
       return 'aspect-[3/4]'
     }
     return 'aspect-[16/9]'
@@ -660,7 +660,7 @@ export default function TemaAdmin() {
         // Trigger Cropping Modal with the correct aspect ratio
         let aspect = 16 / 9
         // Detect 3:4 aspect for characters and featured items
-        if (key.startsWith('featured-') || key.includes('-1') || key.includes('-2') || key.includes('-3')) {
+        if (key.startsWith('featured-') || key.includes('-1') || key.includes('-2') || key.includes('-3') || key.startsWith('mockup-studio-')) {
           aspect = 3 / 4
         }
 
@@ -928,10 +928,10 @@ export default function TemaAdmin() {
                     <span className="text-[8px] font-bold text-amber-500/40">KLIK</span>
                   </h4>
                   <div className="space-y-1">
-                    {dynamicGroups.filter(g => ['layout', 'homepage-videos', 'homepage'].includes(g.id)).map(g => {
+                    {dynamicGroups.filter(g => ['layout', 'homepage-videos', 'homepage', 'mockup-settings'].includes(g.id)).map(g => {
                       const count = dynamicSlots.filter(s => s.group === g.id).length
                       const isActive = openGroup === g.id
-                      const label = g.id === 'layout' ? 'General Layout' : g.id === 'homepage-videos' ? 'Carousel Videos' : 'Homepage Covers'
+                      const label = g.id === 'layout' ? 'General Layout' : g.id === 'homepage-videos' ? 'Carousel Videos' : g.id === 'homepage' ? 'Homepage Covers' : 'Mockup Studio (Kiri/Kanan)'
                       return (
                         <button
                           key={g.id}

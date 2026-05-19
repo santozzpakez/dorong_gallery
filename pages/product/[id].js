@@ -22,7 +22,7 @@ export default function ProductDetail() {
   const { addItem } = useCart()
   const { user } = useAuth()
   const [selectedSize, setSelectedSize] = useState('F4')
-  const { getText } = useSiteAssets()
+  const { getText, getUrl } = useSiteAssets()
   const priceInfo = getPriceInfo(getText, selectedSize)
   const [added, setAdded] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
@@ -306,286 +306,308 @@ export default function ProductDetail() {
                     </div>
                   ) : activeMockup === 'living' ? (
                     /* Dynamic Comparative Side-by-Side Living Room Mockup showing F4, A3, and A3+ simultaneously */
-                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden">
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-2xl shadow-inner">
                       <img 
-                        src="/mockup_living.png" 
+                        src="/mockup_person.png" 
                         alt="Living Room Mockup" 
                         className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
                       />
 
                       {/* Dark overlay to make the guidelines and gold highlights pop incredibly well */}
-                      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+                      <div className="absolute inset-0 bg-black/15 pointer-events-none" />
 
-                      {/* ================== POSTER 1: A3+ (Large) ================== */}
-                      {/* Height Guide Line (y cm) on the RIGHT side of A3+ */}
-                      <div 
-                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
-                        style={{
-                          left: '35.5%',
-                          top: '12%',
-                          height: '26.6%',
-                          borderLeft: '1px dashed rgba(212,175,55,0.7)',
-                        }}
-                      >
-                        <span className="absolute left-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          {dimA3PlusVal.split('x')[1]?.trim() || '48 cm'}
-                        </span>
-                      </div>
-                      {/* Width Guide Line (x cm) directly below the bottom of A3+ */}
-                      <div 
-                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
-                        style={{
-                          left: '14%',
-                          top: '40%',
-                          width: '20%',
-                          borderBottom: '1px dashed rgba(212,175,55,0.7)',
-                        }}
-                      >
-                        <span className="absolute top-1.5 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          {dimA3PlusVal.split('x')[0]?.trim() || '32 cm'}
-                        </span>
-                      </div>
-                      {/* Poster Element (A3+) */}
-                      <div 
-                        onClick={() => setSelectedSize('A3+')}
-                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden opacity-100 ${
-                          selectedSize === 'A3+' 
-                            ? 'ring-2 ring-[#d4af37] scale-[1.04] z-25 shadow-[0_25px_50px_rgba(212,175,55,0.25)]' 
-                            : 'scale-[0.98] z-10 hover:scale-100'
-                        }`}
-                        style={{
-                          top: '12%',
-                          left: '14%',
-                          width: '20%',
-                          aspectRatio: '3/4',
-                          boxShadow: selectedSize === 'A3+' ? '0 25px 50px rgba(0,0,0,0.8)' : '0 12px 24px rgba(0,0,0,0.4)'
-                        }}
-                      >
-                        {selectedSize === 'A3+' ? (
-                          <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Large" />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
-                              <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">AKTIF (A3+)</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-b from-[#f7f6f2] to-[#e6e4de] flex items-center justify-center">
-                            <span className="text-zinc-400 font-serif font-black text-xs md:text-sm tracking-widest uppercase select-none opacity-40">A3+</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ================== POSTER 2: A3 (Medium) ================== */}
-                      {/* Height Guide Line (y cm) on the RIGHT side of A3 */}
-                      <div 
-                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
-                        style={{
-                          left: '60%',
-                          top: '17%',
-                          height: '22%',
-                          borderLeft: '1px dashed rgba(212,175,55,0.7)',
-                        }}
-                      >
-                        <span className="absolute left-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          {dimA3Val.split('x')[1]?.trim() || '42 cm'}
-                        </span>
-                      </div>
-                      {/* Width Guide Line (x cm) directly below the bottom of A3 */}
-                      <div 
-                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
-                        style={{
-                          left: '42%',
-                          top: '40.5%',
-                          width: '16.5%',
-                          borderBottom: '1px dashed rgba(212,175,55,0.7)',
-                        }}
-                      >
-                        <span className="absolute top-1.5 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          {dimA3Val.split('x')[0]?.trim() || '30 cm'}
-                        </span>
-                      </div>
-                      {/* Poster Element (A3) */}
-                      <div 
-                        onClick={() => setSelectedSize('A3')}
-                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden opacity-100 ${
-                          selectedSize === 'A3' 
-                            ? 'ring-2 ring-[#d4af37] scale-[1.04] z-25 shadow-[0_25px_50px_rgba(212,175,55,0.25)]' 
-                            : 'scale-[0.98] z-10 hover:scale-100'
-                        }`}
-                        style={{
-                          top: '17%',
-                          left: '42%',
-                          width: '16.5%',
-                          aspectRatio: '3/4',
-                          boxShadow: selectedSize === 'A3' ? '0 25px 50px rgba(0,0,0,0.8)' : '0 12px 24px rgba(0,0,0,0.4)'
-                        }}
-                      >
-                        {selectedSize === 'A3' ? (
-                          <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Medium" />
-                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
-                              <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">AKTIF (A3)</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-b from-[#f7f6f2] to-[#e6e4de] flex items-center justify-center">
-                            <span className="text-zinc-400 font-serif font-black text-xs md:text-sm tracking-widest uppercase select-none opacity-40">A3</span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* ================== POSTER 3: F4 (Small) ================== */}
+                      {/* ================== POSTER 1: F4 (Small - Left) ================== */}
                       {/* Height Guide Line (y cm) on the RIGHT side of F4 */}
                       <div 
                         className="absolute transition-all duration-300 pointer-events-none flex items-center"
                         style={{
-                          left: '83%',
-                          top: '22.5%',
+                          left: '26.5%',
+                          top: '22%',
                           height: '18%',
-                          borderLeft: '1px dashed rgba(212,175,55,0.7)',
+                          borderLeft: '1.5px dashed rgba(212,175,55,0.75)',
+                          display: selectedSize === 'F4' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute left-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          {dimF4Val.split('x')[1]?.trim() || '33 cm'}
+                        <span className="absolute left-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↕️ {dimF4Val.split('x')[1]?.trim() || '33 cm'}
                         </span>
                       </div>
                       {/* Width Guide Line (x cm) directly below the bottom of F4 */}
                       <div 
                         className="absolute transition-all duration-300 pointer-events-none flex justify-center"
                         style={{
-                          left: '68%',
-                          top: '42%',
+                          left: '12%',
+                          top: '41%',
                           width: '13.5%',
-                          borderBottom: '1px dashed rgba(212,175,55,0.7)',
+                          borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
+                          display: selectedSize === 'F4' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-1.5 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          {dimF4Val.split('x')[0]?.trim() || '21 cm'}
+                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↔️ {dimF4Val.split('x')[0]?.trim() || '21 cm'}
                         </span>
                       </div>
                       {/* Poster Element (F4) */}
                       <div 
                         onClick={() => setSelectedSize('F4')}
-                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden opacity-100 ${
+                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden z-20 ${
                           selectedSize === 'F4' 
-                            ? 'ring-2 ring-[#d4af37] scale-[1.04] z-25 shadow-[0_25px_50px_rgba(212,175,55,0.25)]' 
-                            : 'scale-[0.98] z-10 hover:scale-100'
+                            ? 'ring-2 ring-[#d4af37] scale-[1.05] shadow-[0_20px_45px_rgba(212,175,55,0.4)] opacity-100' 
+                            : 'scale-[0.98] opacity-50 saturate-[0.6] hover:opacity-85 hover:saturate-100 hover:scale-100'
                         }`}
                         style={{
-                          top: '22.5%',
-                          left: '68%',
+                          top: '22%',
+                          left: '12%',
                           width: '13.5%',
                           aspectRatio: '3/4',
-                          boxShadow: selectedSize === 'F4' ? '0 25px 50px rgba(0,0,0,0.8)' : '0 12px 24px rgba(0,0,0,0.4)'
+                          border: selectedSize === 'F4' ? '3px solid #d4af37' : '3px solid #1c1917',
+                          boxShadow: selectedSize === 'F4' ? '0 25px 50px rgba(0,0,0,0.85)' : '0 12px 24px rgba(0,0,0,0.5)'
                         }}
                       >
-                        {selectedSize === 'F4' ? (
+                        {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Small" />
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster F4" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
-                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
-                              <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">AKTIF (F4)</span>
-                            </div>
+                            {selectedSize === 'F4' ? (
+                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-[#d4af37]/20">
+                                <span className="text-[7.5px] text-[#d4af37] font-black tracking-widest uppercase">F4 (AKTIF)</span>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                <span className="text-[8px] bg-black/80 px-2 py-1 rounded text-white font-bold tracking-widest uppercase border border-white/10">F4</span>
+                              </div>
+                            )}
                           </>
                         ) : (
-                          <div className="w-full h-full bg-gradient-to-b from-[#f7f6f2] to-[#e6e4de] flex items-center justify-center">
-                            <span className="text-zinc-400 font-serif font-black text-xs md:text-sm tracking-widest uppercase select-none opacity-40">F4</span>
-                          </div>
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">F4</div>
                         )}
+                      </div>
+
+                      {/* ================== POSTER 2: A3 (Medium - Center) ================== */}
+                      {/* Height Guide Line (y cm) on the RIGHT side of A3 */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
+                        style={{
+                          left: '56.5%',
+                          top: '16.5%',
+                          height: '23.3%',
+                          borderLeft: '1.5px dashed rgba(212,175,55,0.75)',
+                          display: selectedSize === 'A3' ? 'flex' : 'none'
+                        }}
+                      >
+                        <span className="absolute left-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↕️ {dimA3Val.split('x')[1]?.trim() || '42 cm'}
+                        </span>
+                      </div>
+                      {/* Width Guide Line (x cm) directly below the bottom of A3 */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
+                        style={{
+                          left: '38%',
+                          top: '41%',
+                          width: '17.5%',
+                          borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
+                          display: selectedSize === 'A3' ? 'flex' : 'none'
+                        }}
+                      >
+                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↔️ {dimA3Val.split('x')[0]?.trim() || '30 cm'}
+                        </span>
+                      </div>
+                      {/* Poster Element (A3) */}
+                      <div 
+                        onClick={() => setSelectedSize('A3')}
+                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden z-20 ${
+                          selectedSize === 'A3' 
+                            ? 'ring-2 ring-[#d4af37] scale-[1.05] shadow-[0_20px_45px_rgba(212,175,55,0.4)] opacity-100' 
+                            : 'scale-[0.98] opacity-50 saturate-[0.6] hover:opacity-85 hover:saturate-100 hover:scale-100'
+                        }`}
+                        style={{
+                          top: '16.5%',
+                          left: '38%',
+                          width: '17.5%',
+                          aspectRatio: '3/4',
+                          border: selectedSize === 'A3' ? '3px solid #d4af37' : '3px solid #1c1917',
+                          boxShadow: selectedSize === 'A3' ? '0 25px 50px rgba(0,0,0,0.85)' : '0 12px 24px rgba(0,0,0,0.5)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster A3" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
+                            {selectedSize === 'A3' ? (
+                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-[#d4af37]/20">
+                                <span className="text-[7.5px] text-[#d4af37] font-black tracking-widest uppercase">A3 (AKTIF)</span>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                <span className="text-[8px] bg-black/80 px-2 py-1 rounded text-white font-bold tracking-widest uppercase border border-white/10">A3</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">A3</div>
+                        )}
+                      </div>
+
+                      {/* ================== POSTER 3: A3+ (Large - Right) ================== */}
+                      {/* Height Guide Line (y cm) on the RIGHT side of A3+ */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
+                        style={{
+                          left: '91%',
+                          top: '10.5%',
+                          height: '29.3%',
+                          borderLeft: '1.5px dashed rgba(212,175,55,0.75)',
+                          display: selectedSize === 'A3+' ? 'flex' : 'none'
+                        }}
+                      >
+                        <span className="absolute left-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↕️ {dimA3PlusVal.split('x')[1]?.trim() || '48 cm'}
+                        </span>
+                      </div>
+                      {/* Width Guide Line (x cm) directly below the bottom of A3+ */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
+                        style={{
+                          left: '68%',
+                          top: '41%',
+                          width: '22%',
+                          borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
+                          display: selectedSize === 'A3+' ? 'flex' : 'none'
+                        }}
+                      >
+                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↔️ {dimA3PlusVal.split('x')[0]?.trim() || '32 cm'}
+                        </span>
+                      </div>
+                      {/* Poster Element (A3+) */}
+                      <div 
+                        onClick={() => setSelectedSize('A3+')}
+                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden z-20 ${
+                          selectedSize === 'A3+' 
+                            ? 'ring-2 ring-[#d4af37] scale-[1.05] shadow-[0_20px_45px_rgba(212,175,55,0.4)] opacity-100' 
+                            : 'scale-[0.98] opacity-50 saturate-[0.6] hover:opacity-85 hover:saturate-100 hover:scale-100'
+                        }`}
+                        style={{
+                          top: '10.5%',
+                          left: '68%',
+                          width: '22%',
+                          aspectRatio: '3/4',
+                          border: selectedSize === 'A3+' ? '3px solid #d4af37' : '3px solid #1c1917',
+                          boxShadow: selectedSize === 'A3+' ? '0 25px 50px rgba(0,0,0,0.85)' : '0 12px 24px rgba(0,0,0,0.5)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster A3+" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
+                            {selectedSize === 'A3+' ? (
+                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-[#d4af37]/20">
+                                <span className="text-[7.5px] text-[#d4af37] font-black tracking-widest uppercase">A3+ (AKTIF)</span>
+                              </div>
+                            ) : (
+                              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                <span className="text-[8px] bg-black/80 px-2 py-1 rounded text-white font-bold tracking-widest uppercase border border-white/10">A3+</span>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">A3+</div>
+                        )}
+                      </div>
+
+                      {/* ================== ELEGANT MEASUREMENT HEIGHT RULER (FAR RIGHT) ================== */}
+                      <div className="absolute right-4 top-8 bottom-32 w-8 flex flex-col justify-between items-center select-none pointer-events-none text-zinc-500 font-mono text-[7px] z-10 opacity-70">
+                        {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map((num) => (
+                          <div key={num} className="w-full flex items-center justify-end relative h-0">
+                            <span className="mr-1.5 font-black">{num}</span>
+                            <div className="w-3 border-t border-zinc-500/60" />
+                          </div>
+                        ))}
+                        {/* Vertical line connecting them */}
+                        <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-zinc-500/40" />
                       </div>
                     </div>
                   ) : (
-                    /* Dynamic mathematically correct architectural human scale comparison wall */
-                    <div className="relative w-full aspect-[4/3] bg-zinc-950 overflow-hidden flex items-end">
-                      {/* Premium textured dark gallery wall background with light focus effect */}
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,_#1f1f23_0%,_#09090b_100%)] opacity-95" />
-                      
-                      {/* Blueprint architectural grid pattern */}
-                      <div className="absolute inset-0 opacity-[0.025] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:20px_20px]" />
-                      
-                      {/* Standing Human Silhouette */}
-                      <div className="absolute bottom-0 left-[15%] h-[78%] aspect-[1/3.5] flex flex-col items-center select-none pointer-events-none z-10">
-                        {/* High-quality SVG of a standing stylish model silhouette */}
-                        <svg viewBox="0 0 120 400" className="h-full w-full text-zinc-700 dark:text-zinc-600 fill-current drop-shadow-[0_15px_30px_rgba(0,0,0,0.7)] opacity-90 transition-all" xmlns="http://www.w3.org/2000/svg">
-                          <circle cx="60" cy="40" r="22" />
-                          <path d="M54,62 L66,62 L64,75 L56,75 Z" />
-                          <path d="M30,85 C40,80 80,80 90,85 C98,92 95,180 92,210 C88,230 82,240 78,260 L78,390 L42,390 L42,260 C38,240 32,230 28,210 C25,180 22,92 30,85 Z" />
-                        </svg>
-                        {/* Elegant Label */}
-                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-3 py-1 rounded-md text-[8px] text-[#d4af37] font-black uppercase tracking-widest whitespace-nowrap border border-[#d4af37]/20 shadow-xl">
-                          🚶 Tinggi Manusia (±170 cm)
-                        </div>
+                    /* Dynamic mathematically correct desk setup mockup showing 3 posters side-by-side */
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-2xl shadow-inner">
+                      <img 
+                        src="/mockup_desk.png" 
+                        alt="Setup Desk Mockup" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+
+                      {/* Ambient overlay */}
+                      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+
+                      {/* ================== POSTER 1: LEFT POSTER (Customizable) ================== */}
+                      <div 
+                        className="absolute rounded-sm overflow-hidden z-10 transition-all duration-300 animate-fade-in"
+                        style={{
+                          top: '8%',
+                          left: '18%',
+                          width: '18%',
+                          aspectRatio: '3/4',
+                          boxShadow: '0 12px 28px rgba(0,0,0,0.5)'
+                        }}
+                      >
+                        <img 
+                          src={getUrl('mockup-studio-left') || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop'} 
+                          className="w-full h-full object-cover select-none" 
+                          alt="Poster Left" 
+                        />
+                        {/* High-end glossy glass reflection effect */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.05)_50%,rgba(0,0,0,0.12)_100%)] pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/20 pointer-events-none" />
                       </div>
 
-                      {/* Dynamic mathematically correct scaled poster placement next to human */}
+                      {/* ================== POSTER 2: CENTER POSTER (Active product poster to purchase) ================== */}
                       <div 
                         onClick={() => setIsPreviewOpen(true)}
-                        className="absolute cursor-pointer group/poster select-none transition-all duration-500 hover:scale-[1.03]"
+                        className="absolute cursor-zoom-in rounded-sm overflow-hidden z-20 group/center transition-all duration-500 scale-[1.05] hover:scale-[1.07]"
                         style={{
-                          height: `${currentScaleHeight}%`,
+                          top: '8%',
+                          left: '41%',
+                          width: '18%',
                           aspectRatio: '3/4',
-                          bottom: `${64 - (currentScaleHeight / 2)}%`,
-                          left: '52%',
-                          boxShadow: '0 30px 60px rgba(0,0,0,0.85), 0 10px 25px rgba(0,0,0,0.4)',
-                          border: '5px solid #141414'
+                          boxShadow: '0 20px 40px rgba(0,0,0,0.7)'
                         }}
                       >
-                        <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Scaled" />
+                        {product.image_url ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            {/* High-end glossy glass reflection effect */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none mix-blend-overlay" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.05)_50%,rgba(0,0,0,0.12)_100%)] pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/20 pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+
+                      {/* ================== POSTER 3: RIGHT POSTER (Customizable) ================== */}
+                      <div 
+                        className="absolute rounded-sm overflow-hidden z-10 transition-all duration-300"
+                        style={{
+                          top: '8%',
+                          left: '64%',
+                          width: '18%',
+                          aspectRatio: '3/4',
+                          boxShadow: '0 12px 28px rgba(0,0,0,0.5)'
+                        }}
+                      >
+                        <img 
+                          src={getUrl('mockup-studio-right') || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop'} 
+                          className="w-full h-full object-cover select-none" 
+                          alt="Poster Right" 
+                        />
                         {/* High-end glossy glass reflection effect */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent pointer-events-none" />
-                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
-                        
-                        {/* Dynamic absolute label on the poster itself */}
-                        <div className="absolute inset-x-0 bottom-0 bg-black/85 backdrop-blur-sm py-1 text-center border-t border-white/5 opacity-0 group-hover/poster:opacity-100 transition-opacity">
-                          <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">🔍 PERBESAR</span>
-                        </div>
-                      </div>
-
-                      {/* Technical Blueprint Helper Lines */}
-                      {/* Height Guide Line */}
-                      <div 
-                        className="absolute flex items-center gap-1.5 transition-all duration-500"
-                        style={{
-                          height: `${currentScaleHeight}%`,
-                          bottom: `${64 - (currentScaleHeight / 2)}%`,
-                          left: '73%',
-                          borderLeft: '1px dashed rgba(212,175,55,0.45)'
-                        }}
-                      >
-                        <span className="absolute left-3 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          ↕️ {getDimensionInfo(getText, selectedSize).split('x')[1]?.trim() || '33 cm'}
-                        </span>
-                      </div>
-
-                      {/* Width Guide Line */}
-                      <div 
-                        className="absolute flex justify-center transition-all duration-500"
-                        style={{
-                          left: '52%',
-                          width: `${currentScaleHeight * 0.5625}%`,
-                          bottom: `${64 - (currentScaleHeight / 2) - 8}%`,
-                          borderBottom: '1px dashed rgba(212,175,55,0.45)',
-                          display: 'flex',
-                          justifyContent: 'center'
-                        }}
-                      >
-                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-lg whitespace-nowrap">
-                          ↔️ {getDimensionInfo(getText, selectedSize).split('x')[0]?.trim() || '21 cm'}
-                        </span>
-                      </div>
-
-                      {/* Architectural Header Title Banner */}
-                      <div className="absolute top-6 left-6 z-10">
-                        <span className="text-[8px] text-zinc-500 font-black uppercase tracking-widest block mb-0.5">Skala Perbandingan Realistis</span>
-                        <h4 className="text-[10px] md:text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-ping" />
-                          <span>UKURAN ASLI UKURAN {selectedSize}</span>
-                        </h4>
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.05)_50%,rgba(0,0,0,0.12)_100%)] pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/20 pointer-events-none" />
                       </div>
                     </div>
                   )}
@@ -596,7 +618,7 @@ export default function ProductDetail() {
                   {[
                     { key: 'flat', label: '🖼️ Detail', desc: 'Detail Poster' },
                     { key: 'living', label: '🛋️ Ruang Keluarga', desc: 'Mockup Dinding' },
-                    { key: 'studio', label: '🚶 Skala Manusia', desc: 'Ukuran Realistis' }
+                    { key: 'studio', label: '🖥️ Setup Desk', desc: 'Mockup Monitor' }
                   ].map(tab => (
                     <button
                       key={tab.key}

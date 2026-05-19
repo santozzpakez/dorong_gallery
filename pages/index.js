@@ -46,7 +46,7 @@ export default function Home(){
               {/* CARD 1: ANIME (Art & Craft) */}
               <Link 
                 href="/anime" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[-1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[-1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -81,7 +81,7 @@ export default function Home(){
               {/* CARD 2: K-POP (Music & Performance) */}
               <Link 
                 href="/kpop" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[-0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[-0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -116,7 +116,7 @@ export default function Home(){
               {/* CARD 3: AESTHETIC (Art & Decor) */}
               <Link 
                 href="/aesthetic" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -151,7 +151,7 @@ export default function Home(){
               {/* CARD 4: CUSTOM (Craft & Design) */}
               <Link 
                 href="/custom" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border border-zinc-800/80 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_15px_30px_rgba(0,0,0,0.15)] dark:shadow-[0_20px_45px_rgba(0,0,0,0.85)] hover:shadow-[0_25px_60px_rgba(212,175,55,0.25)] hover:border-[#d4af37]/50 hover:-translate-y-4 md:rotate-[1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />

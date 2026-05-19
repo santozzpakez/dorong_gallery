@@ -19,10 +19,7 @@ function MyApp({ Component, pageProps }) {
             <SiteAssetsProvider>
               <div className="min-h-screen relative transition-colors duration-300">
                 <Head>
-                  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-                  <link rel="preconnect" href="https://fonts.googleapis.com" />
-                  <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-                  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
+                  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
                 </Head>
                 <AnimatePresence mode="wait">
                   <motion.div
