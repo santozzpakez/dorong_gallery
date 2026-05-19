@@ -95,7 +95,10 @@ export default function CharacterCollectionPage() {
       } catch { /* abaikan */ }
 
       const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      const actualSeriesName = adminSeries.find(s => toSlug(s) === seriesSlug) || seriesSlug.replace(/-/g, ' ').toUpperCase()
+      const cleanSlug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '')
+      const matchSlug = (a, b) => cleanSlug(a) === cleanSlug(b)
+
+      const actualSeriesName = adminSeries.find(s => matchSlug(toSlug(s), seriesSlug)) || seriesSlug.replace(/-/g, ' ').toUpperCase()
       
       const definedChars = adminChars[actualSeriesName] || []
       const actualCharName = definedChars.find(c => toSlug(c) === characterSlug) || characterSlug.replace(/-/g, ' ').toUpperCase()
@@ -141,7 +144,7 @@ export default function CharacterCollectionPage() {
           const sSlug = sName.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
           const cSlug = cName.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
           
-          if (sSlug === seriesSlug && cSlug === characterSlug) {
+          if (matchSlug(sSlug, seriesSlug) && cSlug === characterSlug) {
             finalSeriesName = sName
             finalCharName = cName
             filteredProducts.push(p)

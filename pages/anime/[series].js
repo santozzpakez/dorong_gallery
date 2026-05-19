@@ -79,9 +79,12 @@ export default function AnimeSeriesPage() {
         if (rawTypes) adminSeries = JSON.parse(rawTypes)?.anime || []
       } catch { /* abaikan */ }
 
-      // Cari nama asli series dari slug
+      // Cari nama asli series dari slug dengan pencocokan cerdas (mendukung singular/plural)
       const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      const actualSeriesName = adminSeries.find(s => toSlug(s) === seriesSlug) || seriesSlug.replace(/-/g, ' ').toUpperCase()
+      const cleanSlug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '')
+      const matchSlug = (a, b) => cleanSlug(a) === cleanSlug(b)
+
+      const actualSeriesName = adminSeries.find(s => matchSlug(toSlug(s), seriesSlug)) || seriesSlug.replace(/-/g, ' ').toUpperCase()
       setSeriesName(actualSeriesName)
 
       const charMap = new Map()
@@ -117,7 +120,7 @@ export default function AnimeSeriesPage() {
               const sName = parts[0].trim()
               const cName = parts[1].trim()
               
-              if (toSlug(sName) === seriesSlug) {
+              if (matchSlug(toSlug(sName), seriesSlug)) {
                 if (!charMap.has(cName)) {
                   charMap.set(cName, { count: 1, image: item.image_url })
                 } else {
