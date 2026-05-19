@@ -138,7 +138,7 @@ export default function Footer() {
                 <img 
                   src={getUrl('parent-logo')} 
                   alt="Parent Company Logo" 
-                  className="h-8 md:h-10 w-auto object-contain opacity-60 hover:opacity-100 transition-opacity duration-300"
+                  className="h-16 md:h-22 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity duration-300"
                 />
               </div>
             )}
