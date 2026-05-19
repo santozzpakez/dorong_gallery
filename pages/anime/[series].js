@@ -96,10 +96,19 @@ export default function AnimeSeriesPage() {
 
       // ── 2. Ambil dari Database ──
       if (hasSupabaseConfig && supabase) {
-        const { data, error } = await supabase
+        let { data, error } = await supabase
           .from('products')
           .select('subcategory, image_url')
           .eq('category', 'anime')
+          .ilike('subcategory', `${actualSeriesName} - %`)
+
+        if ((!data || data.length === 0) && !error) {
+          const fallbackRes = await supabase
+            .from('products')
+            .select('subcategory, image_url')
+            .eq('category', 'anime')
+          data = fallbackRes.data
+        }
 
         if (!error && data) {
           data.forEach(item => {

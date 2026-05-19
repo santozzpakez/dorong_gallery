@@ -141,17 +141,33 @@ export default function Kpop() {
         }
       })
 
-      // ── 3. Jalur Darurat: Scan Produk ──
+      // ── 3. Jalur Darurat: Scan Produk & Site Assets ──
       if (groupMap.size === 0 && hasSupabaseConfig && supabase) {
-        const { data } = await supabase.from('products').select('subcategory').eq('category', 'kpop')
-        if (data) {
-          data.forEach(p => {
-            if (p.subcategory && p.subcategory.includes(' - ')) {
-              const groupName = normalize(p.subcategory.split(' - ')[0].trim())
+        // A. Scan Products
+        const { data: pData } = await supabase.from('products').select('subcategory').eq('category', 'kpop')
+        if (pData) {
+          pData.forEach(p => {
+            if (p.subcategory) {
+              const subName = p.subcategory.includes(' - ') ? p.subcategory.split(' - ')[0].trim() : p.subcategory.trim()
+              const groupName = normalize(subName)
               if (groupName && !groupMap.has(groupName)) {
                 const slug = groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
                 groupMap.set(groupName, { name: groupName, slug, assetKey: `kpop-${slug}` })
               }
+            }
+          })
+        }
+        // B. Scan Site Assets
+        const { data: aData } = await supabase.from('site_assets').select('key, label').like('key', 'kpop-%')
+        if (aData) {
+          aData.forEach(asset => {
+            const key = asset.key
+            if (key.includes('sidebar') || key.includes('slot')) return
+            const rawName = asset.label || key.replace('kpop-', '').replace(/-/g, ' ')
+            const groupName = normalize(rawName)
+            if (groupName && !groupMap.has(groupName)) {
+              const slug = groupName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+              groupMap.set(groupName, { name: groupName, slug, assetKey: `kpop-${slug}` })
             }
           })
         }

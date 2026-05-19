@@ -7,8 +7,9 @@ import { hasSupabaseConfig, supabase } from '../../lib/supabaseClient'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import ImageModal from '../../components/ImageModal'
-
 import { useLanguage } from '../../context/LanguageContext'
+import { useSiteAssets } from '../../lib/siteAssets'
+import { getPriceInfo, getDimensionInfo } from '../../lib/priceHelper'
 
 export default function ProductDetail() {
   const router = useRouter()
@@ -20,8 +21,27 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true)
   const { addItem } = useCart()
   const { user } = useAuth()
+  const [selectedSize, setSelectedSize] = useState('F4')
+  const { getText } = useSiteAssets()
+  const priceInfo = getPriceInfo(getText, selectedSize)
   const [added, setAdded] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
+  const [activeMockup, setActiveMockup] = useState('flat')
+
+  const scaleHeights = { F4: 15, A3: 19.1, 'A3+': 21.8 }
+  const currentScaleHeight = scaleHeights[selectedSize] || 15
+
+  const livingRoomWidths = { F4: 13, A3: 17, 'A3+': 21 }
+  const livingRoomLefts = { F4: 43.5, A3: 41.5, 'A3+': 39.5 }
+  const livingRoomTops = { F4: 26, A3: 23, 'A3+': 20 }
+  
+  const activeLivingWidth = livingRoomWidths[selectedSize] || 13
+  const activeLivingLeft = livingRoomLefts[selectedSize] || 43.5
+  const activeLivingTop = livingRoomTops[selectedSize] || 26
+
+  const dimF4Val = getDimensionInfo(getText, 'F4')
+  const dimA3Val = getDimensionInfo(getText, 'A3')
+  const dimA3PlusVal = getDimensionInfo(getText, 'A3+')
 
   const translations = {
     id: {
@@ -178,7 +198,11 @@ export default function ProductDetail() {
       return
     }
 
-    addItem(product)
+    addItem({
+      ...product,
+      price: priceInfo.discount, // the active selling price is the discount price
+      size: selectedSize
+    })
     setAdded(true)
     setTimeout(() => setAdded(false), 2000)
   }
@@ -217,22 +241,379 @@ export default function ProductDetail() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 mb-16">
           {/* Bagian Kiri: Gambar Utama & Deskripsi */}
           <div className="lg:col-span-7 space-y-8">
-            <div 
-              className="rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative cursor-zoom-in group"
-              onClick={() => setIsPreviewOpen(true)}
-            >
-              {product.image_url ? (
-                <>
-                  <img src={product.image_url} alt={product.title} className="w-full h-auto object-cover max-h-[85vh] group-hover:scale-[1.02] transition-transform duration-700" />
-                  <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="bg-black/40 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-full border border-white/10 shadow-xl">
-                      🔍 {t.zoom}
-                    </span>
-                  </div>
-                </>
-              ) : (
-                <div className="w-full aspect-[3/4] bg-white/5 flex items-center justify-center">No Image</div>
-              )}
+            <div className="flex flex-col md:flex-row gap-4 items-start">
+              {/* Vertical Side Thumbnails Bar (hidden on mobile) */}
+              <div className="hidden md:flex flex-col gap-3 w-20 shrink-0">
+                {/* Flat Poster Thumb */}
+                <button
+                  type="button"
+                  onClick={() => setActiveMockup('flat')}
+                  className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 bg-black/40 relative group transition-all ${
+                    activeMockup === 'flat' ? 'border-[#d4af37] scale-105 shadow-md shadow-[#d4af37]/20' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src={product.image_url} alt="Flat View" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] text-white font-black uppercase tracking-wider">Flat</div>
+                </button>
+
+                {/* Living Room Thumb */}
+                <button
+                  type="button"
+                  onClick={() => setActiveMockup('living')}
+                  className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 bg-black/40 relative group transition-all ${
+                    activeMockup === 'living' ? 'border-[#d4af37] scale-105 shadow-md shadow-[#d4af37]/20' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=200&auto=format&fit=crop" alt="Living Room" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] text-white font-black uppercase tracking-wider">Ruang</div>
+                </button>
+
+                {/* Studio Thumb / Scale Thumb */}
+                <button
+                  type="button"
+                  onClick={() => setActiveMockup('studio')}
+                  className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 bg-black/40 relative group transition-all ${
+                    activeMockup === 'studio' ? 'border-[#d4af37] scale-105 shadow-md shadow-[#d4af37]/20' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=200&auto=format&fit=crop" alt="Studio View" className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] text-white font-black uppercase tracking-wider">Studio</div>
+                </button>
+              </div>
+
+              {/* Main Viewer Area */}
+              <div className="flex-grow w-full">
+                <div 
+                  className="rounded-3xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative group bg-black/30 w-full select-none"
+                >
+                  {activeMockup === 'flat' ? (
+                    <div 
+                      className="cursor-zoom-in relative"
+                      onClick={() => setIsPreviewOpen(true)}
+                    >
+                      {product.image_url ? (
+                        <>
+                          <img src={product.image_url} alt={product.title} className="w-full h-auto object-cover max-h-[85vh] group-hover:scale-[1.01] transition-transform duration-700" />
+                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <span className="bg-black/40 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-full border border-white/10 shadow-xl">
+                              🔍 {t.zoom}
+                            </span>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="w-full aspect-[3/4] bg-white/5 flex items-center justify-center">No Image</div>
+                      )}
+                    </div>
+                  ) : activeMockup === 'living' ? (
+                    /* Dynamic Comparative Side-by-Side Living Room Mockup showing F4, A3, and A3+ simultaneously */
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden">
+                      <img 
+                        src="/mockup_living.png" 
+                        alt="Living Room Mockup" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+
+                      {/* Dark overlay to make the guidelines and gold highlights pop incredibly well */}
+                      <div className="absolute inset-0 bg-black/10 pointer-events-none" />
+
+                      {/* ================== POSTER 1: A3+ (Large) ================== */}
+                      {/* Height Guide Line (y cm) on the RIGHT side of A3+ */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
+                        style={{
+                          left: '35.5%',
+                          top: '12%',
+                          height: '26.6%',
+                          borderLeft: '1px dashed rgba(212,175,55,0.7)',
+                        }}
+                      >
+                        <span className="absolute left-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          {dimA3PlusVal.split('x')[1]?.trim() || '48 cm'}
+                        </span>
+                      </div>
+                      {/* Width Guide Line (x cm) directly below the bottom of A3+ */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
+                        style={{
+                          left: '14%',
+                          top: '40%',
+                          width: '20%',
+                          borderBottom: '1px dashed rgba(212,175,55,0.7)',
+                        }}
+                      >
+                        <span className="absolute top-1.5 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          {dimA3PlusVal.split('x')[0]?.trim() || '32 cm'}
+                        </span>
+                      </div>
+                      {/* Poster Element (A3+) */}
+                      <div 
+                        onClick={() => setSelectedSize('A3+')}
+                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden opacity-100 ${
+                          selectedSize === 'A3+' 
+                            ? 'ring-2 ring-[#d4af37] scale-[1.04] z-25 shadow-[0_25px_50px_rgba(212,175,55,0.25)]' 
+                            : 'scale-[0.98] z-10 hover:scale-100'
+                        }`}
+                        style={{
+                          top: '12%',
+                          left: '14%',
+                          width: '20%',
+                          aspectRatio: '3/4',
+                          boxShadow: selectedSize === 'A3+' ? '0 25px 50px rgba(0,0,0,0.8)' : '0 12px 24px rgba(0,0,0,0.4)'
+                        }}
+                      >
+                        {selectedSize === 'A3+' ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Large" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
+                              <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">AKTIF (A3+)</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-b from-[#f7f6f2] to-[#e6e4de] flex items-center justify-center">
+                            <span className="text-zinc-400 font-serif font-black text-xs md:text-sm tracking-widest uppercase select-none opacity-40">A3+</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ================== POSTER 2: A3 (Medium) ================== */}
+                      {/* Height Guide Line (y cm) on the RIGHT side of A3 */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
+                        style={{
+                          left: '60%',
+                          top: '17%',
+                          height: '22%',
+                          borderLeft: '1px dashed rgba(212,175,55,0.7)',
+                        }}
+                      >
+                        <span className="absolute left-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          {dimA3Val.split('x')[1]?.trim() || '42 cm'}
+                        </span>
+                      </div>
+                      {/* Width Guide Line (x cm) directly below the bottom of A3 */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
+                        style={{
+                          left: '42%',
+                          top: '40.5%',
+                          width: '16.5%',
+                          borderBottom: '1px dashed rgba(212,175,55,0.7)',
+                        }}
+                      >
+                        <span className="absolute top-1.5 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          {dimA3Val.split('x')[0]?.trim() || '30 cm'}
+                        </span>
+                      </div>
+                      {/* Poster Element (A3) */}
+                      <div 
+                        onClick={() => setSelectedSize('A3')}
+                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden opacity-100 ${
+                          selectedSize === 'A3' 
+                            ? 'ring-2 ring-[#d4af37] scale-[1.04] z-25 shadow-[0_25px_50px_rgba(212,175,55,0.25)]' 
+                            : 'scale-[0.98] z-10 hover:scale-100'
+                        }`}
+                        style={{
+                          top: '17%',
+                          left: '42%',
+                          width: '16.5%',
+                          aspectRatio: '3/4',
+                          boxShadow: selectedSize === 'A3' ? '0 25px 50px rgba(0,0,0,0.8)' : '0 12px 24px rgba(0,0,0,0.4)'
+                        }}
+                      >
+                        {selectedSize === 'A3' ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Medium" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
+                              <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">AKTIF (A3)</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-b from-[#f7f6f2] to-[#e6e4de] flex items-center justify-center">
+                            <span className="text-zinc-400 font-serif font-black text-xs md:text-sm tracking-widest uppercase select-none opacity-40">A3</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ================== POSTER 3: F4 (Small) ================== */}
+                      {/* Height Guide Line (y cm) on the RIGHT side of F4 */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex items-center"
+                        style={{
+                          left: '83%',
+                          top: '22.5%',
+                          height: '18%',
+                          borderLeft: '1px dashed rgba(212,175,55,0.7)',
+                        }}
+                      >
+                        <span className="absolute left-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          {dimF4Val.split('x')[1]?.trim() || '33 cm'}
+                        </span>
+                      </div>
+                      {/* Width Guide Line (x cm) directly below the bottom of F4 */}
+                      <div 
+                        className="absolute transition-all duration-300 pointer-events-none flex justify-center"
+                        style={{
+                          left: '68%',
+                          top: '42%',
+                          width: '13.5%',
+                          borderBottom: '1px dashed rgba(212,175,55,0.7)',
+                        }}
+                      >
+                        <span className="absolute top-1.5 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[7px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          {dimF4Val.split('x')[0]?.trim() || '21 cm'}
+                        </span>
+                      </div>
+                      {/* Poster Element (F4) */}
+                      <div 
+                        onClick={() => setSelectedSize('F4')}
+                        className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden opacity-100 ${
+                          selectedSize === 'F4' 
+                            ? 'ring-2 ring-[#d4af37] scale-[1.04] z-25 shadow-[0_25px_50px_rgba(212,175,55,0.25)]' 
+                            : 'scale-[0.98] z-10 hover:scale-100'
+                        }`}
+                        style={{
+                          top: '22.5%',
+                          left: '68%',
+                          width: '13.5%',
+                          aspectRatio: '3/4',
+                          boxShadow: selectedSize === 'F4' ? '0 25px 50px rgba(0,0,0,0.8)' : '0 12px 24px rgba(0,0,0,0.4)'
+                        }}
+                      >
+                        {selectedSize === 'F4' ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Small" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/80 to-transparent py-1 text-center">
+                              <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">AKTIF (F4)</span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-b from-[#f7f6f2] to-[#e6e4de] flex items-center justify-center">
+                            <span className="text-zinc-400 font-serif font-black text-xs md:text-sm tracking-widest uppercase select-none opacity-40">F4</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* Dynamic mathematically correct architectural human scale comparison wall */
+                    <div className="relative w-full aspect-[4/3] bg-zinc-950 overflow-hidden flex items-end">
+                      {/* Premium textured dark gallery wall background with light focus effect */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_35%,_#1f1f23_0%,_#09090b_100%)] opacity-95" />
+                      
+                      {/* Blueprint architectural grid pattern */}
+                      <div className="absolute inset-0 opacity-[0.025] bg-[linear-gradient(to_right,#ffffff_1px,transparent_1px),linear-gradient(to_bottom,#ffffff_1px,transparent_1px)] bg-[size:20px_20px]" />
+                      
+                      {/* Standing Human Silhouette */}
+                      <div className="absolute bottom-0 left-[15%] h-[78%] aspect-[1/3.5] flex flex-col items-center select-none pointer-events-none z-10">
+                        {/* High-quality SVG of a standing stylish model silhouette */}
+                        <svg viewBox="0 0 120 400" className="h-full w-full text-zinc-700 dark:text-zinc-600 fill-current drop-shadow-[0_15px_30px_rgba(0,0,0,0.7)] opacity-90 transition-all" xmlns="http://www.w3.org/2000/svg">
+                          <circle cx="60" cy="40" r="22" />
+                          <path d="M54,62 L66,62 L64,75 L56,75 Z" />
+                          <path d="M30,85 C40,80 80,80 90,85 C98,92 95,180 92,210 C88,230 82,240 78,260 L78,390 L42,390 L42,260 C38,240 32,230 28,210 C25,180 22,92 30,85 Z" />
+                        </svg>
+                        {/* Elegant Label */}
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-black/85 backdrop-blur-md px-3 py-1 rounded-md text-[8px] text-[#d4af37] font-black uppercase tracking-widest whitespace-nowrap border border-[#d4af37]/20 shadow-xl">
+                          🚶 Tinggi Manusia (±170 cm)
+                        </div>
+                      </div>
+
+                      {/* Dynamic mathematically correct scaled poster placement next to human */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-pointer group/poster select-none transition-all duration-500 hover:scale-[1.03]"
+                        style={{
+                          height: `${currentScaleHeight}%`,
+                          aspectRatio: '3/4',
+                          bottom: `${64 - (currentScaleHeight / 2)}%`,
+                          left: '52%',
+                          boxShadow: '0 30px 60px rgba(0,0,0,0.85), 0 10px 25px rgba(0,0,0,0.4)',
+                          border: '5px solid #141414'
+                        }}
+                      >
+                        <img src={product.image_url} className="w-full h-full object-cover" alt="Poster Scaled" />
+                        {/* High-end glossy glass reflection effect */}
+                        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10" />
+                        
+                        {/* Dynamic absolute label on the poster itself */}
+                        <div className="absolute inset-x-0 bottom-0 bg-black/85 backdrop-blur-sm py-1 text-center border-t border-white/5 opacity-0 group-hover/poster:opacity-100 transition-opacity">
+                          <span className="text-[7px] text-[#d4af37] font-black tracking-widest uppercase">🔍 PERBESAR</span>
+                        </div>
+                      </div>
+
+                      {/* Technical Blueprint Helper Lines */}
+                      {/* Height Guide Line */}
+                      <div 
+                        className="absolute flex items-center gap-1.5 transition-all duration-500"
+                        style={{
+                          height: `${currentScaleHeight}%`,
+                          bottom: `${64 - (currentScaleHeight / 2)}%`,
+                          left: '73%',
+                          borderLeft: '1px dashed rgba(212,175,55,0.45)'
+                        }}
+                      >
+                        <span className="absolute left-3 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          ↕️ {getDimensionInfo(getText, selectedSize).split('x')[1]?.trim() || '33 cm'}
+                        </span>
+                      </div>
+
+                      {/* Width Guide Line */}
+                      <div 
+                        className="absolute flex justify-center transition-all duration-500"
+                        style={{
+                          left: '52%',
+                          width: `${currentScaleHeight * 0.5625}%`,
+                          bottom: `${64 - (currentScaleHeight / 2) - 8}%`,
+                          borderBottom: '1px dashed rgba(212,175,55,0.45)',
+                          display: 'flex',
+                          justifyContent: 'center'
+                        }}
+                      >
+                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/35 text-[#d4af37] text-[8px] font-black uppercase tracking-wider px-2 py-0.5 rounded shadow-lg whitespace-nowrap">
+                          ↔️ {getDimensionInfo(getText, selectedSize).split('x')[0]?.trim() || '21 cm'}
+                        </span>
+                      </div>
+
+                      {/* Architectural Header Title Banner */}
+                      <div className="absolute top-6 left-6 z-10">
+                        <span className="text-[8px] text-zinc-500 font-black uppercase tracking-widest block mb-0.5">Skala Perbandingan Realistis</span>
+                        <h4 className="text-[10px] md:text-xs font-black text-white uppercase tracking-widest flex items-center gap-2">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-ping" />
+                          <span>UKURAN ASLI UKURAN {selectedSize}</span>
+                        </h4>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile & Tablet Interactive Tabs Selection */}
+                <div className="flex gap-2 justify-center mt-4">
+                  {[
+                    { key: 'flat', label: '🖼️ Detail', desc: 'Detail Poster' },
+                    { key: 'living', label: '🛋️ Ruang Keluarga', desc: 'Mockup Dinding' },
+                    { key: 'studio', label: '🚶 Skala Manusia', desc: 'Ukuran Realistis' }
+                  ].map(tab => (
+                    <button
+                      key={tab.key}
+                      type="button"
+                      onClick={() => setActiveMockup(tab.key)}
+                      className={`flex-1 md:flex-none px-4 py-2.5 rounded-xl border flex flex-col items-center justify-center transition-all ${
+                        activeMockup === tab.key 
+                          ? 'bg-[#d4af37]/10 border-[#d4af37] text-[#d4af37] shadow-[0_4px_15px_rgba(212,175,55,0.15)] scale-102 font-black' 
+                          : 'bg-black/20 border-white/5 text-zinc-400 hover:text-white hover:border-white/10'
+                      }`}
+                    >
+                      <span className="text-xs font-black uppercase tracking-wider">{tab.label}</span>
+                      <span className="text-[8px] opacity-60 tracking-normal mt-0.5">{tab.desc}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Deskripsi Produk di bawah Foto */}
@@ -258,9 +639,56 @@ export default function ProductDetail() {
                 {product.category} {product.subcategory && product.subcategory !== product.category ? `• ${product.subcategory}` : ''}
               </div>
               <h1 className="text-4xl font-black mb-4 tracking-tight leading-tight">{product.title}</h1>
-              <p className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] mb-8 font-serif">
-                Rp {Number(product.price).toLocaleString('id-ID')}
-              </p>
+              
+              {/* Premium Size Selector */}
+              <div className="mb-6">
+                <span className="text-[10px] text-gray-500 font-black uppercase tracking-wider block mb-2">Pilih Ukuran</span>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {['F4', 'A3', 'A3+'].map((size) => {
+                    const active = selectedSize === size
+                    const pInf = getPriceInfo(getText, size)
+                    const dimStr = getDimensionInfo(getText, size)
+                    return (
+                      <button
+                        key={size}
+                        type="button"
+                        onClick={() => setSelectedSize(size)}
+                        className={`flex-1 py-3 px-2 rounded-xl border transition-all flex flex-col items-center justify-center gap-0.5 ${
+                          active 
+                            ? 'bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] text-black border-transparent shadow-lg shadow-[#d4af37]/20 scale-[1.02]' 
+                            : 'bg-black/20 border-white/10 text-gray-400 hover:border-white/20 hover:text-white'
+                        }`}
+                      >
+                        <span className="text-sm font-black uppercase tracking-wider">{size}</span>
+                        <span className={`text-[9px] font-bold ${active ? 'text-black/60' : 'text-zinc-500'}`}>
+                          {dimStr}
+                        </span>
+                        <span className={`text-[9px] font-black mt-0.5 ${active ? 'text-black/80' : 'text-zinc-400'}`}>
+                          Rp {pInf.discount.toLocaleString('id-ID')}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Dynamic Prices */}
+              <div className="mb-8 flex items-baseline gap-3 flex-wrap">
+                {priceInfo.hasDiscount ? (
+                  <>
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+                      Rp {priceInfo.discount.toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-sm text-gray-500 line-through font-medium">
+                      Rp {priceInfo.original.toLocaleString('id-ID')}
+                    </span>
+                  </>
+                ) : (
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+                    Rp {priceInfo.original.toLocaleString('id-ID')}
+                  </span>
+                )}
+              </div>
               
               <button 
                 onClick={handleAddToCart}
@@ -313,7 +741,19 @@ export default function ProductDetail() {
                       </div>
                     </div>
                     <h4 className="font-bold text-sm mt-4 line-clamp-1 group-hover:text-[#d4af37] transition-colors uppercase tracking-tight">{rec.title}</h4>
-                    <p className="text-xs text-[#d4af37] font-black mt-1">Rp {Number(rec.price).toLocaleString('id-ID')}</p>
+                    {(() => {
+                      const pInfoS = getPriceInfo(getText, 'F4')
+                      return pInfoS.hasDiscount ? (
+                        <p className="text-xs text-[#d4af37] font-black mt-1">
+                          <span className="line-through text-gray-500 mr-1.5 text-[10px]">Rp {pInfoS.original.toLocaleString('id-ID')}</span>
+                          <span>Rp {pInfoS.discount.toLocaleString('id-ID')}</span>
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[#d4af37] font-black mt-1">
+                          Rp {pInfoS.original.toLocaleString('id-ID')}
+                        </p>
+                      )
+                    })()}
                   </div>
                 </Link>
               ))}

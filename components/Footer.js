@@ -5,7 +5,7 @@ import Link from 'next/link'
 export default function Footer() {
   const { getUrl } = useSiteAssets()
   const { lang } = useLanguage()
-  const footerBg = getUrl('footer-bg')
+  const footerBg = getUrl('cover-bg')
 
   const translations = {
     id: {

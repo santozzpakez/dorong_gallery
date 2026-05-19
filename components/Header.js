@@ -72,7 +72,7 @@ export default function Header() {
     }
   }
 
-  const headerBg = getUrl('header-bg')
+  const headerBg = getUrl('cover-bg')
 
   const translations = {
     id: {

@@ -41,7 +41,9 @@ function mergeTypes(saved, fallback) {
   const out = { ...fallback }
   if (!saved || typeof saved !== 'object') return out
   for (const cat of Object.keys(fallback)) {
-    const merged = [...new Set([...(fallback[cat] || []), ...(saved[cat] || [])])]
+    const fallbackList = Array.isArray(fallback[cat]) ? fallback[cat] : []
+    const savedList = Array.isArray(saved[cat]) ? saved[cat] : []
+    const merged = [...new Set([...fallbackList, ...savedList])]
     out[cat] = merged
   }
   return out
@@ -53,8 +55,8 @@ function mergeCharsByType(saved, fallback) {
   for (const cat of Object.keys(fallback)) {
     out[cat] = { ...(fallback[cat] || {}), ...(saved[cat] || {}) }
     for (const typeName of Object.keys(out[cat])) {
-      const def = fallback[cat]?.[typeName] || []
-      const extra = saved[cat]?.[typeName] || []
+      const def = Array.isArray(fallback[cat]?.[typeName]) ? fallback[cat][typeName] : []
+      const extra = Array.isArray(saved[cat]?.[typeName]) ? saved[cat][typeName] : []
       out[cat][typeName] = [...new Set([...def, ...extra])]
     }
   }
@@ -90,13 +92,7 @@ async function compressImage(file, maxWidth = 1200) {
               reject(new Error('Gagal membuat blob gambar'))
               return
             }
-            const fileName = file?.name || 'upload.webp'
-            const newFileName = fileName.includes('.') 
-              ? fileName.split('.').slice(0, -1).join('.') + '.webp'
-              : fileName + '.webp'
-              
-            const compressedFile = new File([blob], newFileName, { type: 'image/webp' })
-            resolve(compressedFile)
+            resolve(blob)
           }, 'image/webp', 0.8)
         } catch (err) {
           reject(err)
@@ -372,6 +368,9 @@ export default function TemaAdmin() {
   const [dynamicGroups, setDynamicGroups] = useState(ASSET_GROUPS)
   const [dynamicSlots, setDynamicSlots] = useState(ASSET_SLOTS)
   const [seriesList, setSeriesList] = useState([])
+  const [kpopGroupsList, setKpopGroupsList] = useState([])
+  const [aestheticThemesList, setAestheticThemesList] = useState([])
+  const [decorCategoriesList, setDecorCategoriesList] = useState([])
 
   // Stage state: unsaved changes
   const [stagedAssets, setStagedAssets] = useState({})
@@ -420,176 +419,224 @@ export default function TemaAdmin() {
 
   useEffect(() => {
     async function loadDynamicSlots() {
-      if (!hasSupabaseConfig || !supabase) return
+      try {
+        // --- 1. Get from LocalStorage (Admin Definitions) ---
+        const STORAGE_TYPES = 'dorong_admin_type_options'
+        const STORAGE_CHARS = 'dorong_admin_characters_by_type'
+        let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
+        let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
+        
+        // Sanitize types object to guarantee arrays are assigned
+        if (types && typeof types === 'object') {
+          Object.keys(types).forEach(k => {
+            if (!Array.isArray(types[k])) {
+              types[k] = []
+            }
+          })
+        } else {
+          types = { anime: [], kpop: [], aesthetic: [], decor: [] }
+        }
 
-      // --- 1. Get from LocalStorage (Admin Definitions) ---
-      const STORAGE_TYPES = 'dorong_admin_type_options'
-      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
-      let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
-      let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
-      
-      // --- 2. Sync from Database Products & Assets ---
-      if (hasSupabaseConfig && supabase) {
-        try {
-          // A. Sync from Products
-          const { data: pData, error: pErr } = await supabase.from('products').select('category, subcategory')
-          if (!pErr && pData) {
-            pData.forEach(p => {
-              const cat = p.category
-              const sub = p.subcategory || ''
-              if (!cat || !sub) return
+        // --- 2. Sync from Database Products & Assets ---
+        if (hasSupabaseConfig && supabase) {
+          try {
+            // A. Sync from Products
+            const { data: pData, error: pErr } = await supabase.from('products').select('category, subcategory')
+            if (!pErr && pData) {
+              pData.forEach(p => {
+                const cat = p.category
+                const sub = p.subcategory || ''
+                if (!cat || !sub) return
 
-              let typeName = ''
-              let charName = ''
+                let typeName = ''
+                let charName = ''
 
-              if (cat === 'anime' || cat === 'kpop') {
-                const parts = sub.split(' - ')
-                typeName = parts[0].trim()
-                charName = parts[1]?.trim() || ''
-              } else if (cat === 'aesthetic') {
-                typeName = sub.trim()
-              }
-
-              if (typeName && typeName !== '-') {
-                if (!types[cat]) types[cat] = []
-                if (!types[cat].includes(typeName)) types[cat].push(typeName)
-                
-                if (charName && charName !== '-') {
-                  if (!chars[cat]) chars[cat] = {}
-                  if (!chars[cat][typeName]) chars[cat][typeName] = []
-                  if (!chars[cat][typeName].includes(charName)) chars[cat][typeName].push(charName)
+                if (cat === 'anime' || cat === 'kpop') {
+                  const parts = sub.split(' - ')
+                  typeName = parts[0].trim()
+                  charName = parts[1]?.trim() || ''
+                } else if (cat === 'aesthetic' || cat === 'decor') {
+                  typeName = sub.trim()
                 }
-              }
-            })
-          }
 
-          // B. Sync from Site Assets (Untuk kategori yang sudah ada cover tapi belum ada produk)
-          const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label')
-          if (!aErr && aData) {
-            aData.forEach(asset => {
-              let rawName = ''
-              if (asset.key.startsWith('anime-cover-')) {
-                rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
-              } else if (asset.key.startsWith('kpop-group-')) {
-                rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
-              } else if (asset.key.startsWith('aesthetic-') && !asset.key.includes('sidebar')) {
-                rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
-              }
-
-              if (rawName) {
-                // Bersihkan "Cover — " atau "Cover " dari nama agar tidak dobel
-                const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-                // Ubah ke Title Case (contoh: naruto -> Naruto)
-                const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                
-                let cat = ''
-                if (asset.key.includes('anime')) cat = 'anime'
-                else if (asset.key.includes('kpop')) cat = 'kpop'
-                else if (asset.key.includes('aesthetic')) cat = 'aesthetic'
-                else cat = 'custom'
-
-                if (cat && types[cat]) {
-                  if (!types[cat].includes(formattedName)) {
-                    types[cat].push(formattedName)
+                if (typeName && typeName !== '-') {
+                  if (!types[cat]) types[cat] = []
+                  if (Array.isArray(types[cat]) && !types[cat].includes(typeName)) {
+                    types[cat].push(typeName)
+                  }
+                  
+                  if (charName && charName !== '-') {
+                    if (!chars[cat]) chars[cat] = {}
+                    if (!chars[cat][typeName]) chars[cat][typeName] = []
+                    if (Array.isArray(chars[cat][typeName]) && !chars[cat][typeName].includes(charName)) {
+                      chars[cat][typeName].push(charName)
+                    }
                   }
                 }
-              }
-            })
-          }
-        } catch (err) { console.error('DB Sync Error:', err) }
-      }
+              })
+            }
 
-      // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
-      const finalTypes = {}
-      Object.keys(types).forEach(cat => {
-        const uniqueNames = new Set()
-        types[cat].forEach(raw => {
-          const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-          const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-          if (formatted) uniqueNames.add(formatted)
+            // B. Sync from Site Assets
+            const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label, text_value')
+            if (!aErr && aData) {
+              aData.forEach(asset => {
+                // Parse global options if present
+                if (asset.key === 'global-category-options' && asset.text_value) {
+                  try {
+                    const parsed = JSON.parse(asset.text_value)
+                    Object.keys(parsed).forEach(cat => {
+                      if (Array.isArray(parsed[cat])) {
+                        if (!types[cat]) types[cat] = []
+                        parsed[cat].forEach(item => {
+                          if (typeof item !== 'string') return
+                          const clean = item.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                          const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                          if (formatted && Array.isArray(types[cat]) && !types[cat].includes(formatted)) {
+                            types[cat].push(formatted)
+                          }
+                        })
+                      }
+                    })
+                  } catch (e) { console.error('Error parsing global-category-options:', e) }
+                }
+
+                // Parse individual covers
+                let rawName = ''
+                const isSlot = asset.key.includes('sidebar') || asset.key.includes('slot')
+                if (isSlot) return
+
+                if (asset.key.startsWith('anime-cover-')) {
+                  rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
+                } else if (asset.key.startsWith('kpop-')) {
+                  rawName = asset.label || asset.key.replace('kpop-', '').replace(/-/g, ' ')
+                } else if (asset.key.startsWith('aesthetic-')) {
+                  rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
+                } else if (asset.key.startsWith('decor-')) {
+                  rawName = asset.label || asset.key.replace('decor-', '').replace(/-/g, ' ')
+                }
+
+                if (rawName) {
+                  const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                  const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                  
+                  let cat = ''
+                  if (asset.key.includes('anime')) cat = 'anime'
+                  else if (asset.key.includes('kpop')) cat = 'kpop'
+                  else if (asset.key.includes('aesthetic')) cat = 'aesthetic'
+                  else if (asset.key.includes('decor')) cat = 'decor'
+                  else cat = 'custom'
+
+                  if (cat && types[cat] && Array.isArray(types[cat])) {
+                    if (!types[cat].includes(formattedName)) {
+                      types[cat].push(formattedName)
+                    }
+                  }
+                }
+              })
+            }
+          } catch (err) { console.error('DB Sync Error:', err) }
+        }
+
+        // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
+        const finalTypes = {}
+        Object.keys(types).forEach(cat => {
+          const uniqueNames = new Set()
+          const rawList = Array.isArray(types[cat]) ? types[cat] : []
+          rawList.forEach(raw => {
+            if (typeof raw !== 'string') return
+            const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+            const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+            if (formatted) uniqueNames.add(formatted)
+          })
+          finalTypes[cat] = Array.from(uniqueNames).sort()
         })
-        finalTypes[cat] = Array.from(uniqueNames).sort()
-      })
 
-      const seriesSet = new Set(finalTypes.anime || [])
-      const kpopGroups = new Set(finalTypes.kpop || [])
-      const decorThemes = new Set(finalTypes.decor || [])
+        const seriesSet = new Set(finalTypes.anime || [])
+        const kpopGroups = new Set(finalTypes.kpop || [])
+        const decorThemes = new Set(finalTypes.decor || [])
+        const aestheticThemes = new Set(finalTypes.aesthetic || [])
 
-      // 1. Filter out ANY existing dynamic groups/slots to start fresh
-      const filteredGroups = ASSET_GROUPS.filter(g =>
-        !g.id.startsWith('anime') &&
-        !g.id.startsWith('kpop') &&
-        !g.id.startsWith('aesthetic')
-      )
-      const filteredSlots = ASSET_SLOTS.filter(s =>
-        !s.group.startsWith('anime') &&
-        !s.group.startsWith('kpop') &&
-        !s.group.startsWith('aesthetic')
-      )
+        // 1. Filter out ANY existing dynamic groups/slots to start fresh
+        const filteredGroups = ASSET_GROUPS.filter(g =>
+          !g.id.startsWith('anime') &&
+          !g.id.startsWith('kpop') &&
+          !g.id.startsWith('decor') &&
+          !g.id.startsWith('aesthetic')
+        )
+        const filteredSlots = ASSET_SLOTS.filter(s =>
+          !s.group.startsWith('anime') &&
+          !s.group.startsWith('kpop') &&
+          !s.group.startsWith('decor') &&
+          !s.group.startsWith('aesthetic')
+        )
 
-      const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+        const toSlug = (str) => typeof str === 'string' ? str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : ''
 
-      // ─── ANIME SECTION ───
-      filteredGroups.push({ id: 'anime-sidebar-layout', label: '🎌 Anime — Sidebar Layout (10 Panels)' })
-      for (let i = 1; i <= 10; i++) {
-        const side = i <= 5 ? 'Kiri' : 'Kanan'
-        const pos = i <= 5 ? i : i - 5
-        filteredSlots.push({ key: `anime-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'anime-sidebar-layout', isLayoutSlot: true })
+        // ─── ANIME SECTION ───
+        filteredGroups.push({ id: 'anime-sidebar-layout', label: '🎌 Anime — Sidebar Layout (10 Panels)' })
+        for (let i = 1; i <= 10; i++) {
+          const side = i <= 5 ? 'Kiri' : 'Kanan'
+          const pos = i <= 5 ? i : i - 5
+          filteredSlots.push({ key: `anime-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'anime-sidebar-layout', isLayoutSlot: true })
+        }
+        filteredGroups.push({ id: 'anime-all-covers', label: '🎌 Anime — All Series Covers' })
+        const sortedSeries = Array.from(seriesSet).sort((a, b) => a.localeCompare(b))
+        sortedSeries.forEach(series => {
+          const slug = toSlug(series)
+          if (slug) filteredSlots.push({ key: `anime-cover-${slug}`, label: `Cover — ${series}`, group: 'anime-all-covers', defaultUrl: '' })
+        })
+
+        // ─── K-POP SECTION ───
+        filteredGroups.push({ id: 'kpop-sidebar-layout', label: '🎵 K-pop — Sidebar Layout (10 Panels)' })
+        for (let i = 1; i <= 10; i++) {
+          const side = i <= 5 ? 'Kiri' : 'Kanan'
+          const pos = i <= 5 ? i : i - 5
+          filteredSlots.push({ key: `kpop-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'kpop-sidebar-layout', isLayoutSlot: true, isKpop: true })
+        }
+        filteredGroups.push({ id: 'kpop-all-covers', label: '🎵 K-pop — All Group Covers' })
+        const sortedKpop = Array.from(kpopGroups).sort((a, b) => a.localeCompare(b))
+        sortedKpop.forEach(groupName => {
+          const slug = toSlug(groupName)
+          if (slug) filteredSlots.push({ key: `kpop-${slug}`, label: `Cover — ${groupName}`, group: 'kpop-all-covers', defaultUrl: '' })
+        })
+
+        // ─── DECOR SECTION ───
+        filteredGroups.push({ id: 'decor-sidebar-layout', label: '🖼 Decor — Sidebar Layout (10 Panels)' })
+        for (let i = 1; i <= 10; i++) {
+          const side = i <= 5 ? 'Kiri' : 'Kanan'
+          const pos = i <= 5 ? i : i - 5
+          filteredSlots.push({ key: `decor-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'decor-sidebar-layout', isLayoutSlot: true, isDecor: true })
+        }
+        filteredGroups.push({ id: 'decor-all-covers', label: '🖼 Decor — All Theme Covers' })
+        const sortedThemes = Array.from(decorThemes).sort((a, b) => a.localeCompare(b))
+        sortedThemes.forEach(name => {
+          const slug = toSlug(name)
+          if (slug) filteredSlots.push({ key: `decor-${slug}`, label: `Cover — ${name}`, group: 'decor-all-covers', defaultUrl: '' })
+        })
+
+        // ─── AESTHETIC SECTION ───
+        filteredGroups.push({ id: 'aesthetic-sidebar-layout', label: '✨ Aesthetic — Sidebar Layout (10 Panels)' })
+        for (let i = 1; i <= 10; i++) {
+          const side = i <= 5 ? 'Kiri' : 'Kanan'
+          const pos = i <= 5 ? i : i - 5
+          filteredSlots.push({ key: `aesthetic-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'aesthetic-sidebar-layout', isLayoutSlot: true, isAesthetic: true })
+        }
+        filteredGroups.push({ id: 'aesthetic-all-covers', label: '✨ Aesthetic — All Theme Covers' })
+        const sortedAesthetic = Array.from(aestheticThemes).sort((a, b) => a.localeCompare(b))
+        sortedAesthetic.forEach(name => {
+          const slug = toSlug(name)
+          if (slug) filteredSlots.push({ key: `aesthetic-${slug}`, label: `Cover — ${name}`, group: 'aesthetic-all-covers', defaultUrl: '' })
+        })
+
+        setDynamicGroups(filteredGroups)
+        setDynamicSlots(filteredSlots)
+        setSeriesList(sortedSeries.map(s => ({ name: s, slug: toSlug(s) })))
+        setKpopGroupsList(sortedKpop.map(s => ({ name: s, slug: toSlug(s) })))
+        setDecorCategoriesList(sortedThemes.map(s => ({ name: s, slug: toSlug(s) })))
+        setAestheticThemesList(sortedAesthetic.map(s => ({ name: s, slug: toSlug(s) })))
+      } catch (globalErr) {
+        console.error('Global loadDynamicSlots error:', globalErr)
       }
-      filteredGroups.push({ id: 'anime-all-covers', label: '🎌 Anime — All Series Covers' })
-      const sortedSeries = Array.from(seriesSet).sort((a, b) => a.localeCompare(b))
-      sortedSeries.forEach(series => {
-        const slug = toSlug(series)
-        filteredSlots.push({ key: `anime-cover-${slug}`, label: `Cover — ${series}`, group: 'anime-all-covers', defaultUrl: '' })
-      })
-
-      // ─── K-POP SECTION ───
-      filteredGroups.push({ id: 'kpop-sidebar-layout', label: '🎵 K-pop — Sidebar Layout (10 Panels)' })
-      for (let i = 1; i <= 10; i++) {
-        const side = i <= 5 ? 'Kiri' : 'Kanan'
-        const pos = i <= 5 ? i : i - 5
-        filteredSlots.push({ key: `kpop-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'kpop-sidebar-layout', isLayoutSlot: true, isKpop: true })
-      }
-      filteredGroups.push({ id: 'kpop-all-covers', label: '🎵 K-pop — All Group Covers' })
-      const sortedKpop = Array.from(kpopGroups).sort((a, b) => a.localeCompare(b))
-      sortedKpop.forEach(groupName => {
-        const slug = toSlug(groupName)
-        filteredSlots.push({ key: `kpop-${slug}`, label: `Cover — ${groupName}`, group: 'kpop-all-covers', defaultUrl: '' })
-      })
-
-      // ─── DECOR SECTION ───
-      filteredGroups.push({ id: 'decor-sidebar-layout', label: '🖼 Decor — Sidebar Layout (10 Panels)' })
-      for (let i = 1; i <= 10; i++) {
-        const side = i <= 5 ? 'Kiri' : 'Kanan'
-        const pos = i <= 5 ? i : i - 5
-        filteredSlots.push({ key: `decor-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'decor-sidebar-layout', isLayoutSlot: true, isDecor: true })
-      }
-      filteredGroups.push({ id: 'decor-all-covers', label: '🖼 Decor — All Theme Covers' })
-      const sortedThemes = Array.from(decorThemes).sort((a, b) => a.localeCompare(b))
-      sortedThemes.forEach(name => {
-        const slug = toSlug(name)
-        filteredSlots.push({ key: `decor-${slug}`, label: `Cover — ${name}`, group: 'decor-all-covers', defaultUrl: '' })
-      })
-
-      // ─── AESTHETIC SECTION ───
-      filteredGroups.push({ id: 'aesthetic-sidebar-layout', label: '✨ Aesthetic — Sidebar Layout (10 Panels)' })
-      for (let i = 1; i <= 10; i++) {
-        const side = i <= 5 ? 'Kiri' : 'Kanan'
-        const pos = i <= 5 ? i : i - 5
-        filteredSlots.push({ key: `aesthetic-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'aesthetic-sidebar-layout', isLayoutSlot: true, isAesthetic: true })
-      }
-      filteredGroups.push({ id: 'aesthetic-all-covers', label: '✨ Aesthetic — All Theme Covers' })
-      const aestheticThemes = new Set(finalTypes.aesthetic || [])
-      const sortedAesthetic = Array.from(aestheticThemes).sort((a, b) => a.localeCompare(b))
-      sortedAesthetic.forEach(name => {
-        const slug = toSlug(name)
-        filteredSlots.push({ key: `aesthetic-${slug}`, label: `Cover — ${name}`, group: 'aesthetic-all-covers', defaultUrl: '' })
-      })
-
-
-      setDynamicGroups(filteredGroups)
-      setDynamicSlots(filteredSlots)
-      setSeriesList(sortedSeries.map(s => ({ name: s, slug: toSlug(s) })))
     }
     loadDynamicSlots()
   }, [loaded])
@@ -669,17 +716,24 @@ export default function TemaAdmin() {
         const isVideo = item.type === 'video'
 
         if (item.file && hasSupabaseConfig && supabase) {
-          // KOMPRESI OTOMATIS: Kecilkan file sebelum upload (kecuali video)
-          // Pastikan item.file ada sebelum kompresi
+          if (!isVideo) {
+            setSaveStatus(`Mengompresi gambar "${key}"...`)
+          } else {
+            setSaveStatus(`Menyiapkan video "${key}"...`)
+          }
           const fileToUpload = isVideo ? item.file : await compressImage(item.file)
-          const safeName = sanitizeFileName(fileToUpload.name || 'upload')
+          
+          setSaveStatus(`Mengupload "${key}" ke Storage...`)
+          const originalName = item.file.name || 'upload'
+          const safeName = sanitizeFileName(originalName)
           const folder = isVideo ? 'videos' : 'tema'
-          const ext = isVideo ? '.mp4' : '' // compressImage already adds .webp
+          const ext = isVideo ? '.mp4' : '' // compressImage returns webp
           const filePath = `${folder}/${key}-${Date.now()}-${safeName}${ext}`
 
           const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, fileToUpload, {
             upsert: false,
-            contentType: fileToUpload.type || 'application/octet-stream'
+            contentType: fileToUpload.type || 'application/octet-stream',
+            cacheControl: '31536000'
           })
 
           if (upErr) throw new Error(`Gagal upload ${key}: ${upErr.message}`)
@@ -687,6 +741,7 @@ export default function TemaAdmin() {
           finalUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
         }
 
+        setSaveStatus(`Menyimpan metadata "${key}" ke database...`)
         const slot = dynamicSlots.find(s => s.key === key)
         const upsertData = {
           key: key,
@@ -704,7 +759,7 @@ export default function TemaAdmin() {
         if (item.text !== undefined) updateText(key, item.text)
         
         count++
-        setSaveProgress(count)
+        setSaveProgress(Math.round((count / keys.length) * 100))
         setSaveStatus(`Selesai ${count} dari ${keys.length}...`)
       }
 
@@ -716,6 +771,7 @@ export default function TemaAdmin() {
 
       // Simple Batch Upsert (Identical to K-pop/Anime Product creation)
       if (dbUpdates.length > 0 && hasSupabaseConfig && supabase) {
+        setSaveStatus('Menyinkronkan dengan database...')
         const { error } = await supabase.from('site_assets').upsert(dbUpdates, { onConflict: 'key' })
         if (error) throw new Error(error.message)
       }
@@ -763,272 +819,474 @@ export default function TemaAdmin() {
     }
   }
 
-  const [animeSearch, setAnimeSearch] = useState('')
-  const [kpopSearch, setKpopSearch] = useState('')
-  const [aestheticSearch, setAestheticSearch] = useState('')
+  const [searchQuery, setSearchQuery] = useState('')
 
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)]">
+    <div className="min-h-screen bg-[#070709] text-gray-100 font-sans selection:bg-amber-500/30 selection:text-white">
       <Header />
-      <main className="pt-28 max-w-6xl mx-auto px-4 pb-16">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-4xl font-black uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">Tema & Aset</h1>
-            <p className="text-xs text-gray-500 mt-1">Kelola gambar, video, dan teks dekoratif website.</p>
+      
+      <main className="pt-28 max-w-7xl mx-auto px-4 pb-24">
+        
+        {/* TOP HEADER */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10 pb-6 border-b border-white/5">
+          <div className="space-y-1">
+            <div className="flex items-center gap-3">
+              <span className="w-1.5 h-6 bg-gradient-to-b from-amber-400 to-amber-600 rounded-full"></span>
+              <h1 className="text-3xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-400 to-amber-600 font-serif">
+                Tema & Aset Website
+              </h1>
+            </div>
+            <p className="text-xs text-gray-500 uppercase tracking-widest font-semibold">
+              Kelola Gambar Latar, Video Slideshow, dan Susunan Panel Sidebar Utama
+            </p>
           </div>
 
-          {/* Floating Save Button */}
-          <div className="flex items-center gap-3">
+          {/* Quick Stats & Action */}
+          <div className="flex items-center gap-4">
             {Object.keys(stagedAssets).length > 0 && (
-              <button
-                onClick={handleSaveAll}
-                disabled={isSaving}
-                className="px-6 py-2.5 rounded-full bg-amber-500 text-black font-black text-sm uppercase tracking-widest shadow-xl shadow-amber-500/20 hover:scale-105 active:scale-95 transition-all disabled:opacity-50"
-              >
-                {isSaving ? 'Menyimpan...' : `Simpan ${Object.keys(stagedAssets).length} Perubahan`}
-              </button>
+              <div className="flex items-center gap-3 bg-amber-500/10 border border-amber-500/20 px-4 py-2 rounded-2xl animate-pulse">
+                <span className="text-[10px] text-amber-400 font-black uppercase tracking-wider">
+                  ⚠️ {Object.keys(stagedAssets).length} Perubahan Belum Disimpan
+                </span>
+              </div>
             )}
-            {saveStatus && <span className="text-xs text-green-400 font-bold">{saveStatus}</span>}
           </div>
         </div>
 
-        {/* --- GLOBAL SAVING OVERLAY --- */}
-        {isSaving && totalSaveItems > 0 && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md animate-in fade-in duration-500">
-            <div className="bg-black border border-amber-500/30 p-8 rounded-3xl max-w-sm w-full shadow-[0_0_50px_rgba(245,158,11,0.2)] flex flex-col items-center">
-              <div className="w-16 h-16 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-6"></div>
+        {/* WORKSPACE LAYOUT */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          
+          {/* COLUMN 1: SIDEBAR NAVIGATION */}
+          <aside className="lg:col-span-3 lg:sticky lg:top-28 space-y-6">
+            
+            {/* Unified Glass Container */}
+            <div className="bg-[#0b0b0e]/90 border border-white/5 rounded-3xl p-5 shadow-2xl backdrop-blur-md space-y-6">
               
-              <h3 className="text-xl font-black text-white uppercase tracking-widest mb-1 text-center">Menyimpan Aset</h3>
-              <p className="text-xs text-gray-500 mb-8 text-center font-mono">Mohon tunggu, sedang memproses data ke server...</p>
-              
-              <div className="w-full space-y-2">
-                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-amber-500 italic">
-                  <span>Progress</span>
-                  <span>{Math.round((saveProgress / totalSaveItems) * 100)}%</span>
-                </div>
-                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[2px]">
-                   <div 
-                    className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full transition-all duration-500 shadow-[0_0_15px_rgba(245,158,11,0.4)]"
-                    style={{ width: `${(saveProgress / totalSaveItems) * 100}%` }}
-                   ></div>
-                </div>
-                <p className="text-center text-[9px] text-gray-500 mt-2">{saveProgress} / {totalSaveItems} Item Berhasil</p>
-              </div>
-            </div>
-          </div>
-        )}
-        <div className="flex flex-wrap items-center gap-3 mb-10">
-          {/* 1. UMUM */}
-          <div className="flex flex-wrap gap-2 p-1 bg-white/5 rounded-xl border border-white/10">
-            {['layout', 'homepage-videos', 'homepage'].map(id => {
-              const g = dynamicGroups.find(x => x.id === id)
-              if (!g) return null
-              const count = dynamicSlots.filter(s => s.group === g.id).length
-              return (
-                <button
-                  key={g.id}
-                  onClick={() => setOpenGroup(g.id)}
-                  className={`px-4 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${openGroup === g.id ? 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black shadow-md shadow-[#d4af37]/15' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-                >
-                  {g.id === 'layout' ? '🎨 General' : g.id === 'homepage-videos' ? '🎬 Videos' : '🏠 Covers'} ({count})
-                </button>
-              )
-            })}
-          </div>
-
-          {/* 2. ANIME DROPDOWN */}
-          <div className="relative group/anime">
-            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('anime') ? 'bg-[#d4af37] border-[#d4af37] text-black shadow-md shadow-[#d4af37]/15' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#d4af37]/50'
-              }`}>
-              🎌 Anime Series
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/anime:opacity-100 group-hover/anime:visible transition-all z-50 p-2 space-y-1">
-              <div className="p-2 border-b border-white/5 mb-2">
-                <input
-                  type="text"
-                  placeholder="Cari Series..."
-                  value={animeSearch}
-                  onChange={(e) => setAnimeSearch(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37]/50 transition-all"
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {/* Fixed Layout Menu at Top */}
-                {dynamicGroups.filter(g => g.id === 'anime-sidebar-layout' || g.id === 'anime-all-covers').map(g => (
-                  <button
-                    key={g.id}
-                    onClick={() => setOpenGroup(g.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#d4af37]/15 border-[#d4af37]/50 text-[#d4af37]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
-                       }`}
-                  >
-                    <span>✨ {g.label.replace('🎌 Anime — ', '')}</span>
-                  </button>
-                ))}
-
-                {dynamicGroups.filter(g => g.id.startsWith('anime') && g.id !== 'anime-sidebar-layout' && g.id !== 'anime-all-covers' && g.label.toLowerCase().includes(animeSearch.toLowerCase())).map(g => {
-                  const count = dynamicSlots.filter(s => s.group === g.id).length
-                  if (count === 0) return null // Hide empty groups
-                  const isActive = openGroup === g.id
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => setOpenGroup(g.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#d4af37]/15 text-[#d4af37]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                         }`}
-                    >
-                      <span className="truncate mr-2">{g.label.replace('Karakter — ', '')}</span>
-                      <span className="opacity-40 flex-shrink-0">{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 3. K-POP DROPDOWN */}
-          <div className="relative group/kpop">
-            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('kpop') ? 'bg-[#00b4d8] border-[#00b4d8] text-white shadow-lg shadow-cyan-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#00b4d8]/50'
-              }`}>
-              🎵 K-pop Groups
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/kpop:opacity-100 group-hover/kpop:visible transition-all z-50 p-2 space-y-1">
-              <div className="p-2 border-b border-white/5 mb-2">
-                <input
-                  type="text"
-                  placeholder="Cari Idol Group..."
-                  value={kpopSearch}
-                  onChange={(e) => setKpopSearch(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-[#00b4d8]/50 transition-all"
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {/* Fixed Layout Menus at Top */}
-                {dynamicGroups.filter(g => g.id === 'kpop-sidebar-layout' || g.id === 'kpop-all-covers').map(g => (
-                  <button
-                    key={g.id}
-                    onClick={() => setOpenGroup(g.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#00b4d8]/20 border-[#00b4d8]/50 text-[#00b4d8]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
-                      }`}
-                  >
-                    <span>✨ {g.label.replace('🎵 K-pop — ', '')}</span>
-                  </button>
-                ))}
-
-                {dynamicGroups.filter(g => g.id.startsWith('kpop') && g.id !== 'kpop-sidebar-layout' && g.id !== 'kpop-all-covers' && g.label.toLowerCase().includes(kpopSearch.toLowerCase())).map(g => {
-                  const count = dynamicSlots.filter(s => s.group === g.id).length
-                  if (count === 0) return null // Hide empty groups
-                  const isActive = openGroup === g.id
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => setOpenGroup(g.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#00b4d8]/20 text-[#00b4d8]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                        }`}
-                    >
-                      <span className="truncate mr-2">{g.label.replace('K-pop — ', '').replace('K-POP', '')}</span>
-                      <span className="opacity-40 flex-shrink-0">{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 4. AESTHETIC DROPDOWN */}
-          <div className="relative group/aesthetic">
-            <button className={`px-5 py-3 rounded-xl text-xs font-black uppercase tracking-widest border transition-all flex items-center gap-2 ${openGroup.startsWith('aesthetic') ? 'bg-[#00f2fe] border-[#00f2fe] text-black shadow-lg shadow-cyan-500/20' : 'bg-white/5 border-white/10 text-gray-400 hover:border-[#00f2fe]/50'
-              }`}>
-              ✨ Aesthetic Themes
-              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M19 9l-7 7-7-7" /></svg>
-            </button>
-            <div className="absolute top-full left-0 mt-2 w-64 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl opacity-0 invisible group-hover/aesthetic:opacity-100 group-hover/aesthetic:visible transition-all z-50 p-2 space-y-1">
-              <div className="p-2 border-b border-white/5 mb-2">
-                <input
-                  type="text"
-                  placeholder="Cari Tema Aesthetic..."
-                  value={aestheticSearch}
-                  onChange={(e) => setAestheticSearch(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-[10px] text-white placeholder-gray-600 focus:outline-none focus:border-[#00f2fe]/50 transition-all"
-                />
-              </div>
-              <div className="max-h-60 overflow-y-auto custom-scrollbar">
-                {/* Fixed Layout Menus at Top */}
-                {dynamicGroups.filter(g => g.id === 'aesthetic-sidebar-layout' || g.id === 'aesthetic-all-covers').map(g => (
-                  <button
-                    key={g.id}
-                    onClick={() => setOpenGroup(g.id)}
-                    className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex justify-between items-center mb-1 border ${openGroup === g.id ? 'bg-[#00f2fe]/20 border-[#00f2fe]/50 text-[#00f2fe]' : 'text-amber-500 border-amber-500/20 hover:bg-white/5'
-                      }`}
-                  >
-                    <span>✨ {g.label.replace('✨ Aesthetic — ', '')}</span>
-                  </button>
-                ))}
-
-                {dynamicGroups.filter(g => g.id.startsWith('aesthetic') && g.id !== 'aesthetic-sidebar-layout' && g.id !== 'aesthetic-all-covers' && g.label.toLowerCase().includes(aestheticSearch.toLowerCase())).map(g => {
-                  const count = dynamicSlots.filter(s => s.group === g.id).length
-                  if (count === 0) return null // Hide empty groups
-                  const isActive = openGroup === g.id
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => setOpenGroup(g.id)}
-                      className={`w-full text-left px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all flex justify-between items-center ${isActive ? 'bg-[#00f2fe]/20 text-[#00f2fe]' : 'text-gray-400 hover:bg-white/5 hover:text-white'
-                        }`}
-                    >
-                      <span className="truncate mr-2">{g.label.replace('Aesthetic — ', '')}</span>
-                      <span className="opacity-40 flex-shrink-0">{count}</span>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* CONTENT AREA */}
-        <div className="bg-white/5 rounded-3xl p-8 border border-white/5 min-h-[400px]">
-          {dynamicGroups.map(group => openGroup === group.id && (
-            <div key={group.id} className="space-y-6">
-              <div className="flex items-center justify-between border-b border-white/10 pb-4 mb-6">
-                <h2 className="text-xl font-black uppercase tracking-widest text-white flex items-center gap-3">
-                  <span className="w-2 h-8 bg-gradient-to-b from-[#f3e5ab] to-[#aa7c11] rounded-full"></span>
-                  {group.label}
-                </h2>
-                <span className="text-[10px] font-mono text-gray-500 uppercase tracking-widest">ID: {group.id}</span>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                {dynamicSlots.filter(s => s.group === group.id).map(slot => (
-                  <AssetSlotCard
-                    key={slot.key}
-                    slot={slot}
-                    staged={stagedAssets[slot.key]}
-                    onStage={onStage}
-                    stagedAssets={stagedAssets}
-                    onReset={handleDeleteAsset}
-                    onCancelStaged={handleCancelStaged}
-                    seriesList={seriesList}
+              {/* Search Bar */}
+              <div className="space-y-2">
+                <label className="text-[9px] font-black text-gray-500 uppercase tracking-widest block">
+                  Cari Kategori / Aset:
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Ketik nama series/id..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 pl-10 text-xs text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50 transition-all font-medium"
                   />
-                ))}
+                  <svg className="w-4 h-4 text-gray-500 absolute left-3.5 top-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-3.5 top-3.5 text-gray-500 hover:text-white text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {dynamicSlots.filter(s => s.group === group.id).length === 0 && (
-                <div className="text-center py-20 text-gray-600 italic">
-                  Belum ada slot aset untuk kategori ini.
+              {/* Collapsible Navigation List */}
+              <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-1 custom-scrollbar">
+                
+                {/* 1. KATEGORI UMUM */}
+                <div className="space-y-2">
+                  <h4 
+                    onClick={() => setOpenGroup('layout')}
+                    className="text-[10px] font-black text-amber-500/80 uppercase tracking-[0.15em] border-b border-amber-500/10 pb-1 flex items-center justify-between cursor-pointer hover:text-amber-400 transition-colors"
+                  >
+                    <span>🌐 Umum & Homepage</span>
+                    <span className="text-[8px] font-bold text-amber-500/40">KLIK</span>
+                  </h4>
+                  <div className="space-y-1">
+                    {dynamicGroups.filter(g => ['layout', 'homepage-videos', 'homepage'].includes(g.id)).map(g => {
+                      const count = dynamicSlots.filter(s => s.group === g.id).length
+                      const isActive = openGroup === g.id
+                      const label = g.id === 'layout' ? 'General Layout' : g.id === 'homepage-videos' ? 'Carousel Videos' : 'Homepage Covers'
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setOpenGroup(g.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-amber-500/20 to-amber-500/5 border border-amber-500/30 text-amber-400' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-amber-500/20 text-amber-400' : 'bg-white/5 text-gray-500'}`}>{count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
                 </div>
-              )}
+
+                {/* 2. ANIME */}
+                <div className="space-y-2">
+                  <h4 
+                    onClick={() => setOpenGroup('anime-sidebar-layout')}
+                    className="text-[10px] font-black text-rose-500/80 uppercase tracking-[0.15em] border-b border-rose-500/10 pb-1 flex items-center justify-between cursor-pointer hover:text-rose-400 transition-colors"
+                  >
+                    <span>🎌 Anime Series</span>
+                    <span className="text-[8px] font-bold text-rose-500/40">KLIK</span>
+                  </h4>
+                  <div className="space-y-1">
+                    {dynamicGroups.filter(g => g.id.startsWith('anime') && (g.id === 'anime-sidebar-layout' || g.id === 'anime-all-covers')).map(g => {
+                      const count = dynamicSlots.filter(s => s.group === g.id).length
+                      const isActive = openGroup === g.id
+                      const label = g.id === 'anime-sidebar-layout' ? 'Sidebar (10 Panels)' : 'Series Covers'
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setOpenGroup(g.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-rose-500/20 to-rose-500/5 border border-rose-500/30 text-rose-400' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-rose-500/20 text-rose-400' : 'bg-white/5 text-gray-500'}`}>{count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 3. K-POP */}
+                <div className="space-y-2">
+                  <h4 
+                    onClick={() => setOpenGroup('kpop-sidebar-layout')}
+                    className="text-[10px] font-black text-cyan-500/80 uppercase tracking-[0.15em] border-b border-cyan-500/10 pb-1 flex items-center justify-between cursor-pointer hover:text-cyan-400 transition-colors"
+                  >
+                    <span>🎵 K-pop Groups</span>
+                    <span className="text-[8px] font-bold text-cyan-500/40">KLIK</span>
+                  </h4>
+                  <div className="space-y-1">
+                    {dynamicGroups.filter(g => g.id.startsWith('kpop') && (g.id === 'kpop-sidebar-layout' || g.id === 'kpop-all-covers')).map(g => {
+                      const count = dynamicSlots.filter(s => s.group === g.id).length
+                      const isActive = openGroup === g.id
+                      const label = g.id === 'kpop-sidebar-layout' ? 'Sidebar (10 Panels)' : 'Group Covers'
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setOpenGroup(g.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-cyan-500/20 to-cyan-500/5 border border-cyan-500/30 text-cyan-400' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-cyan-500/20 text-cyan-400' : 'bg-white/5 text-gray-500'}`}>{count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 4. DECOR */}
+                <div className="space-y-2">
+                  <h4 
+                    onClick={() => setOpenGroup('decor-sidebar-layout')}
+                    className="text-[10px] font-black text-emerald-500/80 uppercase tracking-[0.15em] border-b border-emerald-500/10 pb-1 flex items-center justify-between cursor-pointer hover:text-emerald-400 transition-colors"
+                  >
+                    <span>🖼 Decor Categories</span>
+                    <span className="text-[8px] font-bold text-emerald-500/40">KLIK</span>
+                  </h4>
+                  <div className="space-y-1">
+                    {dynamicGroups.filter(g => g.id.startsWith('decor') && (g.id === 'decor-sidebar-layout' || g.id === 'decor-all-covers')).map(g => {
+                      const count = dynamicSlots.filter(s => s.group === g.id).length
+                      const isActive = openGroup === g.id
+                      const label = g.id === 'decor-sidebar-layout' ? 'Sidebar (10 Panels)' : 'Theme Covers'
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setOpenGroup(g.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 text-emerald-400' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>{count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* 5. AESTHETIC */}
+                <div className="space-y-2">
+                  <h4 
+                    onClick={() => setOpenGroup('aesthetic-sidebar-layout')}
+                    className="text-[10px] font-black text-fuchsia-500/80 uppercase tracking-[0.15em] border-b border-fuchsia-500/10 pb-1 flex items-center justify-between cursor-pointer hover:text-fuchsia-400 transition-colors"
+                  >
+                    <span>✨ Aesthetic Themes</span>
+                    <span className="text-[8px] font-bold text-fuchsia-500/40">KLIK</span>
+                  </h4>
+                  <div className="space-y-1">
+                    {dynamicGroups.filter(g => g.id.startsWith('aesthetic') && (g.id === 'aesthetic-sidebar-layout' || g.id === 'aesthetic-all-covers')).map(g => {
+                      const count = dynamicSlots.filter(s => s.group === g.id).length
+                      const isActive = openGroup === g.id
+                      const label = g.id === 'aesthetic-sidebar-layout' ? 'Sidebar (10 Panels)' : 'Theme Covers'
+                      return (
+                        <button
+                          key={g.id}
+                          onClick={() => setOpenGroup(g.id)}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all ${
+                            isActive 
+                              ? 'bg-gradient-to-r from-fuchsia-500/20 to-fuchsia-500/5 border border-fuchsia-500/30 text-fuchsia-400' 
+                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
+                          }`}
+                        >
+                          <span className="truncate">{label}</span>
+                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-fuchsia-500/20 text-fuchsia-400' : 'bg-white/5 text-gray-500'}`}>{count}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+              </div>
             </div>
-          ))}
+          </aside>
+
+          {/* COLUMN 2: WORKSPACE AREA */}
+          <section className="lg:col-span-9 space-y-6">
+            
+            {/* Header of Active Workspace */}
+            {dynamicGroups.map(group => openGroup === group.id && (
+              <div key={group.id} className="bg-[#0b0b0e]/90 border border-white/5 rounded-3xl p-6 md:p-8 shadow-2xl backdrop-blur-md space-y-8">
+                
+                {/* Header Title with Subtheme Accent */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/5 pb-5">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2.5 h-8 rounded-full ${
+                      group.id.startsWith('anime') ? 'bg-gradient-to-b from-rose-400 to-rose-600' :
+                      group.id.startsWith('kpop') ? 'bg-gradient-to-b from-cyan-400 to-cyan-600' :
+                      group.id.startsWith('decor') ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' :
+                      group.id.startsWith('aesthetic') ? 'bg-gradient-to-b from-fuchsia-400 to-fuchsia-600' :
+                      'bg-gradient-to-b from-amber-400 to-amber-600'
+                    }`}></span>
+                    <div>
+                      <h2 className="text-xl font-black uppercase tracking-wider text-white">
+                        {group.label}
+                      </h2>
+                      <p className="text-[9px] text-gray-500 uppercase tracking-widest font-bold mt-0.5 font-mono">
+                        Workspace ID: {group.id}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {/* Search Query Indicator */}
+                  {searchQuery && (
+                    <span className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-400 font-bold px-3 py-1 rounded-full uppercase tracking-wider">
+                      🔍 Filter: "{searchQuery}"
+                    </span>
+                  )}
+                </div>
+
+                {/* --- MOCKUP INTERAKTIF (WIREFRAME SIDEBAR PREVIEW) --- */}
+                {group.id.includes('sidebar-layout') && (
+                  <div className="bg-black/60 border border-white/5 rounded-2xl p-6 space-y-4">
+                    <div className="text-center space-y-1">
+                      <h4 className="text-[10px] font-black text-amber-500 uppercase tracking-widest">
+                        🖥️ Visualisasi Interaktif Sidebar Layout
+                      </h4>
+                      <p className="text-[9px] text-gray-500 uppercase font-semibold">
+                        Gunakan wireframe di bawah ini untuk mengatur posisi panel pada halaman galeri secara akurat
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center bg-[#070709] p-4 rounded-xl border border-white/5">
+                      
+                      {/* Sidebar Kiri (1 - 5) */}
+                      <div className="md:col-span-3 bg-[#0a0a0c] border border-white/5 rounded-xl p-3 space-y-3">
+                        <div className="text-center text-[9px] font-black text-rose-500 uppercase tracking-widest border-b border-rose-500/10 pb-1.5 mb-2">
+                          ⬅️ Sidebar Kiri
+                        </div>
+                        <div className="space-y-3">
+                          {dynamicSlots.filter(s => s.group === group.id).slice(0, 5).map(slot => {
+                            const selectedSlug = stagedAssets[slot.key]?.text !== undefined ? stagedAssets[slot.key].text : (getText(slot.key) || '')
+                            const coverKey = group.id.startsWith('kpop') ? `kpop-${selectedSlug}` : group.id.startsWith('aesthetic') ? `aesthetic-${selectedSlug}` : group.id.startsWith('decor') ? `decor-${selectedSlug}` : `anime-cover-${selectedSlug}`
+                            const coverUrl = getUrl(coverKey)
+
+                            const getCorrectOptionsList = () => {
+                              if (group.id.startsWith('kpop')) return kpopGroupsList
+                              if (group.id.startsWith('aesthetic')) return aestheticThemesList
+                              if (group.id.startsWith('decor')) return decorCategoriesList
+                              return seriesList
+                            }
+                            const optionsList = getCorrectOptionsList()
+
+                            return (
+                              <div key={slot.key} className="relative rounded-lg overflow-hidden border border-white/10 p-2.5 bg-black/40 min-h-[55px] flex flex-col justify-center shadow-inner">
+                                {coverUrl && (
+                                  <div className="absolute inset-0 bg-cover bg-center opacity-30 z-0 scale-105 blur-[1px] transition-all" style={{ backgroundImage: `url(${coverUrl})` }}></div>
+                                )}
+                                <div className="relative z-10 space-y-1">
+                                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block">
+                                    Slot Kiri #{dynamicSlots.filter(s => s.group === group.id).indexOf(slot) + 1}
+                                  </span>
+                                  <select
+                                    value={selectedSlug}
+                                    onChange={(e) => onStage(slot.key, { text: e.target.value })}
+                                    className="w-full bg-zinc-950 border border-white/10 rounded px-1.5 py-1 text-[9px] text-white focus:outline-none focus:border-amber-500 font-bold"
+                                  >
+                                    <option value="">-- Kosong --</option>
+                                    {optionsList?.map(s => (
+                                      <option key={s.slug} value={s.slug}>{s.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Main Gallery Placeholder */}
+                      <div className="md:col-span-6 border-2 border-dashed border-white/5 rounded-xl h-72 flex flex-col items-center justify-center text-center p-6 space-y-2 bg-zinc-950/20">
+                        <div className="w-12 h-12 bg-white/5 rounded-full flex items-center justify-center border border-white/10 text-gray-400 shadow-inner">
+                          🖼️
+                        </div>
+                        <h5 className="text-[10px] font-black uppercase tracking-widest text-gray-400">
+                          Halaman Galeri Utama
+                        </h5>
+                        <p className="text-[9px] text-gray-600 max-w-[200px] font-bold uppercase tracking-tight">
+                          Daftar produk metal print akan dimuat secara dinamis di bagian tengah ini.
+                        </p>
+                      </div>
+
+                      {/* Sidebar Kanan (6 - 10) */}
+                      <div className="md:col-span-3 bg-[#0a0a0c] border border-white/5 rounded-xl p-3 space-y-3">
+                        <div className="text-center text-[9px] font-black text-cyan-500 uppercase tracking-widest border-b border-cyan-500/10 pb-1.5 mb-2">
+                          ➡️ Sidebar Kanan
+                        </div>
+                        <div className="space-y-3">
+                          {dynamicSlots.filter(s => s.group === group.id).slice(5, 10).map(slot => {
+                            const selectedSlug = stagedAssets[slot.key]?.text !== undefined ? stagedAssets[slot.key].text : (getText(slot.key) || '')
+                            const coverKey = group.id.startsWith('kpop') ? `kpop-${selectedSlug}` : group.id.startsWith('aesthetic') ? `aesthetic-${selectedSlug}` : group.id.startsWith('decor') ? `decor-${selectedSlug}` : `anime-cover-${selectedSlug}`
+                            const coverUrl = getUrl(coverKey)
+
+                            const getCorrectOptionsList = () => {
+                              if (group.id.startsWith('kpop')) return kpopGroupsList
+                              if (group.id.startsWith('aesthetic')) return aestheticThemesList
+                              if (group.id.startsWith('decor')) return decorCategoriesList
+                              return seriesList
+                            }
+                            const optionsList = getCorrectOptionsList()
+
+                            return (
+                              <div key={slot.key} className="relative rounded-lg overflow-hidden border border-white/10 p-2.5 bg-black/40 min-h-[55px] flex flex-col justify-center shadow-inner">
+                                {coverUrl && (
+                                  <div className="absolute inset-0 bg-cover bg-center opacity-30 z-0 scale-105 blur-[1px] transition-all" style={{ backgroundImage: `url(${coverUrl})` }}></div>
+                                )}
+                                <div className="relative z-10 space-y-1">
+                                  <span className="text-[8px] font-black text-gray-400 uppercase tracking-wider block">
+                                    Slot Kanan #{dynamicSlots.filter(s => s.group === group.id).indexOf(slot) - 4}
+                                  </span>
+                                  <select
+                                    value={selectedSlug}
+                                    onChange={(e) => onStage(slot.key, { text: e.target.value })}
+                                    className="w-full bg-zinc-950 border border-white/10 rounded px-1.5 py-1 text-[9px] text-white focus:outline-none focus:border-cyan-500 font-bold"
+                                  >
+                                    <option value="">-- Kosong --</option>
+                                    {optionsList?.map(s => (
+                                      <option key={s.slug} value={s.slug}>{s.name}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+
+                {/* Main Slot Grid with Live Filtering */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                  {dynamicSlots
+                    .filter(s => s.group === group.id)
+                    .filter(s => {
+                      if (!searchQuery) return true
+                      const label = s.label || ''
+                      const key = s.key || ''
+                      const textVal = stagedAssets[s.key]?.text !== undefined ? stagedAssets[s.key].text : (getText(s.key) || '')
+                      return label.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                             key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                             textVal.toLowerCase().includes(searchQuery.toLowerCase())
+                    })
+                    .map(slot => {
+                      const getCorrectList = () => {
+                        if (slot.isKpop) return kpopGroupsList
+                        if (slot.isAesthetic) return aestheticThemesList
+                        if (slot.isDecor) return decorCategoriesList
+                        return seriesList
+                      }
+
+                      return (
+                        <AssetSlotCard
+                          key={slot.key}
+                          slot={slot}
+                          staged={stagedAssets[slot.key]}
+                          onStage={onStage}
+                          stagedAssets={stagedAssets}
+                          onReset={handleResetAsset}
+                          onCancelStaged={handleCancelStaged}
+                          seriesList={getCorrectList()}
+                        />
+                      )
+                    })
+                  }
+                </div>
+
+                {/* Empty State */}
+                {dynamicSlots.filter(s => s.group === group.id).length === 0 && (
+                  <div className="text-center py-20 text-gray-600 italic uppercase tracking-wider text-[10px] font-black">
+                    Belum ada slot aset terdaftar untuk kategori ini.
+                  </div>
+                )}
+
+                {dynamicSlots.filter(s => s.group === group.id).length > 0 && 
+                 dynamicSlots
+                   .filter(s => s.group === group.id)
+                   .filter(s => {
+                     if (!searchQuery) return true
+                     const label = s.label || ''
+                     const key = s.key || ''
+                     const textVal = stagedAssets[s.key]?.text !== undefined ? stagedAssets[s.key].text : (getText(s.key) || '')
+                     return label.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                            key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            textVal.toLowerCase().includes(searchQuery.toLowerCase())
+                   }).length === 0 && (
+                     <div className="text-center py-20 text-zinc-600 italic uppercase tracking-wider text-[10px] font-black border-2 border-dashed border-white/5 rounded-2xl">
+                       ❌ Tidak ada hasil pencarian yang cocok dengan "{searchQuery}"
+                     </div>
+                   )
+                }
+
+              </div>
+            ))}
+          </section>
+
         </div>
+
       </main>
 
       {/* CROP MODAL */}
       {cropData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 backdrop-blur-md">
-          <div className="bg-zinc-900 rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl border border-white/10">
-            <div className="p-4 border-b border-white/10 flex flex-col md:flex-row md:justify-between md:items-center bg-zinc-900 gap-4">
+          <div className="bg-[#0b0b0e] rounded-3xl w-full max-w-4xl overflow-hidden shadow-2xl border border-white/10">
+            <div className="p-4 border-b border-white/10 flex flex-col md:flex-row md:justify-between md:items-center bg-[#0d0d12] gap-4">
               <div className="flex flex-col gap-1">
                 <h3 className="font-black uppercase tracking-widest text-white text-xs">Crop Asset</h3>
                 <p className="text-[10px] text-amber-500 font-bold uppercase tracking-tight">
@@ -1055,7 +1313,7 @@ export default function TemaAdmin() {
                 onZoomChange={setZoom}
               />
             </div>
-            <div className="p-6 bg-zinc-900 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="p-6 bg-[#0d0d12] border-t border-white/5 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="flex flex-col md:flex-row gap-4 w-full md:w-auto">
                 <div className="flex items-center gap-3">
                   <span className="text-[10px] font-bold text-gray-500 uppercase">Zoom</span>
@@ -1110,25 +1368,27 @@ export default function TemaAdmin() {
           </div>
         </div>
       )}
+
+      {/* FUTURISTIC ROTATING PROGRESS SCREEN */}
       {isSaving && (
-        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md">
+        <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-black/90 backdrop-blur-md animate-in fade-in duration-300">
           <div className="relative flex items-center justify-center mb-10">
-            <div className="absolute w-28 h-28 border-4 border-t-[#d4af37] border-r-[#d4af37] border-b-transparent border-l-transparent rounded-full animate-spin"></div>
-            <div className="w-20 h-20 border-4 border-b-[#d4af37] border-l-[#d4af37] border-t-transparent border-r-transparent rounded-full animate-spin direction-reverse"></div>
+            <div className="absolute w-28 h-28 border-4 border-t-amber-500 border-r-amber-500 border-b-transparent border-l-transparent rounded-full animate-spin"></div>
+            <div className="w-20 h-20 border-4 border-b-amber-500 border-l-amber-500 border-t-transparent border-r-transparent rounded-full animate-spin direction-reverse"></div>
             <div className="absolute text-white font-black text-xl font-mono">
               {totalSaveItems > 0 ? `${Math.round((saveProgress / totalSaveItems) * 100)}%` : '...'}
             </div>
           </div>
           
           <div className="w-full max-w-sm px-6">
-            <h3 className="text-[#d4af37] text-xl font-black uppercase tracking-[0.2em] mb-4 text-center animate-pulse">
+            <h3 className="text-amber-500 text-xl font-black uppercase tracking-[0.2em] mb-4 text-center animate-pulse font-serif">
               MEMPROSES...
             </h3>
             
             {/* Progress Bar Container */}
-            <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 mb-4">
+            <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden border border-white/10 mb-4 p-[2px]">
               <div 
-                className="h-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] bg-[length:200%_100%] animate-shimmer transition-all duration-500 ease-out"
+                className="h-full bg-gradient-to-r from-amber-600 via-amber-400 to-amber-500 rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(245,158,11,0.5)]"
                 style={{ width: `${totalSaveItems > 0 ? (saveProgress / totalSaveItems) * 100 : 100}%` }}
               />
             </div>

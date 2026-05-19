@@ -7,10 +7,13 @@ import { hasSupabaseConfig, supabase } from '../../../lib/supabaseClient'
 import ImageModal from '../../../components/ImageModal'
 import { useLanguage } from '../../../context/LanguageContext'
 import Image from 'next/image'
+import { useSiteAssets } from '../../../lib/siteAssets'
+import { getPriceInfo } from '../../../lib/priceHelper'
 
 export default function CharacterCollectionPage() {
   const router = useRouter()
   const { lang } = useLanguage()
+  const { getText } = useSiteAssets()
   const { series: seriesSlug, character: characterSlug } = router.query
 
   const [products, setProducts] = useState([])
@@ -77,22 +80,57 @@ export default function CharacterCollectionPage() {
     }
 
     async function loadData() {
-      // Ambil semua anime, lalu filter berdasarkan subcategory secara manual di client
-      // untuk mencocokkan slug dengan aman.
-      const { data, error } = await supabase
+      // 1. Baca definisi karakter dari Admin (localStorage)
+      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
+      const STORAGE_TYPES = 'dorong_admin_type_options'
+      
+      let adminChars = {}
+      let adminSeries = []
+      try {
+        const rawChars = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_CHARS) : null
+        if (rawChars) adminChars = JSON.parse(rawChars)?.anime || {}
+        
+        const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
+        if (rawTypes) adminSeries = JSON.parse(rawTypes)?.anime || []
+      } catch { /* abaikan */ }
+
+      const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      const actualSeriesName = adminSeries.find(s => toSlug(s) === seriesSlug) || seriesSlug.replace(/-/g, ' ').toUpperCase()
+      
+      const definedChars = adminChars[actualSeriesName] || []
+      const actualCharName = definedChars.find(c => toSlug(c) === characterSlug) || characterSlug.replace(/-/g, ' ').toUpperCase()
+
+      const subcategoryQuery = `${actualSeriesName} - ${actualCharName}`
+
+      // 2. Ambil dari database dengan filter subcategory spesifik (10x lebih cepat!)
+      let { data, error } = await supabase
         .from('products')
         .select('*')
         .eq('category', 'anime')
+        .eq('subcategory', subcategoryQuery)
         .order('created_at', { ascending: false })
+
+      // Fallback: jika kosong karena perbedaan spasi/case, coba ilike
+      if ((!data || data.length === 0) && !error) {
+        const fallbackRes = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', 'anime')
+          .ilike('subcategory', `%${actualCharName}%`)
+          .order('created_at', { ascending: false })
+        if (fallbackRes.data && fallbackRes.data.length > 0) {
+          data = fallbackRes.data
+        }
+      }
 
       if (error || !data) {
         setLoading(false)
         return
       }
 
-      let actualCharName = ''
-      let actualSeriesName = ''
       const filteredProducts = []
+      let finalSeriesName = actualSeriesName
+      let finalCharName = actualCharName
 
       data.forEach(p => {
         if (p.subcategory && p.subcategory.includes(' - ')) {
@@ -104,20 +142,18 @@ export default function CharacterCollectionPage() {
           const cSlug = cName.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
           
           if (sSlug === seriesSlug && cSlug === characterSlug) {
-            actualSeriesName = sName
-            actualCharName = cName
+            finalSeriesName = sName
+            finalCharName = cName
             filteredProducts.push(p)
           }
         }
       })
 
-      if (actualCharName) setCharacterName(actualCharName)
-      else setCharacterName(characterSlug.replace(/-/g, ' ').toUpperCase())
+      const displayProducts = filteredProducts.length > 0 ? filteredProducts : data
 
-      if (actualSeriesName) setSeriesName(actualSeriesName)
-      else setSeriesName(seriesSlug.replace(/-/g, ' ').toUpperCase())
-
-      setProducts(filteredProducts)
+      setCharacterName(finalCharName)
+      setSeriesName(finalSeriesName)
+      setProducts(displayProducts)
       setLoading(false)
     }
 
@@ -177,7 +213,19 @@ export default function CharacterCollectionPage() {
                   <div className="p-5 flex flex-col flex-grow bg-black/20">
                     <h2 className="font-bold text-sm text-[var(--text-main)] group-hover:text-[#d4af37] transition-colors line-clamp-2 leading-snug">{p.title}</h2>
                     <div className="mt-auto pt-3 flex items-center justify-between">
-                      <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest">Rp {Number(p.price).toLocaleString('id-ID')}</p>
+                      {(() => {
+                        const pInfoS = getPriceInfo(getText, 'F4')
+                        return pInfoS.hasDiscount ? (
+                          <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                            <span className="line-through text-gray-500 text-xs normal-case">Rp {pInfoS.original.toLocaleString('id-ID')}</span>
+                            <span>Rp {pInfoS.discount.toLocaleString('id-ID')}</span>
+                          </p>
+                        ) : (
+                          <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest">
+                            Rp {pInfoS.original.toLocaleString('id-ID')}
+                          </p>
+                        )
+                      })()}
                     </div>
                   </div>
                 </article>

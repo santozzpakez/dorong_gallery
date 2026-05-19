@@ -133,19 +133,33 @@ export default function Anime() {
         }
       })
 
-      // ── 3. Jalur Darurat: Scan Produk (Hanya jika cache & local kosong) ──
+      // ── 3. Jalur Darurat: Scan Produk & Site Assets ──
       if (seriesMap.size === 0 && hasSupabaseConfig && supabase) {
-        const { data } = await supabase.from('products').select('subcategory').eq('category', 'anime')
-        if (data) {
-          data.forEach(item => {
-            if (item.subcategory && item.subcategory.includes(' - ')) {
+        // A. Scan Products
+        const { data: pData } = await supabase.from('products').select('subcategory').eq('category', 'anime')
+        if (pData) {
+          pData.forEach(item => {
+            if (item.subcategory) {
               const parts = item.subcategory.split(' - ')
               const series = normalize(parts[0].trim())
-              const char = parts[1].trim()
+              const char = parts[1]?.trim() || ''
               if (series) {
                 if (!seriesMap.has(series)) seriesMap.set(series, new Set())
-                seriesMap.get(series).add(char)
+                if (char) seriesMap.get(series).add(char)
               }
+            }
+          })
+        }
+        // B. Scan Site Assets
+        const { data: aData } = await supabase.from('site_assets').select('key, label').like('key', 'anime-cover-%')
+        if (aData) {
+          aData.forEach(asset => {
+            const key = asset.key
+            if (key.includes('sidebar') || key.includes('slot')) return
+            const rawName = asset.label || key.replace('anime-cover-', '').replace(/-/g, ' ')
+            const series = normalize(rawName)
+            if (series && !seriesMap.has(series)) {
+              seriesMap.set(series, new Set())
             }
           })
         }

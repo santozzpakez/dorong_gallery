@@ -6,9 +6,12 @@ import { hasSupabaseConfig, supabase } from '../lib/supabaseClient'
 import Link from 'next/link'
 import ImageModal from '../components/ImageModal'
 import { useLanguage } from '../context/LanguageContext'
+import { useSiteAssets } from '../lib/siteAssets'
+import { getPriceInfo } from '../lib/priceHelper'
 
 export default function KatalogPage() {
   const { lang } = useLanguage()
+  const { getText } = useSiteAssets()
   const [products, setProducts] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
@@ -187,7 +190,19 @@ export default function KatalogPage() {
                           {p.category}
                           {p.subcategory && p.subcategory !== p.category ? ` · ${p.subcategory}` : ''}
                         </p>
-                        <p className="text-sm mt-2 font-bold text-pink-400">Rp {Number(p.price).toLocaleString('id-ID')}</p>
+                        {(() => {
+                          const pInfoS = getPriceInfo(getText, 'F4')
+                          return pInfoS.hasDiscount ? (
+                            <p className="text-sm mt-2 font-bold text-pink-400 flex items-center gap-1.5 flex-wrap">
+                              <span className="line-through text-gray-500 text-xs">Rp {pInfoS.original.toLocaleString('id-ID')}</span>
+                              <span>Rp {pInfoS.discount.toLocaleString('id-ID')}</span>
+                            </p>
+                          ) : (
+                            <p className="text-sm mt-2 font-bold text-pink-400">
+                              Rp {pInfoS.original.toLocaleString('id-ID')}
+                            </p>
+                          )
+                        })()}
                       </div>
                     </article>
                   </Link>

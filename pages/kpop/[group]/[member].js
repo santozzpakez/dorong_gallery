@@ -7,10 +7,13 @@ import { hasSupabaseConfig, supabase } from '../../../lib/supabaseClient'
 import ImageModal from '../../../components/ImageModal'
 import { useLanguage } from '../../../context/LanguageContext'
 import Image from 'next/image'
+import { useSiteAssets } from '../../../lib/siteAssets'
+import { getPriceInfo } from '../../../lib/priceHelper'
 
 export default function MemberCollectionPage() {
   const router = useRouter()
   const { lang } = useLanguage()
+  const { getText } = useSiteAssets()
   const { group: groupSlug, member: memberSlug } = router.query
 
   const [products, setProducts] = useState([])
@@ -211,9 +214,19 @@ export default function MemberCollectionPage() {
                         {p.title}
                       </h2>
                       <div className="mt-auto pt-3">
-                        <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest">
-                          Rp {Number(p.price).toLocaleString('id-ID')}
-                        </p>
+                        {(() => {
+                          const pInfoS = getPriceInfo(getText, 'F4')
+                          return pInfoS.hasDiscount ? (
+                            <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                              <span className="line-through text-gray-500 text-xs normal-case">Rp {pInfoS.original.toLocaleString('id-ID')}</span>
+                              <span>Rp {pInfoS.discount.toLocaleString('id-ID')}</span>
+                            </p>
+                          ) : (
+                            <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest">
+                              Rp {pInfoS.original.toLocaleString('id-ID')}
+                            </p>
+                          )
+                        })()}
                       </div>
                     </div>
                   </article>

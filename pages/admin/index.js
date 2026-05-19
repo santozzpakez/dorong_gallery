@@ -38,14 +38,7 @@ async function compressImage(file, maxWidth = 1200) {
               reject(new Error('Gagal membuat blob gambar'))
               return
             }
-            // Fallback name jika file.name tidak ada
-            const fileName = file?.name || 'upload.webp'
-            const newFileName = fileName.includes('.') 
-              ? fileName.split('.').slice(0, -1).join('.') + '.webp'
-              : fileName + '.webp'
-              
-            const compressedFile = new File([blob], newFileName, { type: 'image/webp' })
-            resolve(compressedFile)
+            resolve(blob)
           }, 'image/webp', 0.8)
         } catch (err) {
           reject(err)
@@ -187,8 +180,76 @@ function mergeCharsByType(saved, fallback) {
 export default function Admin() {
   const router = useRouter()
   const { user, loading, adminRole } = useAuth()
-  const { loaded } = useSiteAssets()
-  const [activeTab, setActiveTab] = useState('products') // 'products', 'content', 'admins'
+  const { loaded, getText, updateText } = useSiteAssets()
+  const [priceF4Original, setPriceF4Original] = useState('')
+  const [priceF4Discount, setPriceF4Discount] = useState('')
+  const [dimF4, setDimF4] = useState('')
+  const [priceA3Original, setPriceA3Original] = useState('')
+  const [priceA3Discount, setPriceA3Discount] = useState('')
+  const [dimA3, setDimA3] = useState('')
+  const [priceA3PlusOriginal, setPriceA3PlusOriginal] = useState('')
+  const [priceA3PlusDiscount, setPriceA3PlusDiscount] = useState('')
+  const [dimA3Plus, setDimA3Plus] = useState('')
+  const [isSavingPricing, setIsSavingPricing] = useState(false)
+
+  useEffect(() => {
+    if (loaded) {
+      setPriceF4Original(getText('size_price_f4_original', '125000'))
+      setPriceF4Discount(getText('size_price_f4_discount', '99000'))
+      setDimF4(getText('size_dimension_f4', '21 x 33 cm'))
+      
+      setPriceA3Original(getText('size_price_a3_original', '165000'))
+      setPriceA3Discount(getText('size_price_a3_discount', '139000'))
+      setDimA3(getText('size_dimension_a3', '30 x 42 cm'))
+      
+      setPriceA3PlusOriginal(getText('size_price_a3plus_original', '225000'))
+      setPriceA3PlusDiscount(getText('size_price_a3plus_discount', '189000'))
+      setDimA3Plus(getText('size_dimension_a3plus', '32 x 48 cm'))
+    }
+  }, [loaded])
+
+  const handleSavePricing = async (e) => {
+    e?.preventDefault()
+    if (!hasSupabaseConfig || !supabase) {
+      alert('Supabase belum terkonfigurasi.')
+      return
+    }
+
+    setIsSavingPricing(true)
+    setStatusMessage('Menyimpan konfigurasi harga & dimensi...')
+
+    try {
+      const updates = [
+        { key: 'size_price_f4_original', text_value: priceF4Original.toString().trim(), label: 'Harga Original F4', category: 'pricing', updated_at: new Date().toISOString() },
+        { key: 'size_price_f4_discount', text_value: priceF4Discount.toString().trim(), label: 'Harga Diskon F4', category: 'pricing', updated_at: new Date().toISOString() },
+        { key: 'size_dimension_f4', text_value: dimF4.toString().trim(), label: 'Dimensi F4', category: 'pricing', updated_at: new Date().toISOString() },
+        
+        { key: 'size_price_a3_original', text_value: priceA3Original.toString().trim(), label: 'Harga Original A3', category: 'pricing', updated_at: new Date().toISOString() },
+        { key: 'size_price_a3_discount', text_value: priceA3Discount.toString().trim(), label: 'Harga Diskon A3', category: 'pricing', updated_at: new Date().toISOString() },
+        { key: 'size_dimension_a3', text_value: dimA3.toString().trim(), label: 'Dimensi A3', category: 'pricing', updated_at: new Date().toISOString() },
+        
+        { key: 'size_price_a3plus_original', text_value: priceA3PlusOriginal.toString().trim(), label: 'Harga Original A3+', category: 'pricing', updated_at: new Date().toISOString() },
+        { key: 'size_price_a3plus_discount', text_value: priceA3PlusDiscount.toString().trim(), label: 'Harga Diskon A3+', category: 'pricing', updated_at: new Date().toISOString() },
+        { key: 'size_dimension_a3plus', text_value: dimA3Plus.toString().trim(), label: 'Dimensi A3+', category: 'pricing', updated_at: new Date().toISOString() }
+      ]
+
+      const { error } = await supabase.from('site_assets').upsert(updates, { onConflict: 'key' })
+      if (error) throw error
+
+      updates.forEach(up => updateText(up.key, up.text_value))
+
+      setStatusMessage('Berhasil menyimpan konfigurasi harga & dimensi! ✓')
+      alert('Konfigurasi harga dan dimensi berhasil disimpan!')
+    } catch (err) {
+      console.error(err)
+      setStatusMessage(`Gagal menyimpan harga: ${err.message}`)
+      alert(`Gagal menyimpan harga: ${err.message}`)
+    } finally {
+      setIsSavingPricing(false)
+    }
+  }
+
+  const [activeTab, setActiveTab] = useState('products') // 'products', 'content', 'admins', 'pricing'
   const [adminList, setAdminList] = useState([])
   const [newAdminEmail, setNewAdminEmail] = useState('')
   const [newAdminRole, setNewAdminRole] = useState('regular')
@@ -412,8 +473,10 @@ export default function Admin() {
                 const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
                 const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
                 const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : asset.key.startsWith('aesthetic') ? 'aesthetic' : 'custom'
-                if (!types[cat].includes(formattedName)) {
-                  types[cat].push(formattedName)
+                if (types[cat]) {
+                  if (!types[cat].includes(formattedName)) {
+                    types[cat].push(formattedName)
+                  }
                 }
               }
             })
@@ -702,80 +765,107 @@ export default function Admin() {
 
   // ── Rename / Delete Type (Series / Grup) ──
   async function commitRenameType() {
-    const oldName = renamingType?.name
-    const newName = renameTypeVal.trim()
-    if (!oldName || !newName || newName === oldName) { setRenamingType(null); return }
+    alert('Fungsi SIMPAN terpanggil!');
+    try {
+      const oldName = renamingType?.name
+      const newName = renameTypeVal.trim()
+      alert(`Nama Lama: "${oldName}", Nama Baru: "${newName}"`);
+      
+      if (!oldName || !newName || newName === oldName) {
+        alert('Batal karena nama kosong atau sama dengan yang lama.');
+        setRenamingType(null);
+        return;
+      }
 
-    const cat = form.category
-    const oldSlug = oldName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    const newSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-    const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-group-' : 'aesthetic-'
-    
-    setStatusMessage(`Sedang memigrasi data dari "${oldName}" ke "${newName}"...`)
+      const cat = form.category
+      const oldSlug = oldName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      const newSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+      const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-group-' : 'aesthetic-'
+      
+      setStatusMessage(`Sedang memigrasi data dari "${oldName}" ke "${newName}"...`)
 
-    // 1. Update Database (Products) - Agar produk tetap muncul di series baru
-    if (hasSupabaseConfig && supabase) {
-      try {
-        // Cari semua produk yang subcategory-nya diawali dengan oldName
-        const { data: prods } = await supabase.from('products')
-          .select('id, subcategory')
-          .eq('category', cat)
-        
-        if (prods) {
-          const updates = prods
-            .filter(p => p.subcategory && p.subcategory.split(' - ')[0].trim() === oldName)
-            .map(p => ({
-              id: p.id,
-              subcategory: p.subcategory.replace(oldName, newName)
-            }))
+      // 1. Update Database (Products) - Agar produk tetap muncul di series baru
+      if (hasSupabaseConfig && supabase) {
+        alert('Menyambungkan ke database Supabase...');
+        try {
+          // Cari semua produk yang subcategory-nya diawali dengan oldName
+          const { data: prods, error: selectErr } = await supabase.from('products')
+            .select('id, subcategory')
+            .eq('category', cat)
           
-          if (updates.length > 0) {
-            await supabase.from('products').upsert(updates)
+          if (selectErr) {
+            alert(`Supabase Select Error: ${selectErr.message}`);
           }
-        }
+          
+          if (prods) {
+            const updates = prods
+              .filter(p => p.subcategory && p.subcategory.split(' - ')[0].trim() === oldName)
+              .map(p => ({
+                id: p.id,
+                subcategory: p.subcategory.replace(oldName, newName)
+              }))
+            
+            if (updates.length > 0) {
+              alert(`Mengupdate ${updates.length} produk di database...`);
+              const { error: upsertErr } = await supabase.from('products').upsert(updates)
+              if (upsertErr) {
+                alert(`Supabase Upsert Error: ${upsertErr.message}`);
+              }
+            }
+          }
 
-        // 2. Update Database (Site Assets / Cover) - Agar gambar tidak hilang
-        const oldKey = `${assetPrefix}${oldSlug}`
-        const newKey = `${assetPrefix}${newSlug}`
-        
-        const { data: assetData } = await supabase.from('site_assets').select('*').eq('key', oldKey).single()
-        if (assetData) {
-          // Hapus kunci lama, buat kunci baru dengan data yang sama
-          await supabase.from('site_assets').delete().eq('key', oldKey)
-          await supabase.from('site_assets').upsert({
-            ...assetData,
-            key: newKey,
-            label: assetData.label.replace(oldName, newName)
-          })
-          // Update local assets context if possible
-          if (typeof updateAsset === 'function') updateAsset(newKey, assetData.image_url)
+          // 2. Update Database (Site Assets / Cover) - Agar gambar tidak hilang
+          const oldKey = `${assetPrefix}${oldSlug}`
+          const newKey = `${assetPrefix}${newSlug}`
+          
+          alert(`Memeriksa cover asset: "${oldKey}"`);
+          const { data: assetData, error: assetErr } = await supabase.from('site_assets').select('*').eq('key', oldKey).single()
+          
+          if (assetData) {
+            alert(`Ditemukan cover asset. Sedang memigrasikan...`);
+            const { error: delErr } = await supabase.from('site_assets').delete().eq('key', oldKey)
+            if (delErr) {
+              alert(`Supabase Delete Asset Error: ${delErr.message}`);
+            }
+            const { error: insErr } = await supabase.from('site_assets').upsert({
+              ...assetData,
+              key: newKey,
+              label: (assetData.label || '').replace(oldName, newName)
+            })
+            if (insErr) {
+              alert(`Supabase Insert Asset Error: ${insErr.message}`);
+            }
+          }
+        } catch (dbErr) {
+          alert(`Error internal koneksi database: ${dbErr.message}`);
         }
-      } catch (err) {
-        console.error('Migration failed:', err)
       }
+
+      alert('Mengupdate state lokal di browser...');
+      // 3. Update Local State (Deduplicate)
+      setTypeOptions(prev => {
+        const list = prev[cat] || []
+        const newList = list.map(n => n === oldName ? newName : n)
+        return { ...prev, [cat]: [...new Set(newList)] }
+      })
+      setCharactersByType(prev => {
+        const catMap = { ...(prev[cat] || {}) }
+        if (catMap[oldName]) {
+          const existingChars = catMap[newName] || []
+          const oldChars = catMap[oldName] || []
+          catMap[newName] = [...new Set([...existingChars, ...oldChars])]
+          delete catMap[oldName]
+        }
+        return { ...prev, [cat]: catMap }
+      })
+      
+      if (form.typeName === oldName) setForm(prev => ({ ...prev, typeName: newName }))
+      setRenamingType(null)
+      setStatusMessage(`Berhasil! "${oldName}" telah digabungkan ke "${newName}".`)
+      alert('Berhasil menyimpan perubahan!');
+    } catch (e) {
+      alert(`Terjadi error di commitRenameType: ${e.message}`);
     }
-
-    // 3. Update Local State (Deduplicate)
-    setTypeOptions(prev => {
-      const list = prev[cat] || []
-      const newList = list.map(n => n === oldName ? newName : n)
-      return { ...prev, [cat]: [...new Set(newList)] }
-    })
-    setCharactersByType(prev => {
-      const catMap = { ...(prev[cat] || {}) }
-      if (catMap[oldName]) {
-        // Gabungkan karakter jika nama baru sudah punya karakter
-        const existingChars = catMap[newName] || []
-        const oldChars = catMap[oldName] || []
-        catMap[newName] = [...new Set([...existingChars, ...oldChars])]
-        delete catMap[oldName]
-      }
-      return { ...prev, [cat]: catMap }
-    })
-    
-    if (form.typeName === oldName) setForm(prev => ({ ...prev, typeName: newName }))
-    setRenamingType(null)
-    setStatusMessage(`Berhasil! "${oldName}" telah digabungkan ke "${newName}".`)
   }
 
   async function deleteType(name) {
@@ -969,19 +1059,11 @@ export default function Admin() {
       setStatusMessage('Lengkapi judul produk dulu ya.')
       return
     }
-    if (!form.price) {
-      setStatusMessage('Lengkapi harga dulu ya.')
-      return
-    }
     if (!hasSupabaseConfig || !supabase) {
       setStatusMessage('Supabase belum dikonfigurasi di .env.local (URL + anon key). Restart npm run dev setelah mengubah .env.local.')
       return
     }
-    const priceNum = Number(form.price)
-    if (!Number.isFinite(priceNum) || priceNum < 0) {
-      setStatusMessage('Harga tidak valid. Isi angka saja, contoh: 159000')
-      return
-    }
+    const priceNum = 99000 // Default value for legacy DB column
     const needsHierarchy = form.category === 'anime' || form.category === 'kpop'
     if (needsHierarchy && (!form.typeName || !form.characterName)) {
       setStatusMessage('Pilih judul/series dulu, lalu pilih karakter (atau tambah baru).')
@@ -1023,12 +1105,13 @@ export default function Admin() {
         const uploadOneFile = async (file, index) => {
           // KOMPRESI OTOMATIS: Kecilkan ukuran file sebelum upload
           const compressed = await compressImage(file)
-          const safeName = sanitizeFileName(compressed.name)
+          const safeName = sanitizeFileName(file.name)
           const filePath = `products/${Date.now()}-${index}-${safeName}`
           
           const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, compressed, {
             upsert: false,
-            contentType: 'image/webp'
+            contentType: 'image/webp',
+            cacheControl: '31536000'
           })
 
           if (upErr) throw new Error(`Gagal upload ${file.name}: ${upErr.message}`)
@@ -1082,12 +1165,13 @@ export default function Admin() {
       setStatusMessage('Mengunggah gambar...')
       
       const compressedImage = imageFile
-      const safeName = sanitizeFileName(imageFile.name)
+      const safeName = sanitizeFileName(imageFile.name || form.title || 'product-image')
       const filePath = `products/${Date.now()}-${safeName}.webp`
       
       const { error: uploadErr } = await supabase.storage.from('product-images').upload(filePath, compressedImage, {
         upsert: false,
-        contentType: 'image/webp'
+        contentType: 'image/webp',
+        cacheControl: '31536000'
       })
 
       if (uploadErr) {
@@ -1212,6 +1296,13 @@ export default function Admin() {
             📦 Products & Gallery
           </button>
           
+          <button 
+            onClick={() => setActiveTab('pricing')}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pricing' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-white'}`}
+          >
+            💰 Pricing Control
+          </button>
+
           <Link href="/admin/tema" className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white flex items-center gap-2`}>
             🎨 Site Assets
           </Link>
@@ -1548,13 +1639,6 @@ export default function Admin() {
                 )}
               </div>
             )}
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Harga (Rp)</p>
-                <input value={form.price} onChange={(e) => updateField('price', e.target.value)} placeholder="Contoh: 159000" className="p-3 rounded bg-black/20 w-full" />
-              </div>
-            </div>
             
             <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded bg-black/20" />
 
@@ -1705,6 +1789,159 @@ export default function Admin() {
           )}
         </div>
       </>
+    )}
+
+    {activeTab === 'pricing' && (
+      <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+        <form onSubmit={handleSavePricing} className="glass p-8 rounded-3xl border border-white/10 space-y-8">
+          <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+            <span className="w-2.5 h-8 rounded-full bg-gradient-to-b from-amber-400 to-amber-600"></span>
+            <div>
+              <h2 className="text-xl font-black uppercase tracking-widest text-white">Konfigurasi Harga & Ukuran Global</h2>
+              <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-0.5">
+                Atur harga original, harga diskon, dan dimensi fisik (x, y) cm untuk masing-masing ukuran metal print
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* UKURAN F4 */}
+            <div className="bg-black/20 border border-white/5 p-6 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <span className="text-lg font-black text-amber-500 uppercase">Ukuran F4</span>
+                <span className="text-[9px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-black">21x33 CM</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Dimensi Fisik (cm)</label>
+                  <input 
+                    type="text"
+                    value={dimF4}
+                    onChange={e => setDimF4(e.target.value)}
+                    placeholder="21 x 33 cm"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Harga Original (Rp)</label>
+                  <input 
+                    type="number"
+                    value={priceF4Original}
+                    onChange={e => setPriceF4Original(e.target.value)}
+                    placeholder="125000"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Harga Diskon (Rp)</label>
+                  <input 
+                    type="number"
+                    value={priceF4Discount}
+                    onChange={e => setPriceF4Discount(e.target.value)}
+                    placeholder="99000"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* UKURAN A3 */}
+            <div className="bg-black/20 border border-white/5 p-6 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <span className="text-lg font-black text-amber-500 uppercase">Ukuran A3</span>
+                <span className="text-[9px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-black">30x42 CM</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Dimensi Fisik (cm)</label>
+                  <input 
+                    type="text"
+                    value={dimA3}
+                    onChange={e => setDimA3(e.target.value)}
+                    placeholder="30 x 42 cm"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Harga Original (Rp)</label>
+                  <input 
+                    type="number"
+                    value={priceA3Original}
+                    onChange={e => setPriceA3Original(e.target.value)}
+                    placeholder="165000"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Harga Diskon (Rp)</label>
+                  <input 
+                    type="number"
+                    value={priceA3Discount}
+                    onChange={e => setPriceA3Discount(e.target.value)}
+                    placeholder="139000"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* UKURAN A3+ */}
+            <div className="bg-black/20 border border-white/5 p-6 rounded-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-white/5 pb-2">
+                <span className="text-lg font-black text-amber-500 uppercase">Ukuran A3+</span>
+                <span className="text-[9px] bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded font-black">32x48 CM</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Dimensi Fisik (cm)</label>
+                  <input 
+                    type="text"
+                    value={dimA3Plus}
+                    onChange={e => setDimA3Plus(e.target.value)}
+                    placeholder="32 x 48 cm"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Harga Original (Rp)</label>
+                  <input 
+                    type="number"
+                    value={priceA3PlusOriginal}
+                    onChange={e => setPriceA3PlusOriginal(e.target.value)}
+                    placeholder="225000"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] text-gray-500 font-bold uppercase tracking-wider block mb-1">Harga Diskon (Rp)</label>
+                  <input 
+                    type="number"
+                    value={priceA3PlusDiscount}
+                    onChange={e => setPriceA3PlusDiscount(e.target.value)}
+                    placeholder="189000"
+                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* SAVE BUTTON */}
+          <button
+            type="submit"
+            disabled={isSavingPricing}
+            className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-black font-black text-sm uppercase tracking-widest transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 shadow-xl shadow-amber-500/10"
+          >
+            {isSavingPricing ? 'Menyimpan...' : 'Simpan Konfigurasi Harga & Ukuran ✓'}
+          </button>
+        </form>
+      </div>
     )}
 
         {activeTab === 'admins' && adminRole === 'superior' && (
