@@ -778,7 +778,7 @@ export default function TemaAdmin() {
         if (item.text !== undefined) updateText(key, item.text)
         
         count++
-        setSaveProgress(Math.round((count / keys.length) * 100))
+        setSaveProgress(count)
         setSaveStatus(`Selesai ${count} dari ${keys.length}...`)
       }
 
@@ -788,11 +788,16 @@ export default function TemaAdmin() {
         await Promise.all(chunk.map(key => uploadOneAsset(key)))
       }
 
-      // Simple Batch Upsert (Identical to K-pop/Anime Product creation)
-      if (dbUpdates.length > 0 && hasSupabaseConfig && supabase) {
+      // Simple Batch Upsert (Menggunakan API Server-Side untuk kestabilan penuh tanpa hambatan RLS/CORS)
+      if (dbUpdates.length > 0) {
         setSaveStatus('Menyinkronkan dengan database...')
-        const { error } = await supabase.from('site_assets').upsert(dbUpdates, { onConflict: 'key' })
-        if (error) throw new Error(error.message)
+        const res = await fetch('/api/sync-theme-assets', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dbUpdates })
+        })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Server DB sync failed')
       }
 
       setStagedAssets({})
@@ -813,13 +818,15 @@ export default function TemaAdmin() {
     setTotalSaveItems(0) // Prevent NaN% calculation in overlay
     setSaveStatus('Menghapus...')
     try {
-      if (hasSupabaseConfig && supabase) {
-        // Safe, bulletproof reset using upsert (avoids DELETE Row-Level Security policies that could block or hang)
-        const { error } = await supabase
-          .from('site_assets')
-          .upsert({ key, image_url: '', updated_at: new Date().toISOString() }, { onConflict: 'key' })
-        if (error) throw error
-      }
+      // Menggunakan API Server-Side untuk reset asset demi keamanan dan keandalan penuh
+      const upsertData = [{ key, image_url: '', updated_at: new Date().toISOString() }]
+      const res = await fetch('/api/sync-theme-assets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dbUpdates: upsertData })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Server DB reset failed')
       
       // Update local state
       updateAsset(key, '')
