@@ -328,7 +328,7 @@ export default function Header() {
 
       {/* Row 1: Brand bar */}
       <div className="relative z-30 bg-zinc-950/95 backdrop-blur-md border-b border-zinc-900/65 shadow-lg">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="w-full px-4 md:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-6">
             <button 
               onClick={() => setIsSidebarOpen(true)}
@@ -460,7 +460,7 @@ export default function Header() {
             exit={{ y: -50, opacity: 0 }}
             className="relative z-10 bg-zinc-950/95 backdrop-blur-2xl border-b border-zinc-900 shadow-2xl"
           >
-            <div className="max-w-6xl mx-auto px-6 py-4">
+            <div className="w-full px-4 md:px-8 py-4">
               <div className="flex items-center gap-4 bg-zinc-900 rounded-2xl px-4 py-3 border border-zinc-800 focus-within:border-[#d4af37]/50 transition-all">
                 <span className="text-zinc-500">🔍</span>
                 <input 
@@ -526,7 +526,7 @@ export default function Header() {
 
       {/* Row 2: Nav bar — semi-transparent dengan backdrop blur */}
       <div className="relative z-10 bg-black/90 backdrop-blur-md border-b border-[#d4af37]/20 shadow-md">
-        <div className="max-w-6xl mx-auto px-6 py-3 flex items-center justify-between">
+        <div className="w-full px-4 md:px-8 py-3 flex items-center justify-between">
           <nav className="flex gap-6 text-sm items-center">
             {navLinks.map(({ href, name }) => (
               <Link
