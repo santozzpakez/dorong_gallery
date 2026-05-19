@@ -356,19 +356,19 @@ export default function Header() {
               </motion.div>
             </button>
 
-            <Link href="/" className="flex items-center gap-3.5 group">
+            <Link href="/" className="flex items-center gap-4 group">
               {getUrl('logo') ? (
                 <img
                   src={getUrl('logo')}
                   alt="Lumi Forge Logo"
-                  className="h-7 w-auto md:h-8 object-contain transition-transform group-hover:scale-105"
+                  className="h-10 w-auto md:h-14 object-contain transition-transform duration-300 group-hover:scale-105"
                 />
               ) : (
-                <div className="h-7 w-7 md:h-8 md:w-8 rounded-xl bg-gradient-to-br from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] flex items-center justify-center text-black font-black text-xs md:text-sm shadow-md border border-[#d4af37]/30 transition-transform group-hover:scale-105">
+                <div className="h-10 w-10 md:h-14 md:w-14 rounded-2xl bg-gradient-to-br from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] flex items-center justify-center text-black font-black text-sm md:text-lg shadow-lg border border-[#d4af37]/30 transition-transform duration-300 group-hover:scale-105">
                   LF
                 </div>
               )}
-              <span className="text-xl md:text-2xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif">
+              <span className="text-2xl md:text-3xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif">
                 LUMI FORGE
               </span>
             </Link>
