@@ -340,22 +340,6 @@ export default function Header() {
                 <span className="block w-4 h-0.5 bg-[#d4af37] rounded-full transition-transform group-hover:w-6"></span>
               </div>
             </button>
-
-            {/* Animated Slide Toggle for Theme */}
-            <button
-              onClick={toggleTheme}
-              className="relative w-10 h-5 rounded-full p-0.5 transition-colors duration-500 focus:outline-none flex-shrink-0 bg-zinc-900 border border-zinc-800"
-              title="Toggle Light/Dark Mode"
-            >
-              <motion.div
-                animate={{ x: theme === 'dark' ? 20 : 0 }}
-                transition={{ type: "spring", stiffness: 500, damping: 30 }}
-                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] bg-[#d4af37] text-black shadow-md font-bold"
-              >
-                {theme === 'dark' ? '🌙' : '☀️'}
-              </motion.div>
-            </button>
-
             <Link href="/" className="flex items-center gap-4 group">
               {getUrl('logo') ? (
                 <img
@@ -374,7 +358,22 @@ export default function Header() {
             </Link>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            {/* Animated Slide Toggle for Theme */}
+            <button
+              onClick={toggleTheme}
+              className="relative w-10 h-5 rounded-full p-0.5 transition-colors duration-500 focus:outline-none flex-shrink-0 bg-zinc-900 border border-zinc-800 mr-1"
+              title="Toggle Light/Dark Mode"
+            >
+              <motion.div
+                animate={{ x: theme === 'dark' ? 20 : 0 }}
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px] bg-[#d4af37] text-black shadow-md font-bold"
+              >
+                {theme === 'dark' ? '🌙' : '☀️'}
+              </motion.div>
+            </button>
+
             <button
               onClick={() => setShowSearch(!showSearch)}
               className={`p-1.5 rounded-full transition-all text-sm border ${showSearch ? 'bg-[#d4af37] text-black border-[#d4af37] scale-110 shadow-md shadow-[#d4af37]/25' : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-white'}`}
