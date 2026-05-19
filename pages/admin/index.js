@@ -410,108 +410,120 @@ export default function Admin() {
 
   useEffect(() => {
     async function initCategories() {
-      // 1. Start with default or local storage
-      let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
-      let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
+      try {
+        // 1. Start with default or local storage
+        let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
+        let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
 
-      // 2. Fetch all products to find existing categories/subcategories
-      if (hasSupabaseConfig && supabase) {
-        try {
-          const { data, error } = await supabase.from('products').select('category, subcategory')
-          if (!error && data) {
-            data.forEach(p => {
-              const cat = p.category
-              const sub = p.subcategory || ''
-              if (!cat || !sub) return
+        // 2. Fetch all products to find existing categories/subcategories
+        if (hasSupabaseConfig && supabase) {
+          try {
+            const { data, error } = await supabase.from('products').select('category, subcategory')
+            if (!error && data) {
+              data.forEach(p => {
+                const cat = p.category
+                const sub = p.subcategory || ''
+                if (!cat || !sub) return
 
-              // Add to typeOptions (Series/Group/Theme)
-              let typeName = ''
-              let charName = ''
+                // Add to typeOptions (Series/Group/Theme)
+                let typeName = ''
+                let charName = ''
 
-              if (cat === 'anime' || cat === 'kpop') {
-                const parts = sub.split(' - ')
-                typeName = parts[0].trim()
-                charName = parts[1]?.trim() || ''
-              } else if (cat === 'aesthetic') {
-                typeName = sub.trim()
-              }
-
-              if (typeName && typeName !== '-') {
-                if (!types[cat]) types[cat] = []
-                if (!types[cat].includes(typeName)) {
-                  types[cat].push(typeName)
+                if (cat === 'anime' || cat === 'kpop') {
+                  const parts = sub.split(' - ')
+                  typeName = parts[0].trim()
+                  charName = parts[1]?.trim() || ''
+                } else if (cat === 'aesthetic') {
+                  typeName = sub.trim()
                 }
 
-                // Add to charactersByType
-                if (charName && charName !== '-') {
-                  if (!chars[cat]) chars[cat] = {}
-                  if (!chars[cat][typeName]) chars[cat][typeName] = []
-                  if (!chars[cat][typeName].includes(charName)) {
-                    chars[cat][typeName].push(charName)
+                if (typeName && typeName !== '-') {
+                  if (!types[cat]) types[cat] = []
+                  if (!types[cat].includes(typeName)) {
+                    types[cat].push(typeName)
+                  }
+
+                  // Add to charactersByType
+                  if (charName && charName !== '-') {
+                    if (!chars[cat]) chars[cat] = {}
+                    if (!chars[cat][typeName]) chars[cat][typeName] = []
+                    if (!chars[cat][typeName].includes(charName)) {
+                      chars[cat][typeName].push(charName)
+                    }
                   }
                 }
-              }
-            })
+              })
               // B. Sync from Site Assets (Hanya jika kategori tersebut punya data valid)
-          // Kita tidak lagi otomatis menambahkan kategori dari Site Assets jika produknya sudah dihapus,
-          // kecuali kategori tersebut memang punya aset gambar yang terdaftar.
-          const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label, image_url')
-          if (!aErr && aData) {
-            aData.forEach(asset => {
-              if (!asset.image_url) return // Lewati jika tidak ada gambarnya
+              // Kita tidak lagi otomatis menambahkan kategori dari Site Assets jika produknya sudah dihapus,
+              // kecuali kategori tersebut memang punya aset gambar yang terdaftar.
+              const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label, image_url')
+              if (!aErr && aData) {
+                aData.forEach(asset => {
+                  if (!asset.image_url) return // Lewati jika tidak ada gambarnya
 
-              let rawName = ''
-              if (asset.key.startsWith('anime-cover-')) {
-                rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
-              } else if (asset.key.startsWith('kpop-group-')) {
-                rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
-              } else if (asset.key.startsWith('aesthetic-') && !asset.key.includes('sidebar')) {
-                rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
-              }
-
-              if (rawName) {
-                const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-                const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : asset.key.startsWith('aesthetic') ? 'aesthetic' : 'custom'
-                if (types[cat]) {
-                  if (!types[cat].includes(formattedName)) {
-                    types[cat].push(formattedName)
+                  let rawName = ''
+                  if (asset.key.startsWith('anime-cover-')) {
+                    rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
+                  } else if (asset.key.startsWith('kpop-group-')) {
+                    rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
+                  } else if (asset.key.startsWith('aesthetic-') && !asset.key.includes('sidebar')) {
+                    rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
                   }
-                }
+
+                  if (rawName) {
+                    const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                    const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                    const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : asset.key.startsWith('aesthetic') ? 'aesthetic' : 'custom'
+                    if (types[cat]) {
+                      if (!types[cat].includes(formattedName)) {
+                        types[cat].push(formattedName)
+                      }
+                    }
+                  }
+                })
+              }
+            }
+          } catch (err) {
+            console.error('Failed to sync categories from DB:', err)
+          }
+        }
+
+        // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
+        const finalTypes = {}
+        Object.keys(types).forEach(cat => {
+          const uniqueNames = new Set()
+          if (Array.isArray(types[cat])) {
+            types[cat].forEach(raw => {
+              if (!raw || typeof raw !== 'string') return
+              try {
+                // Bersihkan "Cover", "Cover - ", dsb
+                const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                // Format ke Title Case
+                const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+                if (formatted) uniqueNames.add(formatted)
+              } catch (err) {
+                console.warn('Gagal membersihkan kategori:', raw, err)
               }
             })
           }
-          }
-        } catch (err) {
-          console.error('Failed to sync categories from DB:', err)
-        }
-      }
-
-      // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
-      const finalTypes = {}
-      Object.keys(types).forEach(cat => {
-        const uniqueNames = new Set()
-        types[cat].forEach(raw => {
-          // Bersihkan "Cover", "Cover - ", dsb
-          const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-          // Format ke Title Case
-          const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-          if (formatted) uniqueNames.add(formatted)
+          finalTypes[cat] = Array.from(uniqueNames).sort()
         })
-        finalTypes[cat] = Array.from(uniqueNames).sort()
-      })
 
-      setTypeOptions(finalTypes)
-      setCharactersByType(chars)
+        setTypeOptions(finalTypes)
+        setCharactersByType(chars)
 
-      const firstType = finalTypes.anime?.[0] || 'One Piece'
-      const firstChar = chars.anime?.[firstType]?.[0] || ''
-      setForm((prev) => ({
-        ...prev,
-        typeName: firstType,
-        characterName: firstChar
-      }))
-      setListsReady(true)
+        const firstType = finalTypes.anime?.[0] || 'One Piece'
+        const firstChar = chars.anime?.[firstType]?.[0] || ''
+        setForm((prev) => ({
+          ...prev,
+          typeName: firstType,
+          characterName: firstChar
+        }))
+      } catch (globalErr) {
+        console.error('Fatal error in initCategories:', globalErr)
+      } finally {
+        setListsReady(true)
+      }
     }
 
     initCategories()
