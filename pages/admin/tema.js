@@ -710,13 +710,21 @@ export default function TemaAdmin() {
       const CONCURRENCY_LIMIT = 3 // Parallel uploads limit
       let count = 0
 
+      // Helper to convert file/blob to base64
+      const toBase64 = (file) => new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = () => resolve(reader.result.split(',')[1])
+        reader.onerror = error => reject(error)
+      })
+
       // Helper for uploading one asset
       const uploadOneAsset = async (key) => {
         const item = stagedAssets[key]
         let finalUrl = item.url
         const isVideo = item.type === 'video'
 
-        if (item.file && hasSupabaseConfig && supabase) {
+        if (item.file) {
           setSaveStatus(`Menyiapkan "${key}"...`)
           const fileToUpload = item.file
           
@@ -727,11 +735,21 @@ export default function TemaAdmin() {
           const ext = isVideo ? '.mp4' : '' // compressImage returns webp
           const filePath = `${folder}/${key}-${Date.now()}-${safeName}${ext}`
 
+          const base64Data = await toBase64(fileToUpload)
+
           // Gunakan Promise.race dengan timeout 15 detik agar proses upload tidak macet selamanya jika koneksi lambat/terputus
-          const uploadPromise = supabase.storage.from('product-images').upload(filePath, fileToUpload, {
-            upsert: false,
-            contentType: fileToUpload.type || 'application/octet-stream',
-            cacheControl: '31536000'
+          const uploadPromise = fetch('/api/upload-theme-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              filePath,
+              base64Data,
+              contentType: fileToUpload.type || 'application/octet-stream'
+            })
+          }).then(async (res) => {
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Server upload failed')
+            return data
           })
 
           const timeoutPromise = new Promise((_, reject) =>
@@ -739,11 +757,7 @@ export default function TemaAdmin() {
           )
 
           const uploadResult = await Promise.race([uploadPromise, timeoutPromise])
-          const upErr = uploadResult?.error
-
-          if (upErr) throw new Error(`Gagal upload ${key}: ${upErr.message}`)
-
-          finalUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
+          finalUrl = uploadResult.publicUrl
         }
 
         setSaveStatus(`Menyimpan metadata "${key}" ke database...`)
