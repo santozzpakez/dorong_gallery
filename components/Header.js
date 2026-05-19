@@ -356,11 +356,21 @@ export default function Header() {
               </motion.div>
             </button>
 
-            <Link
-              href="/"
-              className="text-2xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif"
-            >
-              LUMI FORGE
+            <Link href="/" className="flex items-center gap-3.5 group">
+              {getUrl('logo') ? (
+                <img
+                  src={getUrl('logo')}
+                  alt="Lumi Forge Logo"
+                  className="h-7 w-auto md:h-8 object-contain transition-transform group-hover:scale-105"
+                />
+              ) : (
+                <div className="h-7 w-7 md:h-8 md:w-8 rounded-xl bg-gradient-to-br from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] flex items-center justify-center text-black font-black text-xs md:text-sm shadow-md border border-[#d4af37]/30 transition-transform group-hover:scale-105">
+                  LF
+                </div>
+              )}
+              <span className="text-xl md:text-2xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)] font-serif">
+                LUMI FORGE
+              </span>
             </Link>
           </div>
 
