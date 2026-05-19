@@ -726,11 +726,19 @@ export default function TemaAdmin() {
           const ext = isVideo ? '.mp4' : '' // compressImage returns webp
           const filePath = `${folder}/${key}-${Date.now()}-${safeName}${ext}`
 
-          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, fileToUpload, {
+          // Gunakan Promise.race dengan timeout 15 detik agar proses upload tidak macet selamanya jika koneksi lambat/terputus
+          const uploadPromise = supabase.storage.from('product-images').upload(filePath, fileToUpload, {
             upsert: false,
             contentType: fileToUpload.type || 'application/octet-stream',
             cacheControl: '31536000'
           })
+
+          const timeoutPromise = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Koneksi Timeout (15 detik). Kemungkinan koneksi internet sedang lambat atau file terlalu besar. Silakan coba simpan kembali.')), 15000)
+          )
+
+          const uploadResult = await Promise.race([uploadPromise, timeoutPromise])
+          const upErr = uploadResult?.error
 
           if (upErr) throw new Error(`Gagal upload ${key}: ${upErr.message}`)
 
