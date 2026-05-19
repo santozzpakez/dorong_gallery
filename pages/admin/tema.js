@@ -681,9 +681,10 @@ export default function TemaAdmin() {
       finalBlob = await getCroppedImg(cropData.url, croppedAreaPixels, rotation)
       finalUrl = URL.createObjectURL(finalBlob)
     } else {
-      // Auto compress even if not cropped
-      finalBlob = await compressImage(cropData.file)
-      finalUrl = URL.createObjectURL(finalBlob)
+      // Jika memilih "Tanpa Crop", gunakan file asli langsung tanpa kompresi
+      // Ini menjaga transparansi PNG logo tetap tajam dan mencegah macet (stuck)
+      finalBlob = cropData.file
+      finalUrl = cropData.url
     }
 
     setStagedAssets(prev => ({
