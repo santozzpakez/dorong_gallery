@@ -8,6 +8,7 @@ import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import ImageModal from '../../components/ImageModal'
 import { useLanguage } from '../../context/LanguageContext'
+import ProductReviews from '../../components/ProductReviews'
 import { useSiteAssets } from '../../lib/siteAssets'
 import { getPriceInfo, getDimensionInfo } from '../../lib/priceHelper'
 
@@ -1319,6 +1320,9 @@ export default function ProductDetail() {
                 </div>
               </div>
             </div>
+
+            {/* Review Produk di bawah Foto */}
+            <ProductReviews productId={id} productTitle={product?.title} lang={lang} />
 
             {/* Deskripsi Produk di bawah Foto */}
             <div className="bg-zinc-900/50 p-8 rounded-lg border border-zinc-800">
