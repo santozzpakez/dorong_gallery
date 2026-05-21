@@ -429,7 +429,7 @@ export default function Header() {
                 >
                   {t.logout}
                 </button>
-                {(user.email === 'admin@dorong.gallery' || adminRole) && (
+                {adminRole && (
                   <Link
                     href="/admin"
                     className="px-4 py-1.5 rounded-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-[10px] font-black uppercase tracking-widest shadow-md shadow-[#d4af37]/10 hover:scale-105 transition-all"

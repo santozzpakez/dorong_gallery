@@ -6,6 +6,8 @@ import { hasSupabaseConfig, supabase } from '../../lib/supabaseClient'
 import { useSiteAssets } from '../../lib/siteAssets'
 import { ASSET_GROUPS, ASSET_SLOTS, DECOR_CATEGORIES as CATS } from '../../lib/assetSlots'
 import Cropper from 'react-easy-crop'
+import { useAuth } from '../../context/AuthContext'
+import { useRouter } from 'next/router'
 
 // Helper to sanitize filenames
 function sanitizeFileName(name) {
@@ -188,7 +190,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelS
     if (slot.key.startsWith('kpop-group-') || slot.key.startsWith('aesthetic-')) {
       return 'aspect-[16/9]'
     }
-    if (slot.key.startsWith('featured-') || slot.key.includes('-1') || slot.key.includes('-2') || slot.key.includes('-3') || slot.key.startsWith('mockup-studio-')) {
+    if (slot.key.startsWith('featured-') || slot.key.includes('-1') || slot.key.includes('-2') || slot.key.includes('-3') || slot.key.startsWith('mockup-studio-') || slot.key.startsWith('mockup-cafe-')) {
       return 'aspect-[3/4]'
     }
     return 'aspect-[16/9]'
@@ -363,7 +365,17 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelS
 
 // --- MAIN PAGE ---
 export default function TemaAdmin() {
+  const router = useRouter()
+  const { user, loading, adminRole } = useAuth()
   const { getUrl, getText, updateAsset, updateText, loaded } = useSiteAssets()
+
+  useEffect(() => {
+    if (loading) return
+    if (!adminRole) {
+      router.push('/')
+    }
+  }, [user, adminRole, loading])
+
   const [openGroup, setOpenGroup] = useState('layout')
   const [dynamicGroups, setDynamicGroups] = useState(ASSET_GROUPS)
   const [dynamicSlots, setDynamicSlots] = useState(ASSET_SLOTS)
@@ -660,7 +672,7 @@ export default function TemaAdmin() {
         // Trigger Cropping Modal with the correct aspect ratio
         let aspect = 16 / 9
         // Detect 3:4 aspect for characters and featured items
-        if (key.startsWith('featured-') || key.includes('-1') || key.includes('-2') || key.includes('-3') || key.startsWith('mockup-studio-')) {
+        if (key.startsWith('featured-') || key.includes('-1') || key.includes('-2') || key.includes('-3') || key.startsWith('mockup-studio-') || key.startsWith('mockup-cafe-')) {
           aspect = 3 / 4
         }
 
@@ -737,10 +749,16 @@ export default function TemaAdmin() {
 
           const base64Data = await toBase64(fileToUpload)
 
+          const { data: { session } } = await supabase.auth.getSession()
+          const token = session?.access_token
+
           // Gunakan Promise.race dengan timeout 15 detik agar proses upload tidak macet selamanya jika koneksi lambat/terputus
           const uploadPromise = fetch('/api/upload-theme-asset', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : ''
+            },
             body: JSON.stringify({
               filePath,
               base64Data,
@@ -791,9 +809,14 @@ export default function TemaAdmin() {
       // Simple Batch Upsert (Menggunakan API Server-Side untuk kestabilan penuh tanpa hambatan RLS/CORS)
       if (dbUpdates.length > 0) {
         setSaveStatus('Menyinkronkan dengan database...')
+        const { data: { session } } = await supabase.auth.getSession()
+        const token = session?.access_token
         const res = await fetch('/api/sync-theme-assets', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
           body: JSON.stringify({ dbUpdates })
         })
         const data = await res.json()
@@ -820,9 +843,14 @@ export default function TemaAdmin() {
     try {
       // Menggunakan API Server-Side untuk reset asset demi keamanan dan keandalan penuh
       const upsertData = [{ key, image_url: '', updated_at: new Date().toISOString() }]
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token
       const res = await fetch('/api/sync-theme-assets', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
         body: JSON.stringify({ dbUpdates: upsertData })
       })
       const data = await res.json()
@@ -846,6 +874,17 @@ export default function TemaAdmin() {
   }
 
   const [searchQuery, setSearchQuery] = useState('')
+
+  if (loading || !adminRole) {
+    return (
+      <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white font-sans">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37] mx-auto"></div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Memverifikasi Otorisasi Admin...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#070709] text-gray-100 font-sans selection:bg-amber-500/30 selection:text-white">

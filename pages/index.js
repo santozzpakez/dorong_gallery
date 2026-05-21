@@ -6,9 +6,71 @@ import FeaturedCarousel from '../components/FeaturedCarousel'
 import ShopGallery from '../components/ShopGallery'
 import Footer from '../components/Footer'
 import { useSiteAssets } from '../lib/siteAssets'
+import { useLanguage } from '../context/LanguageContext'
 
 export default function Home(){
   const { getUrl } = useSiteAssets()
+  const { lang } = useLanguage()
+
+  const translations = {
+    id: {
+      noImage: 'Tidak Ada Gambar',
+      anime: '- ANIME -',
+      animeSubtitle: 'SENI & KERAJINAN',
+      kpop: '- K-POP -',
+      kpopSubtitle: 'MUSIK & PERTUNJUKAN',
+      aesthetic: '- AESTHETIC -',
+      aestheticSubtitle: 'SENI & DEKORASI',
+      custom: '- CUSTOM -',
+      customSubtitle: 'KERAJINAN & DESAIN'
+    },
+    en: {
+      noImage: 'No Image',
+      anime: '- ANIME -',
+      animeSubtitle: 'ART & CRAFT',
+      kpop: '- K-POP -',
+      kpopSubtitle: 'MUSIC & PERFORMANCE',
+      aesthetic: '- AESTHETIC -',
+      aestheticSubtitle: 'ART & DECOR',
+      custom: '- CUSTOM -',
+      customSubtitle: 'CRAFT & DESIGN'
+    },
+    jp: {
+      noImage: '画像なし',
+      anime: '- アニメ -',
+      animeSubtitle: 'アート & クラフト',
+      kpop: '- K-POP -',
+      kpopSubtitle: 'ミュージック & パフォーマンス',
+      aesthetic: '- エステティック -',
+      aestheticSubtitle: 'アート & デコ',
+      custom: '- カスタム -',
+      customSubtitle: 'クラフト & デザイン'
+    },
+    kr: {
+      noImage: '이미지 없음',
+      anime: '- 애니메이션 -',
+      animeSubtitle: '아트 & 크래프트',
+      kpop: '- K-팝 -',
+      kpopSubtitle: '뮤직 & 퍼포먼스',
+      aesthetic: '- 에스테틱 -',
+      aestheticSubtitle: '아트 & 데코',
+      custom: '- 커스텀 -',
+      customSubtitle: '크래프트 & 디자인'
+    },
+    cn: {
+      noImage: '无图片',
+      anime: '- 动漫 -',
+      animeSubtitle: '艺术 & 手工',
+      kpop: '- 韩流 -',
+      kpopSubtitle: '音乐 & 表演',
+      aesthetic: '- 美学 -',
+      aestheticSubtitle: '艺术 & 装饰',
+      custom: '- 定制 -',
+      customSubtitle: '工艺 & 设计'
+    }
+  }
+
+  const t = translations[lang] || translations.id
 
   return (
     <>
@@ -60,7 +122,7 @@ export default function Home(){
                       className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">{t.noImage}</div>
                   )}
                   {/* Subtle inner metallic shadow */}
                   <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
@@ -70,10 +132,10 @@ export default function Home(){
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
                   <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
                   <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
-                    - ANIME -
+                    {t.anime}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
-                    ART & CRAFT
+                    {t.animeSubtitle}
                   </span>
                 </div>
               </Link>
@@ -95,7 +157,7 @@ export default function Home(){
                       className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">{t.noImage}</div>
                   )}
                   {/* Subtle inner metallic shadow */}
                   <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
@@ -105,10 +167,10 @@ export default function Home(){
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
                   <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
                   <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
-                    - K-POP -
+                    {t.kpop}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
-                    MUSIC & PERFORMANCE
+                    {t.kpopSubtitle}
                   </span>
                 </div>
               </Link>
@@ -130,7 +192,7 @@ export default function Home(){
                       className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">{t.noImage}</div>
                   )}
                   {/* Subtle inner metallic shadow */}
                   <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
@@ -140,10 +202,10 @@ export default function Home(){
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
                   <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
                   <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
-                    - AESTHETIC -
+                    {t.aesthetic}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
-                    ART & DECOR
+                    {t.aestheticSubtitle}
                   </span>
                 </div>
               </Link>
@@ -165,7 +227,7 @@ export default function Home(){
                       className="w-full h-full object-cover opacity-75 group-hover:opacity-90 group-hover:scale-105 transition-all duration-700 ease-out"
                     />
                   ) : (
-                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">No Image</div>
+                    <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-400 text-xs">{t.noImage}</div>
                   )}
                   {/* Subtle inner metallic shadow */}
                   <div className="absolute inset-0 shadow-[inset_0_1px_4px_rgba(255,255,255,0.15)] pointer-events-none" />
@@ -175,10 +237,10 @@ export default function Home(){
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
                   <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
                   <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
-                    - CUSTOM -
+                    {t.custom}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
-                    CRAFT & DESIGN
+                    {t.customSubtitle}
                   </span>
                 </div>
               </Link>

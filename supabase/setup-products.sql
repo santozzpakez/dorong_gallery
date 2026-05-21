@@ -27,10 +27,38 @@ for select
 using (true);
 
 drop policy if exists "public insert products" on public.products;
-create policy "public insert products"
+drop policy if exists "Only admins can insert products" on public.products;
+create policy "Only admins can insert products"
 on public.products
 for insert
-with check (true);
+with check (
+  exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
+
+drop policy if exists "Only admins can update products" on public.products;
+create policy "Only admins can update products"
+on public.products
+for update
+using (
+  exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
+
+drop policy if exists "Only admins can delete products" on public.products;
+create policy "Only admins can delete products"
+on public.products
+for delete
+using (
+  exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
 
 -- ========== STORAGE bucket ==========
 -- Buat bucket storage untuk gambar produk
@@ -51,46 +79,48 @@ drop policy if exists "anon read product images" on storage.objects;
 drop policy if exists "anon upload product images" on storage.objects;
 drop policy if exists "auth read product images" on storage.objects;
 drop policy if exists "auth upload product images" on storage.objects;
+drop policy if exists "Only admins can insert storage" on storage.objects;
+drop policy if exists "Only admins can update storage" on storage.objects;
+drop policy if exists "Only admins can delete storage" on storage.objects;
 
--- Buat policy baru untuk anon key (public read & write)
+-- Buat policy baru untuk anon key (public read saja)
 create policy "storage read product images"
 on storage.objects
 for select
 using (bucket_id = 'product-images');
 
-create policy "storage insert product images"
+-- Otorisasi upload hanya untuk admin
+create policy "Only admins can insert storage"
 on storage.objects
 for insert
-with check (bucket_id = 'product-images');
+with check (
+  bucket_id = 'product-images'
+  and exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
 
-create policy "storage update product images"
+-- Otorisasi update hanya untuk admin
+create policy "Only admins can update storage"
 on storage.objects
 for update
-using (bucket_id = 'product-images');
+using (
+  bucket_id = 'product-images'
+  and exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
 
-create policy "storage delete product images"
+-- Otorisasi delete hanya untuk admin
+create policy "Only admins can delete storage"
 on storage.objects
 for delete
-using (bucket_id = 'product-images');
-
--- Policy untuk anon key (bisa upload & baca gambar)
-create policy "anon read product images"
-on storage.objects
-for select
-using (true);
-
-create policy "anon upload product images"
-on storage.objects
-for insert
-with check (true);
-
--- Policy untuk auth user (opsional, jika menggunakan auth)
-create policy "auth read product images"
-on storage.objects
-for select
-using (true);
-
-create policy "auth upload product images"
-on storage.objects
-for insert
-with check (true);
+using (
+  bucket_id = 'product-images'
+  and exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);

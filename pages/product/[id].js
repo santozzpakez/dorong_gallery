@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Header from '../../components/Header'
@@ -27,6 +27,75 @@ export default function ProductDetail() {
   const [added, setAdded] = useState(false)
   const [isPreviewOpen, setIsPreviewOpen] = useState(false)
   const [activeMockup, setActiveMockup] = useState('flat')
+  const [posterRotation, setPosterRotation] = useState(0)
+  const [displayLandscapeRotation, setDisplayLandscapeRotation] = useState(90)
+
+  const scrollRef = useRef(null)
+  const [canScrollUp, setCanScrollUp] = useState(false)
+  const [canScrollDown, setCanScrollDown] = useState(true)
+
+  const handleScroll = () => {
+    if (scrollRef.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollRef.current
+      setCanScrollUp(scrollTop > 5)
+      setCanScrollDown(scrollTop + clientHeight < scrollHeight - 5)
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      handleScroll()
+    }, 500)
+    return () => clearTimeout(timer)
+  }, [product, activeMockup])
+
+
+  const getImageStyle = (mockupKey, rotation) => {
+    const isRotated = rotation % 180 !== 0;
+    const base = {
+      transition: 'all 0.5s ease-in-out',
+      objectFit: 'cover',
+      userSelect: 'none',
+      pointerEvents: 'none',
+    };
+
+    if (!isRotated) {
+      return {
+        ...base,
+        width: '100%',
+        height: '100%',
+        transform: `rotate(${rotation}deg)`,
+      };
+    }
+
+    // Swapped width & height percentages to prevent any cropping when rotated by 90/270 degrees
+    let width = '100%';
+    let height = '100%';
+
+    if (mockupKey === 'flat' || mockupKey === 'metal' || mockupKey === 'display') {
+      width = '133.3%';
+      height = '75%';
+    } else if (mockupKey === 'livingroom') {
+      width = '142.5%';
+      height = '70.2%';
+    } else if (mockupKey === 'living_landscape') {
+      width = '78.4%';
+      height = '127.5%';
+    } else if (mockupKey === 'display_landscape') {
+      width = '75%';
+      height = '133.3%';
+    }
+
+    return {
+      ...base,
+      position: 'absolute',
+      top: '50%',
+      left: '50%',
+      width,
+      height,
+      transform: `translate(-50%, -50%) rotate(${rotation}deg)`,
+    };
+  };
 
   const scaleHeights = { F4: 15, A3: 19.1, 'A3+': 21.8 }
   const currentScaleHeight = scaleHeights[selectedSize] || 15
@@ -39,9 +108,49 @@ export default function ProductDetail() {
   const activeLivingLeft = livingRoomLefts[selectedSize] || 43.5
   const activeLivingTop = livingRoomTops[selectedSize] || 26
 
+  const cafeWidths = { F4: 8.5, A3: 11.5, 'A3+': 13 }
+  const cafeTops = { F4: 20, A3: 16, 'A3+': 13 }
+  const cafeAspects = { F4: '21.5/33', A3: '29.7/42', 'A3+': '32.9/48.3' }
+
+  const activeCafeWidth = cafeWidths[selectedSize] || 8.5
+  const activeCafeTop = cafeTops[selectedSize] || 20
+  const activeCafeAspect = cafeAspects[selectedSize] || '21.5/33'
+
+  const gamingWidths = { F4: 9.5, A3: 12.5, 'A3+': 14 }
+  const gamingTops = { F4: 15, A3: 12, 'A3+': 10 }
+  const gamingAspects = { F4: '21.5/33', A3: '29.7/42', 'A3+': '32.9/48.3' }
+
+  const activeGamingWidth = gamingWidths[selectedSize] || 9.5
+  const activeGamingTop = gamingTops[selectedSize] || 15
+  const activeGamingAspect = gamingAspects[selectedSize] || '21.5/33'
+
+  const bedroomWidths = { F4: 10, A3: 13.5, 'A3+': 15 }
+  const bedroomTops = { F4: 22, A3: 16, 'A3+': 11 }
+  const bedroomAspects = { F4: '21.5/33', A3: '29.7/42', 'A3+': '32.9/48.3' }
+
+  const activeBedroomWidth = bedroomWidths[selectedSize] || 10
+  const activeBedroomTop = bedroomTops[selectedSize] || 22
+  const activeBedroomAspect = bedroomAspects[selectedSize] || '21.5/33'
+
   const dimF4Val = getDimensionInfo(getText, 'F4')
   const dimA3Val = getDimensionInfo(getText, 'A3')
   const dimA3PlusVal = getDimensionInfo(getText, 'A3+')
+
+  const displayWidths = { F4: 16, A3: 19, 'A3+': 22 }
+  const displayTops = { F4: 15.6, A3: 10.3, 'A3+': 4.9 }
+  const displaySideLefts = { F4: 32.3, A3: 28.3, 'A3+': 24.3 }
+
+  const activeDisplayWidth = displayWidths[selectedSize] || 19
+  const activeDisplayTop = displayTops[selectedSize] || 10.3
+  const activeDisplaySideLeft = displaySideLefts[selectedSize] || 18.3
+
+  const displayLandscapeWidths = { F4: 21.3, A3: 25.3, 'A3+': 29.3 }
+  const displayLandscapeTops = { F4: 18.2, A3: 13.4, 'A3+': 8.5 }
+  const displaySideLandscapeLefts = { F4: 51.3, A3: 50.3, 'A3+': 49.3 }
+
+  const activeDisplayLandscapeWidth = displayLandscapeWidths[selectedSize] || 25.3
+  const activeDisplayLandscapeTop = displayLandscapeTops[selectedSize] || 13.4
+  const activeDisplaySideLandscapeLeft = displaySideLandscapeLefts[selectedSize] || 40.3
 
   const translations = {
     id: {
@@ -150,44 +259,66 @@ export default function ProductDetail() {
   }
 
   useEffect(() => {
-    if (!id || !hasSupabaseConfig || !supabase) return
+    // Tunggu sampai router siap dan id tersedia
+    if (!router.isReady) return
+    if (!id || !hasSupabaseConfig || !supabase) {
+      setLoading(false)
+      return
+    }
+
+    let cancelled = false
 
     async function loadData() {
       setLoading(true)
       
-      // Ambil detail produk
-      const { data: pData, error: pErr } = await supabase
-        .from('products')
-        .select('*')
-        .eq('id', id)
-        .single()
+      try {
+        // Ambil detail produk dengan timeout 10 detik
+        const controller = new AbortController()
+        const timeout = setTimeout(() => controller.abort(), 10000)
 
-      if (pErr || !pData) {
-        setLoading(false)
-        return
+        const { data: pData, error: pErr } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', id)
+          .single()
+          .abortSignal(controller.signal)
+
+        clearTimeout(timeout)
+
+        if (cancelled) return
+
+        if (pErr || !pData) {
+          setLoading(false)
+          return
+        }
+
+        setProduct(pData)
+
+        // Ambil rekomendasi (kategori yang sama, kecualikan produk saat ini)
+        const { data: recData, error: recErr } = await supabase
+          .from('products')
+          .select('*')
+          .eq('category', pData.category)
+          .neq('id', id)
+          .limit(20)
+
+        if (!cancelled && !recErr && recData) {
+          // Acak rekomendasi
+          const shuffled = [...recData].sort(() => 0.5 - Math.random()).slice(0, 4)
+          setRecommendations(shuffled)
+        }
+      } catch (err) {
+        // Tangkap error timeout atau network failure agar loading tidak stuck
+        console.error('Error loading product:', err.message)
+      } finally {
+        if (!cancelled) setLoading(false)
       }
-
-      setProduct(pData)
-
-      // Ambil rekomendasi (kategori yang sama, kecualikan produk saat ini)
-      const { data: recData, error: recErr } = await supabase
-        .from('products')
-        .select('*')
-        .eq('category', pData.category)
-        .neq('id', id)
-        .limit(20)
-
-      if (!recErr && recData) {
-        // Acak rekomendasi
-        const shuffled = [...recData].sort(() => 0.5 - Math.random()).slice(0, 4)
-        setRecommendations(shuffled)
-      }
-
-      setLoading(false)
     }
 
     loadData()
-  }, [id])
+
+    return () => { cancelled = true }
+  }, [router.isReady, id])
 
   const handleAddToCart = () => {
     if (!product) return
@@ -242,71 +373,222 @@ export default function ProductDetail() {
           {/* Bagian Kiri: Gambar Utama & Deskripsi */}
           <div className="lg:col-span-7 space-y-8">
             <div className="flex flex-col md:flex-row gap-4 items-start">
-              {/* Vertical Side Thumbnails Bar (hidden on mobile) */}
-              <div className="hidden md:flex flex-col gap-3 w-20 shrink-0">
-                {/* Flat Poster Thumb */}
+              {/* Vertical Side Thumbnails Bar - Clean style like animetalposter.com */}
+              <div className="hidden md:flex flex-col items-center gap-1.5 w-[72px] shrink-0 relative select-none">
+                {/* Scroll Up Button */}
                 <button
                   type="button"
-                  onClick={() => setActiveMockup('flat')}
-                  className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 bg-black/40 relative group transition-all ${
-                    activeMockup === 'flat' ? 'border-[#d4af37] scale-105 shadow-md shadow-[#d4af37]/20' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                  onClick={() => {
+                    if (scrollRef.current) {
+                      scrollRef.current.scrollBy({ top: -80, behavior: 'smooth' })
+                    }
+                  }}
+                  disabled={!canScrollUp}
+                  className={`w-8 h-8 rounded-full border border-zinc-700 bg-zinc-900/90 text-[#d4af37] flex items-center justify-center transition-all duration-200 shadow-md ${
+                    canScrollUp 
+                      ? 'opacity-100 hover:bg-zinc-800 hover:border-[#d4af37] cursor-pointer' 
+                      : 'opacity-20 cursor-not-allowed border-zinc-800'
                   }`}
+                  aria-label="Scroll Up"
                 >
-                  <img src={product.image_url} alt="Flat View" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] text-white font-black uppercase tracking-wider">Flat</div>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 15l7-7 7 7" />
+                  </svg>
                 </button>
 
-                {/* Living Room Thumb */}
-                <button
-                  type="button"
-                  onClick={() => setActiveMockup('living')}
-                  className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 bg-black/40 relative group transition-all ${
-                    activeMockup === 'living' ? 'border-[#d4af37] scale-105 shadow-md shadow-[#d4af37]/20' : 'border-zinc-800 opacity-60 hover:opacity-100'
-                  }`}
+                {/* Scroll Container */}
+                <div
+                  ref={scrollRef}
+                  onScroll={handleScroll}
+                  className="w-full h-[400px] overflow-y-auto scrollbar-hide flex flex-col gap-2 py-0.5 scroll-smooth"
                 >
-                  <img src="https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=200&auto=format&fit=crop" alt="Living Room" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] text-white font-black uppercase tracking-wider">Ruang</div>
-                </button>
+                  {[
+                    { key: 'flat', img: product.image_url, alt: 'Poster' },
+                    { key: 'metal', img: product.image_url, alt: 'Metal Print' },
+                    { key: 'gaming', img: '/mockup_gaming.jpg', alt: 'Gaming Scene' },
+                    { key: 'livingroom', img: '/mockup_livingroom.jpg', alt: 'Living Room (Portrait)', badge: 'Portrait' },
+                    { key: 'living_landscape', img: '/mockup_livingroom_landscape.png', alt: 'Living Room (Landscape)', badge: 'Landscape' },
+                    { key: 'display', img: '/mockup_display_clean.png', alt: 'Product Display (Portrait & Landscape)', badge: 'Prt & Lnd' },
+                    { key: 'living', img: '/mockup_person.png', alt: 'Scale View' },
+                    { key: 'studio', img: '/mockup_desk.png', alt: 'Studio Desk' },
+                    { key: 'cafe', img: '/mockup_cafe.jpg', alt: 'Cafe' },
+                    { key: 'bedroom', img: '/mockup_bedroom.jpg', alt: 'Bedroom' },
+                  ].map(thumb => (
+                    <button
+                      key={thumb.key}
+                      type="button"
+                      onClick={() => setActiveMockup(thumb.key)}
+                      className={`w-full aspect-square rounded-lg overflow-hidden border-2 bg-zinc-900 relative transition-all duration-200 shrink-0 ${
+                        activeMockup === thumb.key 
+                          ? 'border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105 opacity-100' 
+                          : 'border-zinc-700/50 opacity-50 hover:opacity-90 hover:border-zinc-500'
+                      }`}
+                    >
+                      <img src={thumb.img} alt={thumb.alt} className="w-full h-full object-cover" />
+                      {thumb.badge && (
+                        <div className="absolute bottom-0 inset-x-0 bg-black/85 py-0.5 text-[8px] text-[#d4af37] font-black uppercase tracking-wider text-center border-t border-[#d4af37]/20 select-none">
+                          {thumb.badge}
+                        </div>
+                      )}
+                    </button>
+                  ))}
+                </div>
 
-                {/* Studio Thumb / Scale Thumb */}
+                {/* Scroll Down Button */}
                 <button
                   type="button"
-                  onClick={() => setActiveMockup('studio')}
-                  className={`w-full aspect-[3/4] rounded-xl overflow-hidden border-2 bg-black/40 relative group transition-all ${
-                    activeMockup === 'studio' ? 'border-[#d4af37] scale-105 shadow-md shadow-[#d4af37]/20' : 'border-zinc-800 opacity-60 hover:opacity-100'
+                  onClick={() => {
+                    if (scrollRef.current) {
+                      scrollRef.current.scrollBy({ top: 80, behavior: 'smooth' })
+                    }
+                  }}
+                  disabled={!canScrollDown}
+                  className={`w-8 h-8 rounded-full border border-zinc-700 bg-zinc-900/90 text-[#d4af37] flex items-center justify-center transition-all duration-200 shadow-md ${
+                    canScrollDown 
+                      ? 'opacity-100 hover:bg-zinc-800 hover:border-[#d4af37] cursor-pointer' 
+                      : 'opacity-20 cursor-not-allowed border-zinc-800'
                   }`}
+                  aria-label="Scroll Down"
                 >
-                  <img src="https://images.unsplash.com/photo-1513694203232-719a280e022f?q=80&w=200&auto=format&fit=crop" alt="Studio View" className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center text-[9px] text-white font-black uppercase tracking-wider">Studio</div>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </button>
               </div>
 
               {/* Main Viewer Area */}
               <div className="flex-grow w-full">
                 <div 
-                  className="rounded-3xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative group bg-black/30 w-full select-none"
+                  className="rounded-lg overflow-hidden relative group bg-zinc-900 w-full select-none"
                 >
                   {activeMockup === 'flat' ? (
-                    <div 
-                      className="cursor-zoom-in relative"
-                      onClick={() => setIsPreviewOpen(true)}
-                    >
-                      {product.image_url ? (
-                        <>
-                          <img src={product.image_url} alt={product.title} className="w-full h-auto object-cover max-h-[85vh] group-hover:scale-[1.01] transition-transform duration-700" />
-                          <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                            <span className="bg-black/40 backdrop-blur-md text-white text-xs font-black uppercase tracking-widest px-6 py-3 rounded-full border border-white/10 shadow-xl">
-                              🔍 {t.zoom}
-                            </span>
-                          </div>
-                        </>
-                      ) : (
-                        <div className="w-full aspect-[3/4] bg-white/5 flex items-center justify-center">No Image</div>
-                      )}
+                    <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fafaf9] via-[#f5f5f4] to-[#e7e5e4] dark:from-[#141416] dark:via-[#0c0c0e] dark:to-[#040405] overflow-hidden rounded-lg flex items-center justify-center p-6 shadow-inner border border-zinc-200/50 dark:border-zinc-800/30 animate-fade-in">
+                      {/* Studio lights soft background glow (Premium warm gold spotlight in dark mode) */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0)_75%)] dark:bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.08)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
+
+                      {/* Centered Flat Poster */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="relative w-[48%] aspect-[3/4] rounded-sm overflow-hidden cursor-zoom-in group/flat transition-all duration-300 hover:scale-[1.02]"
+                        style={{
+                          boxShadow: '0 20px 40px rgba(0,0,0,0.3), 0 8px 16px rgba(0,0,0,0.2)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img 
+                              src={product.image_url} 
+                              alt={product.title} 
+                              className="transition-all duration-500" 
+                              style={getImageStyle('flat', posterRotation)}
+                            />
+                            {/* Premium gloss & glint effect */}
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/8 to-white/0 pointer-events-none mix-blend-overlay" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                            
+                            {/* Hover zoom text */}
+                            <div className="absolute inset-0 bg-black/25 opacity-0 group-hover/flat:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="bg-black/60 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/10 shadow-lg">
+                                🔍 {t.zoom}
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : activeMockup === 'metal' ? (
+                    /* Premium 3D Glossy Metal Print Mockup matching the exact perspective, metallic thickness edge, drop shadow, and reflection sheen */
+                    <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fafaf9] via-[#f5f5f4] to-[#e7e5e4] dark:from-[#141416] dark:via-[#0c0c0e] dark:to-[#040405] overflow-hidden rounded-lg flex items-center justify-center p-6 shadow-inner border border-zinc-200/50 dark:border-zinc-800/30 animate-fade-in">
+                      {/* Studio lights soft background glow (Premium warm gold spotlight in dark mode) */}
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0)_75%)] dark:bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.08)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
+
+                      {/* 3D Tilted Metal Plate Container with interactive hover effect */}
+                      <div 
+                        className="relative w-[48%] aspect-[3/4] transition-all duration-700 ease-out preserve-3d"
+                        style={{
+                          transform: `perspective(1600px) rotateX(43deg) rotateY(-22deg) rotateZ(19deg) scale(${selectedSize === 'F4' ? 0.82 : selectedSize === 'A3' ? 0.92 : 0.98})`,
+                          transformStyle: 'preserve-3d',
+                        }}
+                      >
+                        {/* 3D Drop Shadow layer cast underneath */}
+                        <div 
+                          className="absolute inset-0 rounded-sm pointer-events-none transition-all duration-500"
+                          style={{
+                            background: 'rgba(0,0,0,0.38)',
+                            transform: 'translateZ(-30px) scale(0.96)',
+                            filter: 'blur(16px)',
+                            boxShadow: '0 25px 50px rgba(0,0,0,0.6)',
+                          }}
+                        />
+
+                        {/* Actual Metal Plate */}
+                        <div 
+                          className="w-full h-full rounded-[3px] overflow-hidden relative cursor-zoom-in group/plate transition-transform duration-350"
+                          onClick={() => setIsPreviewOpen(true)}
+                          style={{
+                            /* Elegant extruded silver metal core edge */
+                            borderRight: '1.5px solid rgba(255,255,255,0.65)',
+                            borderBottom: '1.5px solid rgba(255,255,255,0.5)',
+                            boxShadow: `
+                              0.5px 0.5px 0px rgba(255,255,255,0.8),
+                              1px 1px 0px #e2e8f0,
+                              1.5px 1.5px 0px #cbd5e1,
+                              2px 2px 0px #94a3b8,
+                              2.5px 2.5px 0px #64748b,
+                              3px 3px 4px rgba(0,0,0,0.4),
+                              0 10px 25px rgba(0,0,0,0.25)
+                            `
+                          }}
+                        >
+                          {product.image_url ? (
+                            <>
+                              {/* Product Artwork */}
+                              <img 
+                                src={product.image_url} 
+                                alt={product.title} 
+                                className="transition-all duration-500" 
+                                style={getImageStyle('metal', posterRotation)}
+                              />
+
+                              {/* High-Glossy Glass Reflection Sheen Streak (Diagonal light sheen) */}
+                              <div 
+                                className="absolute inset-0 pointer-events-none mix-blend-overlay opacity-95 transition-transform duration-1000"
+                                style={{
+                                  background: 'linear-gradient(115deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0) 38%, rgba(255,255,255,0.65) 48%, rgba(255,255,255,0.85) 50%, rgba(255,255,255,0.65) 52%, rgba(255,255,255,0) 62%, rgba(255,255,255,0) 100%)',
+                                  transform: 'scale(1.5)',
+                                }}
+                              />
+
+                              {/* Realistic subtle brushed aluminum metal texture overlay */}
+                              <div 
+                                className="absolute inset-0 pointer-events-none opacity-[0.03] mix-blend-overlay"
+                                style={{
+                                  backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=\'0 0 200 200\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'noiseFilter\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.8\' numOctaves=\'3\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23noiseFilter)\'/%3E%3C/svg%3E")'
+                                }}
+                              />
+
+                              {/* Light glint on the top edge */}
+                              <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/40 to-transparent opacity-80 pointer-events-none" />
+
+                              {/* Glass overlay hover zoom text */}
+                              <div className="absolute inset-0 bg-black/10 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <span className="bg-black/60 backdrop-blur-md text-white text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full border border-white/10 shadow-lg">
+                                  🔍 {t.zoom}
+                                </span>
+                              </div>
+                            </>
+                          ) : (
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                          )}
+                        </div>
+                      </div>
                     </div>
                   ) : activeMockup === 'living' ? (
                     /* Dynamic Comparative Side-by-Side Living Room Mockup showing F4, A3, and A3+ simultaneously */
-                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-2xl shadow-inner">
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-lg shadow-inner">
                       <img 
                         src="/mockup_person.png" 
                         alt="Living Room Mockup" 
@@ -328,7 +610,14 @@ export default function ProductDetail() {
                           display: selectedSize === 'F4' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute left-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                        <span 
+                          className="absolute bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
+                          style={{
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center',
+                            left: '-26px'
+                          }}
+                        >
                           ↕️ {dimF4Val.split('x')[1]?.trim() || '33 cm'}
                         </span>
                       </div>
@@ -337,14 +626,14 @@ export default function ProductDetail() {
                         className="absolute transition-all duration-300 pointer-events-none flex justify-center"
                         style={{
                           left: '12%',
-                          top: '41%',
+                          top: '44%',
                           width: '13.5%',
                           borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
                           display: selectedSize === 'F4' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
-                          ↔️ {dimF4Val.split('x')[0]?.trim() || '21 cm'}
+                        <span className="absolute top-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↔️ {dimF4Val.split('x')[0]?.trim() || '21'} cm
                         </span>
                       </div>
                       {/* Poster Element (F4) */}
@@ -395,7 +684,14 @@ export default function ProductDetail() {
                           display: selectedSize === 'A3' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute left-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                        <span 
+                          className="absolute bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
+                          style={{
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center',
+                            left: '-26px'
+                          }}
+                        >
                           ↕️ {dimA3Val.split('x')[1]?.trim() || '42 cm'}
                         </span>
                       </div>
@@ -404,14 +700,14 @@ export default function ProductDetail() {
                         className="absolute transition-all duration-300 pointer-events-none flex justify-center"
                         style={{
                           left: '38%',
-                          top: '41%',
+                          top: '44%',
                           width: '17.5%',
                           borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
                           display: selectedSize === 'A3' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
-                          ↔️ {dimA3Val.split('x')[0]?.trim() || '30 cm'}
+                        <span className="absolute top-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↔️ {dimA3Val.split('x')[0]?.trim() || '30'} cm
                         </span>
                       </div>
                       {/* Poster Element (A3) */}
@@ -462,7 +758,14 @@ export default function ProductDetail() {
                           display: selectedSize === 'A3+' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute left-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                        <span 
+                          className="absolute bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
+                          style={{
+                            transform: 'rotate(-90deg)',
+                            transformOrigin: 'center',
+                            left: '-26px'
+                          }}
+                        >
                           ↕️ {dimA3PlusVal.split('x')[1]?.trim() || '48 cm'}
                         </span>
                       </div>
@@ -471,14 +774,14 @@ export default function ProductDetail() {
                         className="absolute transition-all duration-300 pointer-events-none flex justify-center"
                         style={{
                           left: '68%',
-                          top: '41%',
+                          top: '44%',
                           width: '22%',
                           borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
                           display: selectedSize === 'A3+' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-2 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
-                          ↔️ {dimA3PlusVal.split('x')[0]?.trim() || '32 cm'}
+                        <span className="absolute top-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                          ↔️ {dimA3PlusVal.split('x')[0]?.trim() || '32'} cm
                         </span>
                       </div>
                       {/* Poster Element (A3+) */}
@@ -529,9 +832,9 @@ export default function ProductDetail() {
                         <div className="absolute right-0 top-0 bottom-0 w-[1px] bg-zinc-500/40" />
                       </div>
                     </div>
-                  ) : (
+                  ) : activeMockup === 'studio' ? (
                     /* Dynamic mathematically correct desk setup mockup showing 3 posters side-by-side */
-                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-2xl shadow-inner">
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-lg shadow-inner">
                       <img 
                         src="/mockup_desk.png" 
                         alt="Setup Desk Mockup" 
@@ -610,28 +913,407 @@ export default function ProductDetail() {
                         <div className="absolute inset-0 ring-1 ring-inset ring-white/20 pointer-events-none" />
                       </div>
                     </div>
+                  ) : activeMockup === 'livingroom' ? (
+                    /* Living Room Mockup - Clean modern room with green chair and plant */
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-lg animate-fade-in">
+                      <img 
+                        src="/mockup_livingroom.jpg" 
+                        alt="Living Room Mockup" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+                      {/* Product poster on wall */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in overflow-hidden z-20 transition-all duration-300 hover:scale-[1.02]"
+                        style={{
+                          top: '8.8%',
+                          left: '37.9%',
+                          width: '23.4%',
+                          aspectRatio: '240/342',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img 
+                              src={product.image_url} 
+                              className="transition-all duration-500" 
+                              style={getImageStyle('livingroom', posterRotation)}
+                              alt="Poster in Living Room" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/8 to-white/0 pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : activeMockup === 'living_landscape' ? (
+                    /* Living Room Mockup - Landscape Version with custom background */
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-lg animate-fade-in">
+                      <img 
+                        src="/mockup_livingroom_landscape.png" 
+                        alt="Living Room Mockup Landscape" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                        style={{ objectPosition: 'center 0%' }}
+                      />
+                      {/* Product poster on wall (Landscape aspect ratio 32.9/25.8) */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in overflow-hidden z-20 transition-all duration-300 hover:scale-[1.02]"
+                        style={{
+                          top: '24.2%',
+                          left: '31.3%',
+                          width: '32.9%',
+                          aspectRatio: '32.9/25.8',
+                          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 2px 8px rgba(0,0,0,0.3)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img 
+                              src={product.image_url} 
+                              className="transition-all duration-500" 
+                              style={getImageStyle('living_landscape', (posterRotation + 90) % 360)}
+                              alt="Poster in Living Room Landscape" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/8 to-white/0 pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : activeMockup === 'display' ? (
+                    /* Product Display / Packaging Mockup - Clean orthographic front view with side-by-side Portrait & Landscape combo */
+                    <div className="relative w-full aspect-[4/3] bg-zinc-900 overflow-hidden rounded-lg animate-fade-in">
+                      <img 
+                        src="/mockup_display_clean.png" 
+                        alt="Product Display Portrait & Landscape" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+                      
+                      {/* Left: Portrait Poster */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in overflow-hidden z-20 transition-all duration-500 hover:scale-[1.02]"
+                        style={{
+                          top: `${activeDisplayTop}%`,
+                          left: `${activeDisplaySideLeft}%`,
+                          width: `${activeDisplayWidth}%`,
+                          aspectRatio: '3/4',
+                          boxShadow: '0 15px 35px rgba(0,0,0,0.35), 0 5px 12px rgba(0,0,0,0.2)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img 
+                              src={product.image_url} 
+                              className="transition-all duration-500" 
+                              style={getImageStyle('display', posterRotation)}
+                              alt="Product Display Portrait" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.15)_0%,rgba(255,255,255,0)_60%)] pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+
+                      {/* Right: Landscape Poster */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in overflow-hidden z-20 transition-all duration-500 hover:scale-[1.02]"
+                        style={{
+                          top: `${activeDisplayLandscapeTop}%`,
+                          left: `${activeDisplaySideLandscapeLeft}%`,
+                          width: `${activeDisplayLandscapeWidth}%`,
+                          aspectRatio: '4/3',
+                          boxShadow: '0 15px 35px rgba(0,0,0,0.35), 0 5px 12px rgba(0,0,0,0.2)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img 
+                              src={product.image_url} 
+                              className="transition-all duration-500" 
+                              style={getImageStyle('display_landscape', displayLandscapeRotation)}
+                              alt="Product Display Landscape" 
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.15)_0%,rgba(255,255,255,0)_60%)] pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+                    </div>
+                  ) : activeMockup === 'cafe' ? (
+                    /* Cafe Mockup with dynamic poster frames positioned precisely on the wall and responsive size scaling */
+                    <div className="relative w-full aspect-[16/9] bg-zinc-900 overflow-hidden rounded-lg shadow-inner animate-fade-in">
+                      <img 
+                        src="/mockup_cafe.jpg" 
+                        alt="Cafe Mockup" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+                      
+                      {/* Ambient overlay */}
+                      <div className="absolute inset-0 bg-black/5 pointer-events-none" />
+
+                      {/* ================== POSTER 1: LEFT POSTER ================== */}
+                      <div 
+                        className="absolute rounded-sm overflow-hidden z-10 transition-all duration-300"
+                        style={{
+                          top: `${activeCafeTop}%`,
+                          left: `${25 - activeCafeWidth / 2}%`,
+                          width: `${activeCafeWidth}%`,
+                          aspectRatio: activeCafeAspect,
+                          border: '3px solid #1c1917',
+                          boxShadow: '0 16px 36px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.4), inset 0 0 12px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        <img 
+                          src={getUrl('mockup-cafe-left') || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop'} 
+                          className="w-full h-full object-cover select-none" 
+                          alt="Poster Cafe Left" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                      </div>
+
+                      {/* ================== POSTER 2: CENTER POSTER (Active product) ================== */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in rounded-sm overflow-hidden z-20 group/center transition-all duration-500 scale-[1.01] hover:scale-[1.03]"
+                        style={{
+                          top: `${activeCafeTop}%`,
+                          left: `${50 - activeCafeWidth / 2}%`,
+                          width: `${activeCafeWidth}%`,
+                          aspectRatio: activeCafeAspect,
+                          border: '3.5px solid #1c1917',
+                          boxShadow: '0 20px 48px rgba(0,0,0,0.75), 0 6px 15px rgba(0,0,0,0.45), inset 0 0 12px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+
+                      {/* ================== POSTER 3: RIGHT POSTER ================== */}
+                      <div 
+                        className="absolute rounded-sm overflow-hidden z-10 transition-all duration-300"
+                        style={{
+                          top: `${activeCafeTop}%`,
+                          left: `${75 - activeCafeWidth / 2}%`,
+                          width: `${activeCafeWidth}%`,
+                          aspectRatio: activeCafeAspect,
+                          border: '3px solid #1c1917',
+                          boxShadow: '0 16px 36px rgba(0,0,0,0.65), 0 4px 10px rgba(0,0,0,0.4), inset 0 0 12px rgba(0,0,0,0.1)'
+                        }}
+                      >
+                        <img 
+                          src={getUrl('mockup-cafe-right') || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop'} 
+                          className="w-full h-full object-cover select-none" 
+                          alt="Poster Cafe Right" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                      </div>
+                    </div>
+                  ) : activeMockup === 'gaming' ? (
+                    /* Gaming Room Mockup with dynamic poster frames, tech aesthetic, and neon glow shadow */
+                    <div className="relative w-full aspect-[16/9] bg-zinc-900 overflow-hidden rounded-lg shadow-inner animate-fade-in">
+                      <img 
+                        src="/mockup_gaming.jpg" 
+                        alt="Gaming Room Mockup" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+                      
+                      {/* Ambient/cyberpunk glowing overlay */}
+                      <div className="absolute inset-0 bg-purple-950/10 pointer-events-none" />
+
+                      {/* ================== POSTER 1: LEFT POSTER ================== */}
+                      <div 
+                        className="absolute rounded-sm overflow-hidden z-10 transition-all duration-300"
+                        style={{
+                          top: `${activeGamingTop}%`,
+                          left: `${25 - activeGamingWidth / 2}%`,
+                          width: `${activeGamingWidth}%`,
+                          aspectRatio: activeGamingAspect,
+                          border: '4.5px solid #111',
+                          boxShadow: '0 12px 30px rgba(0,0,0,0.8), 0 0 20px rgba(168,85,247,0.35), 0 0 35px rgba(6,182,212,0.25)'
+                        }}
+                      >
+                        <img 
+                          src={getUrl('mockup-gaming-left') || 'https://images.unsplash.com/photo-1542751371-adc38448a05e?q=80&w=600&auto=format&fit=crop'} 
+                          className="w-full h-full object-cover select-none" 
+                          alt="Poster Gaming Left" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                      </div>
+
+                      {/* ================== POSTER 2: CENTER POSTER (Active product) ================== */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in rounded-sm overflow-hidden z-20 group/center transition-all duration-500 scale-[1.01] hover:scale-[1.03]"
+                        style={{
+                          top: `${activeGamingTop}%`,
+                          left: `${50 - activeGamingWidth / 2}%`,
+                          width: `${activeGamingWidth}%`,
+                          aspectRatio: activeGamingAspect,
+                          border: '4.5px solid #111',
+                          boxShadow: '0 20px 48px rgba(0,0,0,0.9), 0 0 30px rgba(168,85,247,0.55), 0 0 50px rgba(6,182,212,0.35)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+
+                      {/* ================== POSTER 3: RIGHT POSTER ================== */}
+                      <div 
+                        className="absolute rounded-sm overflow-hidden z-10 transition-all duration-300"
+                        style={{
+                          top: `${activeGamingTop}%`,
+                          left: `${75 - activeGamingWidth / 2}%`,
+                          width: `${activeGamingWidth}%`,
+                          aspectRatio: activeGamingAspect,
+                          border: '4.5px solid #111',
+                          boxShadow: '0 12px 30px rgba(0,0,0,0.8), 0 0 20px rgba(168,85,247,0.35), 0 0 35px rgba(6,182,212,0.25)'
+                        }}
+                      >
+                        <img 
+                          src={getUrl('mockup-gaming-right') || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?q=80&w=600&auto=format&fit=crop'} 
+                          className="w-full h-full object-cover select-none" 
+                          alt="Poster Gaming Right" 
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                        <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                        <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                      </div>
+                    </div>
+                  ) : (
+                    /* Bedroom Mockup with a single cozy poster centered over the headboard and light oak wooden frame */
+                    <div className="relative w-full aspect-[16/9] bg-zinc-900 overflow-hidden rounded-lg shadow-inner animate-fade-in">
+                      <img 
+                        src="/mockup_bedroom.jpg" 
+                        alt="Bedroom Mockup" 
+                        className="absolute inset-0 w-full h-full object-cover select-none pointer-events-none" 
+                      />
+                      
+                      {/* Ambient warm lighting overlay */}
+                      <div className="absolute inset-0 bg-amber-900/5 pointer-events-none" />
+
+                      {/* ================== CENTERED POSTER ABOVE THE HEADBOARD ================== */}
+                      <div 
+                        onClick={() => setIsPreviewOpen(true)}
+                        className="absolute cursor-zoom-in rounded-sm overflow-hidden z-20 group/center transition-all duration-500 scale-[1.01] hover:scale-[1.03]"
+                        style={{
+                          top: `${activeBedroomTop}%`,
+                          left: `${50 - activeBedroomWidth / 2}%`,
+                          width: `${activeBedroomWidth}%`,
+                          aspectRatio: activeBedroomAspect,
+                          border: '4.5px solid #d4c5b9', // Elegant light oak wooden border
+                          boxShadow: '0 12px 32px rgba(0,0,0,0.3), 0 4px 10px rgba(0,0,0,0.2), inset 0 0 12px rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        {product.image_url ? (
+                          <>
+                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
+                            <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
+                            <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
+                          </>
+                        ) : (
+                          <div className="w-full h-full bg-zinc-800 flex items-center justify-center text-[10px] text-zinc-500">No Image</div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Floating Rotation Control Overlay */}
+                  {['gaming', 'studio', 'cafe', 'bedroom'].includes(activeMockup) ? null : activeMockup === 'display' ? (
+                    <div className="absolute bottom-4 right-4 z-30 flex gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setPosterRotation((prev) => (prev + 90) % 360);
+                        }}
+                        className="bg-black/80 hover:bg-black text-[#d4af37] border border-[#d4af37]/30 hover:border-[#d4af37] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none animate-fade-in"
+                      >
+                        🔄 Putar Portrait (Kiri)
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setDisplayLandscapeRotation((prev) => (prev + 90) % 360);
+                        }}
+                        className="bg-black/80 hover:bg-black text-[#d4af37] border border-[#d4af37]/30 hover:border-[#d4af37] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none animate-fade-in"
+                      >
+                        🔄 Putar Landscape (Kanan)
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setPosterRotation((prev) => (prev + 90) % 360);
+                      }}
+                      className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-black text-[#d4af37] border border-[#d4af37]/30 hover:border-[#d4af37] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none"
+                    >
+                      🔄 Putar Gambar
+                    </button>
                   )}
                 </div>
 
-                {/* Mobile & Tablet Interactive Tabs Selection */}
-                <div className="flex gap-2 justify-center mt-4">
+                {/* Mobile Thumbnail Strip (horizontal scroll) */}
+                <div className="md:hidden flex gap-2 mt-3 overflow-x-auto scrollbar-hide pb-1 px-1">
                   {[
-                    { key: 'flat', label: '🖼️ Detail', desc: 'Detail Poster' },
-                    { key: 'living', label: '🛋️ Ruang Keluarga', desc: 'Mockup Dinding' },
-                    { key: 'studio', label: '🖥️ Setup Desk', desc: 'Mockup Monitor' }
-                  ].map(tab => (
+                    { key: 'flat', img: product.image_url, alt: 'Poster' },
+                    { key: 'metal', img: product.image_url, alt: 'Metal' },
+                    { key: 'gaming', img: '/mockup_gaming.jpg', alt: 'Gaming' },
+                    { key: 'livingroom', img: '/mockup_livingroom.jpg', alt: 'Living Room (PRT)', badge: 'PRT' },
+                    { key: 'living_landscape', img: '/mockup_livingroom_landscape.png', alt: 'Living Room (LND)', badge: 'LND' },
+                    { key: 'display', img: '/mockup_display_clean.png', alt: 'Display (Prt & Lnd)', badge: 'P&L' },
+                    { key: 'living', img: '/mockup_person.png', alt: 'Scale' },
+                    { key: 'studio', img: '/mockup_desk.png', alt: 'Studio' },
+                    { key: 'cafe', img: '/mockup_cafe.jpg', alt: 'Cafe' },
+                    { key: 'bedroom', img: '/mockup_bedroom.jpg', alt: 'Bedroom' },
+                  ].map(thumb => (
                     <button
-                      key={tab.key}
+                      key={thumb.key}
                       type="button"
-                      onClick={() => setActiveMockup(tab.key)}
-                      className={`flex-1 md:flex-none px-4 py-2.5 rounded-xl border flex flex-col items-center justify-center transition-all ${
-                        activeMockup === tab.key 
-                          ? 'bg-[#d4af37]/10 border-[#d4af37] text-[#d4af37] shadow-[0_4px_15px_rgba(212,175,55,0.15)] scale-102 font-black' 
-                          : 'bg-black/20 border-white/5 text-zinc-400 hover:text-white hover:border-white/10'
+                      onClick={() => setActiveMockup(thumb.key)}
+                      className={`w-14 h-14 rounded-md overflow-hidden border-2 bg-zinc-900 shrink-0 transition-all duration-200 relative ${
+                        activeMockup === thumb.key 
+                          ? 'border-[#d4af37] shadow-[0_0_8px_rgba(212,175,55,0.4)] opacity-100 scale-105' 
+                          : 'border-zinc-700/50 opacity-50'
                       }`}
                     >
-                      <span className="text-xs font-black uppercase tracking-wider">{tab.label}</span>
-                      <span className="text-[8px] opacity-60 tracking-normal mt-0.5">{tab.desc}</span>
+                      <img src={thumb.img} alt={thumb.alt} className="w-full h-full object-cover" />
+                      {thumb.badge && (
+                        <div className="absolute bottom-0 inset-x-0 bg-black/85 py-0.5 text-[7px] text-[#d4af37] font-black uppercase tracking-wider text-center border-t border-[#d4af37]/20 select-none">
+                          {thumb.badge}
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -639,7 +1321,7 @@ export default function ProductDetail() {
             </div>
 
             {/* Deskripsi Produk di bawah Foto */}
-            <div className="glass p-8 rounded-2xl border border-zinc-200/80 dark:border-zinc-850/40 shadow-xl">
+            <div className="bg-zinc-900/50 p-8 rounded-lg border border-zinc-800">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
                 <span className="w-1 h-6 bg-[#d4af37] rounded-full"></span>
                 {t.description}

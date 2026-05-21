@@ -35,6 +35,33 @@ export default async function handler(req, res) {
       }
     })
 
+    // --- VERIFIKASI ADMIN ---
+    const authHeader = req.headers.authorization
+    if (!authHeader) {
+      return res.status(401).json({ error: 'Otorisasi gagal: Token otorisasi tidak ditemukan.' })
+    }
+    const token = authHeader.split(' ')[1]
+    if (!token) {
+      return res.status(401).json({ error: 'Otorisasi gagal: Format token tidak valid.' })
+    }
+
+    // Ambil informasi user berdasarkan token
+    const { data: { user }, error: userErr } = await supabaseAdmin.auth.getUser(token)
+    if (userErr || !user) {
+      return res.status(401).json({ error: 'Otorisasi gagal: Sesi telah kedaluwarsa atau tidak valid.' })
+    }
+
+    // Cek apakah email user terdaftar di tabel site_admins
+    const { data: adminData, error: adminErr } = await supabaseAdmin
+      .from('site_admins')
+      .select('role')
+      .eq('email', user.email)
+      .maybeSingle()
+
+    if (adminErr || !adminData) {
+      return res.status(403).json({ error: 'Akses ditolak: Anda tidak memiliki hak akses admin.' })
+    }
+
     // Convert Base64 back to raw Buffer
     const buffer = Buffer.from(base64Data, 'base64')
 

@@ -19,16 +19,19 @@ for select
 using (true);
 
 drop policy if exists "public upsert site_assets" on public.site_assets;
-create policy "public upsert site_assets"
-on public.site_assets
-for insert
-with check (true);
-
 drop policy if exists "public update site_assets" on public.site_assets;
-create policy "public update site_assets"
+drop policy if exists "Only admins can manage site_assets" on public.site_assets;
+
+-- Izinkan modifikasi (insert/update/delete) hanya bagi admin
+create policy "Only admins can manage site_assets"
 on public.site_assets
-for update
-using (true);
+for all
+using (
+  exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
 
 -- ========== STORAGE bucket (reuse product-images or create site-assets) ==========
 insert into storage.buckets (id, name, public)
@@ -41,18 +44,49 @@ update storage.buckets set public = true where id = 'site-assets';
 drop policy if exists "storage read site assets" on storage.objects;
 drop policy if exists "storage insert site assets" on storage.objects;
 drop policy if exists "storage update site assets" on storage.objects;
+drop policy if exists "storage delete site assets" on storage.objects;
+drop policy if exists "Only admins can insert site storage" on storage.objects;
+drop policy if exists "Only admins can update site storage" on storage.objects;
+drop policy if exists "Only admins can delete site storage" on storage.objects;
 
+-- Baca berkas publik diperbolehkan untuk siapa saja
 create policy "storage read site assets"
 on storage.objects
 for select
 using (bucket_id = 'site-assets');
 
-create policy "storage insert site assets"
+-- Otorisasi upload hanya untuk admin
+create policy "Only admins can insert site storage"
 on storage.objects
 for insert
-with check (bucket_id = 'site-assets');
+with check (
+  bucket_id = 'site-assets'
+  and exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
 
-create policy "storage update site assets"
+-- Otorisasi update hanya untuk admin
+create policy "Only admins can update site storage"
 on storage.objects
 for update
-using (bucket_id = 'site-assets');
+using (
+  bucket_id = 'site-assets'
+  and exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);
+
+-- Otorisasi delete hanya untuk admin
+create policy "Only admins can delete site storage"
+on storage.objects
+for delete
+using (
+  bucket_id = 'site-assets'
+  and exists (
+    select 1 from public.site_admins 
+    where email = auth.jwt()->>'email'
+  )
+);

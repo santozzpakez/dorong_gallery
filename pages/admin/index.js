@@ -569,9 +569,6 @@ export default function Admin() {
     // Tunggu sampai status login & role benar-benar selesai dimuat
     if (loading) return
     
-    // Jika user ada tapi role belum ada, tunggu sebentar (bisa jadi sedang proses fetch role)
-    if (user && adminRole === null) return 
-
     // Proteksi Admin: Jika loading selesai dan tetap tidak ada role, berarti bukan admin
     if (!adminRole) {
       router.push('/')
@@ -1293,6 +1290,17 @@ export default function Admin() {
     const cat = currentFolder[0]
     const subcat = currentFolder[1]
     currentView = savedProducts.filter(p => p.category === cat && (p.subcategory === subcat || (!p.subcategory && subcat === 'Uncategorized')))
+  }
+
+  if (loading || !adminRole) {
+    return (
+      <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white font-sans">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37] mx-auto"></div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Memverifikasi Otorisasi Admin...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
