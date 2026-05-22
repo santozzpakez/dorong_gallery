@@ -131,7 +131,7 @@ export default function AestheticTypePage() {
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-sans mb-6 flex-wrap font-bold uppercase tracking-wider">
-          <Link href="/aesthetic" className="text-[#d4af37]/80 hover:text-[#d4af37] transition-colors">
+          <Link href="/aesthetic" className="text-accent/80 hover:text-accent transition-colors">
             &larr; Aesthetic
           </Link>
           <span className="text-zinc-600">/</span>
@@ -139,7 +139,7 @@ export default function AestheticTypePage() {
         </div>
 
         {/* Header */}
-        <h1 className="text-3xl md:text-4xl font-black mt-2 uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+        <h1 className="text-3xl md:text-4xl font-black mt-2 uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
           {typeName || 'Loading...'}
         </h1>
         <p className="text-zinc-500 dark:text-zinc-400 mt-2 mb-10 text-xs md:text-sm font-sans tracking-widest uppercase font-bold">
@@ -149,13 +149,13 @@ export default function AestheticTypePage() {
         {/* Produk */}
         {loading ? (
           <div className="text-center py-20 text-zinc-500 flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin mb-4"></div>
+            <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4"></div>
             {t.searching}
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-20 text-zinc-500 border border-dashed border-zinc-200 dark:border-zinc-850 rounded-xl bg-zinc-100 dark:bg-zinc-950/20">
             <p className="text-zinc-400 mb-4 font-bold">{t.empty}</p>
-            <Link href="/admin" className="text-[#d4af37] text-xs hover:underline uppercase font-black tracking-widest">
+            <Link href="/admin" className="text-accent text-xs hover:underline uppercase font-black tracking-widest">
               {t.uploadViaAdmin}
             </Link>
           </div>
@@ -167,7 +167,7 @@ export default function AestheticTypePage() {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
               {products.map((p) => (
                 <Link key={p.id} href={`/product/${p.id}`}>
-                  <article className="rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 hover:border-[#d4af37]/60 hover:shadow-[0_15px_30px_rgba(212,175,55,0.15)] transition-all cursor-pointer group flex flex-col h-full shadow-lg">
+                  <article className="rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 hover:border-accent/60 hover:shadow-[0_15px_30px_rgb(var(--accent-main)/0.15)] transition-all cursor-pointer group flex flex-col h-full shadow-lg">
                     <div className="aspect-[3/4] bg-black/40 relative overflow-hidden">
                       {p.image_url ? (
                         <Image
@@ -185,7 +185,7 @@ export default function AestheticTypePage() {
                       {/* Hover overlay */}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-4">
                         <div className="flex gap-2">
-                          <span className="flex-1 bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-full text-center shadow-[0_4px_15px_rgba(212,175,55,0.2)]">
+                          <span className="flex-1 bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-full text-center shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)]">
                             {t.viewDetail}
                           </span>
                           <button
@@ -203,19 +203,19 @@ export default function AestheticTypePage() {
                       </div>
                     </div>
                     <div className="p-4 flex flex-col flex-grow bg-black/20">
-                      <h2 className="font-bold text-sm text-[var(--text-main)] group-hover:text-[#d4af37] transition-colors line-clamp-2 leading-snug">
+                      <h2 className="font-bold text-sm text-[var(--text-main)] group-hover:text-accent transition-colors line-clamp-2 leading-snug">
                         {p.title}
                       </h2>
                       <div className="mt-auto pt-3">
                         {(() => {
                           const pInfoS = getPriceInfo(getText, 'F4')
                           return pInfoS.hasDiscount ? (
-                            <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
+                            <p className="text-sm text-accent font-black font-sans uppercase tracking-widest flex items-center gap-1.5 flex-wrap">
                               <span className="line-through text-gray-500 text-xs normal-case">Rp {pInfoS.original.toLocaleString('id-ID')}</span>
                               <span>Rp {pInfoS.discount.toLocaleString('id-ID')}</span>
                             </p>
                           ) : (
-                            <p className="text-sm text-[#d4af37] font-black font-sans uppercase tracking-widest">
+                            <p className="text-sm text-accent font-black font-sans uppercase tracking-widest">
                               Rp {pInfoS.original.toLocaleString('id-ID')}
                             </p>
                           )

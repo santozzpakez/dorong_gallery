@@ -83,22 +83,45 @@ export default function Home(){
         <Hero />
 
         {/* Section Koleksi dengan Background Adaptif & Garis Pembatas */}
-        <section id="categories" className="relative overflow-hidden border-b border-zinc-900/10 dark:border-zinc-900 bg-[var(--bg)] py-20">
+        <section id="categories" className="relative overflow-hidden border-b border-zinc-900/10 dark:border-zinc-900 bg-gradient-to-b from-[var(--bg)] via-zinc-50 dark:via-[#0a0a0c] to-[var(--bg)] py-24">
           
+          {/* Subtle Premium Dot Pattern Texture */}
+          <div className="absolute inset-0 opacity-[0.15] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle at 2px 2px, rgb(var(--accent-main)) 1px, transparent 0)', backgroundSize: '40px 40px' }} />
+
           {/* Polished Dark Desk Metallic Ground Surface Shadow */}
-          <div className="absolute bottom-0 left-0 w-full h-80 bg-gradient-to-t from-transparent via-[#d4af37]/3 to-transparent pointer-events-none z-0" />
+          <div className="absolute bottom-0 left-0 w-full h-80 bg-gradient-to-t from-transparent via-accent/5 to-transparent pointer-events-none z-0" />
 
           {/* Premium Serif Ribbon Header Bar */}
-          <div className="w-full mb-16 flex flex-col justify-center items-center relative overflow-hidden z-10 px-4">
-            <div className="absolute left-1/2 -translate-x-1/2 w-96 h-96 bg-[#d4af37]/5 rounded-full filter blur-3xl pointer-events-none"></div>
+          <div className="w-full mb-12 py-12 flex flex-col justify-center items-center relative overflow-hidden z-10 px-4">
+            {/* Horizontal Vignette Background - Smooth Edges */}
+            <div className="absolute inset-y-0 left-0 w-[25%] md:w-[35%] bg-gradient-to-r from-zinc-700/15 to-transparent pointer-events-none" />
+            <div className="absolute inset-y-0 right-0 w-[25%] md:w-[35%] bg-gradient-to-l from-zinc-700/15 to-transparent pointer-events-none" />
             
-            <span className="text-[10px] md:text-xs font-black uppercase tracking-[0.4em] text-[#d4af37] mb-2 font-serif">
-              🏛️ META-GRAPHICS PREMIUM COLLECTION 🏛️
-            </span>
-            <h2 className="relative z-10 text-4xl sm:text-5xl md:text-6xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#b39359] font-serif text-center filter drop-shadow-[0_2px_10px_rgba(212,175,55,0.15)]">
-              COLLECTIONS
-            </h2>
-            <div className="h-[2px] w-24 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mt-4" />
+            {/* Background Glow Behind Title */}
+            <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-4xl h-full bg-gradient-to-r from-transparent via-accent/5 dark:via-accent/10 to-transparent blur-3xl pointer-events-none" />
+            
+            <div className="relative flex flex-col items-center">
+              <span className="px-8 py-2.5 rounded-full border border-yellow-200/50 bg-gradient-to-r from-[#aa771c] via-[#f4d068] to-[#aa771c] text-[9px] md:text-xs font-black uppercase tracking-[0.4em] text-black mb-8 font-serif shadow-[0_4px_20px_rgba(212,175,55,0.4)] flex items-center gap-3 relative overflow-hidden">
+                {/* Sheen effect over the gold */}
+                <div className="absolute inset-0 bg-gradient-to-b from-white/40 to-transparent pointer-events-none" />
+                <span className="relative z-10 text-black/70">✧</span>
+                <span className="relative z-10 drop-shadow-[0_1px_1px_rgba(255,255,255,0.5)]">META-GRAPHICS PREMIUM COLLECTION</span>
+                <span className="relative z-10 text-black/70">✧</span>
+              </span>
+              
+              <h2 className="relative z-10 text-5xl sm:text-6xl md:text-7xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#dfb342] via-[#bf953f] to-[#8a5d19] font-serif text-center filter drop-shadow-[0_2px_8px_rgba(212,175,55,0.25)] dark:drop-shadow-[0_2px_15px_rgba(212,175,55,0.4)]">
+                COLLECTIONS
+              </h2>
+              
+              {/* Elegant Royal Divider Line */}
+              <div className="flex items-center gap-6 md:gap-10 w-full max-w-[95%] mx-auto mt-10">
+                <div className="h-[2px] flex-grow bg-gradient-to-r from-transparent via-accent/60 to-accent shadow-[0_0_5px_rgba(212,175,55,0.3)]" />
+                <div className="w-3 h-3 rotate-45 border-2 border-accent shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
+                <div className="w-2.5 h-2.5 rotate-45 bg-accent shadow-[0_0_12px_rgba(212,175,55,0.8)]" />
+                <div className="w-3 h-3 rotate-45 border-2 border-accent shadow-[0_0_10px_rgba(212,175,55,0.6)]" />
+                <div className="h-[2px] flex-grow bg-gradient-to-l from-transparent via-accent/60 to-accent shadow-[0_0_5px_rgba(212,175,55,0.3)]" />
+              </div>
+            </div>
           </div>
 
           {/* 3D Skewed Brushed-Metal Cards Deck */}
@@ -108,7 +131,7 @@ export default function Home(){
               {/* CARD 1: ANIME (Art & Craft) */}
               <Link 
                 href="/anime" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[-1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-accent/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgb(var(--accent-main)/0.25),_0_0_30px_rgb(var(--accent-main)/0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgb(var(--accent-main)/0.45),_0_0_50px_rgb(var(--accent-main)/0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgb(var(--accent-main)/0.65),_0_0_70px_rgb(var(--accent-main)/0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-accent hover:-translate-y-4 md:rotate-[-1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -130,8 +153,8 @@ export default function Home(){
 
                 {/* Card Engraved Golden Text Bottom Section */}
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
-                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
-                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                  <div className="absolute top-0 w-8 h-[1px] bg-accent/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
                     {t.anime}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
@@ -143,7 +166,7 @@ export default function Home(){
               {/* CARD 2: K-POP (Music & Performance) */}
               <Link 
                 href="/kpop" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[-0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-accent/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgb(var(--accent-main)/0.25),_0_0_30px_rgb(var(--accent-main)/0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgb(var(--accent-main)/0.45),_0_0_50px_rgb(var(--accent-main)/0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgb(var(--accent-main)/0.65),_0_0_70px_rgb(var(--accent-main)/0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-accent hover:-translate-y-4 md:rotate-[-0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -165,8 +188,8 @@ export default function Home(){
 
                 {/* Card Engraved Golden Text Bottom Section */}
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
-                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
-                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                  <div className="absolute top-0 w-8 h-[1px] bg-accent/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
                     {t.kpop}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
@@ -178,7 +201,7 @@ export default function Home(){
               {/* CARD 3: AESTHETIC (Art & Decor) */}
               <Link 
                 href="/aesthetic" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-accent/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgb(var(--accent-main)/0.25),_0_0_30px_rgb(var(--accent-main)/0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgb(var(--accent-main)/0.45),_0_0_50px_rgb(var(--accent-main)/0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgb(var(--accent-main)/0.65),_0_0_70px_rgb(var(--accent-main)/0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-accent hover:-translate-y-4 md:rotate-[0.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -200,8 +223,8 @@ export default function Home(){
 
                 {/* Card Engraved Golden Text Bottom Section */}
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
-                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
-                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                  <div className="absolute top-0 w-8 h-[1px] bg-accent/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
                     {t.aesthetic}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
@@ -213,7 +236,7 @@ export default function Home(){
               {/* CARD 4: CUSTOM (Craft & Design) */}
               <Link 
                 href="/custom" 
-                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-[#d4af37]/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgba(212,175,55,0.25),_0_0_30px_rgba(212,175,55,0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgba(212,175,55,0.45),_0_0_50px_rgba(212,175,55,0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgba(212,175,55,0.65),_0_0_70px_rgba(212,175,55,0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-[#d4af37] hover:-translate-y-4 md:rotate-[1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
+                className="group relative w-full md:w-[23%] aspect-[3/4] overflow-hidden rounded-[24px] border-2 border-accent/65 bg-gradient-to-b from-zinc-900 via-zinc-950 to-black shadow-[0_0_15px_rgb(var(--accent-main)/0.25),_0_0_30px_rgb(var(--accent-main)/0.12),_0_10px_25px_rgba(0,0,0,0.6)] dark:shadow-[0_0_25px_rgb(var(--accent-main)/0.45),_0_0_50px_rgb(var(--accent-main)/0.22),_0_20px_45px_rgba(0,0,0,0.9)] hover:shadow-[0_0_40px_rgb(var(--accent-main)/0.65),_0_0_70px_rgb(var(--accent-main)/0.3),_0_15px_40px_rgba(0,0,0,0.8)] hover:border-accent hover:-translate-y-4 md:rotate-[1.5deg] hover:rotate-0 transition-all duration-500 ease-out cursor-pointer flex flex-col justify-between"
               >
                 {/* Visual Accent Sheen Overlay */}
                 <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000 ease-out z-20 pointer-events-none" />
@@ -235,8 +258,8 @@ export default function Home(){
 
                 {/* Card Engraved Golden Text Bottom Section */}
                 <div className="h-[32%] w-full bg-gradient-to-b from-zinc-900 to-black flex flex-col justify-center items-center px-4 py-3 relative border-t border-zinc-800/40">
-                  <div className="absolute top-0 w-8 h-[1px] bg-[#d4af37]/35" />
-                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
+                  <div className="absolute top-0 w-8 h-[1px] bg-accent/35" />
+                  <h3 className="text-xl lg:text-2xl font-black uppercase tracking-[0.1em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark drop-shadow-[0_1px_3px_rgba(0,0,0,0.1)] dark:drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)] font-serif">
                     {t.custom}
                   </h3>
                   <span className="text-[9px] lg:text-[10px] font-black uppercase tracking-[0.25em] text-zinc-400 group-hover:text-zinc-200 transition-colors duration-300 mt-1.5 font-sans">
@@ -249,7 +272,7 @@ export default function Home(){
           </div>
 
           {/* Brushed Platinum Elegant Bottom Divider Line */}
-          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[#d4af37]/30 to-transparent shadow-[0_1px_4px_rgba(212,175,55,0.2)] mt-12" />
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-accent/30 to-transparent shadow-[0_1px_4px_rgb(var(--accent-main)/0.2)] mt-12" />
         </section>
 
         <div className="relative z-10">

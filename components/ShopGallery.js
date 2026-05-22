@@ -69,7 +69,7 @@ export default function ShopGallery() {
   if (!hasSupabaseConfig) {
     return (
       <section className="max-w-6xl mx-auto px-6 py-12 border-t border-zinc-200 dark:border-zinc-900">
-        <h2 className="text-3xl font-black mb-2 uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">Produk dari Admin</h2>
+        <h2 className="text-3xl font-black mb-2 uppercase tracking-widest text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">Produk dari Admin</h2>
         <p className="text-zinc-500 text-sm">Supabase belum terkonfigurasi.</p>
       </section>
     )
@@ -79,7 +79,7 @@ export default function ShopGallery() {
     return (
       <section className="max-w-6xl mx-auto px-6 py-12 border-t border-zinc-200 dark:border-zinc-900">
         <div className="flex justify-center py-12">
-          <div className="w-8 h-8 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin"></div>
+          <div className="w-8 h-8 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
         </div>
       </section>
     )
@@ -92,7 +92,7 @@ export default function ShopGallery() {
       {/* Tampilan Grid Foto Kecil */}
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
         {products.map((p) => (
-          <Link key={p.id} href={`/product/${p.id}`} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-200/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 hover:border-[#d4af37]/50 transition-all duration-300">
+          <Link key={p.id} href={`/product/${p.id}`} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-200/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 hover:border-accent/50 transition-all duration-300">
             {p.image_url ? (
               <Image 
                 src={p.image_url} 
@@ -107,7 +107,7 @@ export default function ShopGallery() {
             
             {/* Hover Overlay Simple */}
             <div className="absolute inset-0 bg-black/75 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
-              <span className="text-[10px] font-black text-[#d4af37] uppercase tracking-[0.2em] font-sans">View</span>
+              <span className="text-[10px] font-black text-accent uppercase tracking-[0.2em] font-sans">View</span>
             </div>
           </Link>
         ))}
@@ -117,7 +117,7 @@ export default function ShopGallery() {
       <div className="flex justify-center mt-12">
         <Link 
           href="/katalog" 
-          className="px-10 py-3 rounded-full bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-xs font-black uppercase tracking-[0.2em] shadow-md shadow-[#d4af37]/10 hover:scale-105 active:scale-95 transition-all"
+          className="px-10 py-3 rounded-full bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black text-xs font-black uppercase tracking-[0.2em] shadow-md shadow-accent/10 hover:scale-105 active:scale-95 transition-all"
         >
           {t.viewAll} &rarr;
         </Link>

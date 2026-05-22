@@ -9,6 +9,13 @@
   --panel: rgba(255, 255, 255, 0.8);
   --accent: #d4af37;
   --accent-purple: #b39359;
+  
+  /* Accent Colors (RGB for Tailwind opacity support) */
+  /* Light mode uses darker golds, avoiding white gradients so it doesn't clash with light bg */
+  --accent-light: 212 175 55; /* #d4af37 */
+  --accent-main: 197 154 39;  /* #c59a27 */
+  --accent-dark: 170 124 17;  /* #aa7c11 */
+  --accent-alt: 179 147 89;   /* #b39359 */
 }
 
 html.dark {
@@ -18,6 +25,12 @@ html.dark {
   --panel: rgba(15, 15, 20, 0.6);
   --accent: #d4af37;
   --accent-purple: #b39359;
+
+  /* Accent Colors (RGB for Tailwind opacity support) */
+  --accent-light: 243 229 171; /* #f3e5ab */
+  --accent-main: 212 175 55;   /* #d4af37 */
+  --accent-dark: 170 124 17;   /* #aa7c11 */
+  --accent-alt: 179 147 89;    /* #b39359 */
 }
 
 html, body, #__next {

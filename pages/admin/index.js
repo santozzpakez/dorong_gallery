@@ -1296,7 +1296,7 @@ export default function Admin() {
     return (
       <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white font-sans">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent mx-auto"></div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Memverifikasi Otorisasi Admin...</p>
         </div>
       </div>

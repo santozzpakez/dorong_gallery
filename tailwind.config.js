@@ -26,7 +26,13 @@ module.exports = {
         },
         'neon-cyan': '#00f3ff',
         'neon-purple': '#b026ff',
-        'neon-pink': '#ff007f'
+        'neon-pink': '#ff007f',
+        accent: {
+          light: 'rgb(var(--accent-light) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--accent-main) / <alpha-value>)',
+          dark: 'rgb(var(--accent-dark) / <alpha-value>)',
+          alt: 'rgb(var(--accent-alt) / <alpha-value>)'
+        }
       },
       boxShadow: {
         'neon-cyan': '0 0 15px rgba(0, 243, 255, 0.4), 0 0 40px rgba(0, 243, 255, 0.2)',

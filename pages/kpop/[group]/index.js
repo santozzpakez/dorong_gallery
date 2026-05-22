@@ -174,10 +174,10 @@ export default function KpopGroupPage() {
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
       <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 w-full pb-16">
-        <Link href="/kpop" className="text-xs text-[#d4af37]/80 hover:text-[#d4af37] transition-colors flex items-center gap-2 font-sans font-black uppercase tracking-widest">
+        <Link href="/kpop" className="text-xs text-accent/80 hover:text-accent transition-colors flex items-center gap-2 font-sans font-black uppercase tracking-widest">
           &larr; {t.back}
         </Link>
-        <h1 className="text-4xl md:text-5xl font-black mt-6 uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+        <h1 className="text-4xl md:text-5xl font-black mt-6 uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
           {groupName || 'Loading...'}
         </h1>
         <p className="text-zinc-500 dark:text-zinc-400 mt-2 mb-10 text-xs md:text-sm font-sans tracking-widest uppercase font-bold">
@@ -186,7 +186,7 @@ export default function KpopGroupPage() {
 
         {loading ? (
           <div className="text-center py-20 text-zinc-500 flex flex-col items-center">
-            <div className="w-10 h-10 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin mb-4"></div>
+            <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin mb-4"></div>
             {t.loading}
           </div>
         ) : memberList.length === 0 ? (
@@ -203,7 +203,7 @@ export default function KpopGroupPage() {
                 <Link
                   key={member.slug}
                   href={`/kpop/${groupSlug}/${member.slug}`}
-                  className="group rounded-[24px] overflow-hidden border border-zinc-200/60 dark:border-zinc-800/30 bg-gradient-to-b from-zinc-900 to-black hover:shadow-[0_20px_45px_rgba(212,175,55,0.15)] hover:border-[#d4af37]/50 transition-all duration-500 relative block h-80 flex flex-col justify-end p-6"
+                  className="group rounded-[24px] overflow-hidden border border-zinc-200/60 dark:border-zinc-800/30 bg-gradient-to-b from-zinc-900 to-black hover:shadow-[0_20px_45px_rgb(var(--accent-main)/0.15)] hover:border-accent/50 transition-all duration-500 relative block h-80 flex flex-col justify-end p-6"
                 >
                   {displayImage ? (
                     <div className="absolute inset-0 z-0">
@@ -219,12 +219,12 @@ export default function KpopGroupPage() {
                   )}
 
                   <div className="relative z-10 transform group-hover:-translate-y-2 transition-transform duration-300">
-                    <h2 className="text-2xl font-black text-white uppercase tracking-wider group-hover:text-[#d4af37] transition-colors font-serif">
+                    <h2 className="text-2xl font-black text-white uppercase tracking-wider group-hover:text-accent transition-colors font-serif">
                       {member.name}
                     </h2>
                     <p className={`text-[10px] font-black uppercase tracking-widest mt-3 inline-block px-3 py-1.5 rounded-full border font-sans ${
                       member.count > 0
-                        ? 'text-[#d4af37] bg-black/70 border-[#d4af37]/35'
+                        ? 'text-accent bg-black/70 border-accent/35'
                         : 'text-zinc-500 bg-black/40 border-zinc-700/50'
                     }`}>
                       {member.count > 0 

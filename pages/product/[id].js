@@ -354,7 +354,7 @@ export default function ProductDetail() {
         <Header />
         <main className="flex-grow pt-32 text-center">
           <h1 className="text-2xl font-bold">{t.notFound}</h1>
-          <Link href="/" className="text-[#d4af37] mt-4 inline-block hover:underline uppercase font-black tracking-widest text-xs">{t.backHome}</Link>
+          <Link href="/" className="text-accent mt-4 inline-block hover:underline uppercase font-black tracking-widest text-xs">{t.backHome}</Link>
         </main>
       </div>
     )
@@ -365,7 +365,7 @@ export default function ProductDetail() {
       <Header />
       <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 pb-16 w-full">
         <div className="mb-6">
-          <button onClick={() => router.back()} className="text-xs text-[#d4af37]/80 hover:text-[#d4af37] font-bold uppercase tracking-widest transition-all flex items-center gap-2">
+          <button onClick={() => router.back()} className="text-xs text-accent/80 hover:text-accent font-bold uppercase tracking-widest transition-all flex items-center gap-2">
             ← {t.back}
           </button>
         </div>
@@ -385,9 +385,9 @@ export default function ProductDetail() {
                     }
                   }}
                   disabled={!canScrollUp}
-                  className={`w-8 h-8 rounded-full border border-zinc-700 bg-zinc-900/90 text-[#d4af37] flex items-center justify-center transition-all duration-200 shadow-md ${
+                  className={`w-8 h-8 rounded-full border border-zinc-700 bg-zinc-900/90 text-accent flex items-center justify-center transition-all duration-200 shadow-md ${
                     canScrollUp 
-                      ? 'opacity-100 hover:bg-zinc-800 hover:border-[#d4af37] cursor-pointer' 
+                      ? 'opacity-100 hover:bg-zinc-800 hover:border-accent cursor-pointer' 
                       : 'opacity-20 cursor-not-allowed border-zinc-800'
                   }`}
                   aria-label="Scroll Up"
@@ -421,13 +421,13 @@ export default function ProductDetail() {
                       onClick={() => setActiveMockup(thumb.key)}
                       className={`w-full aspect-square rounded-lg overflow-hidden border-2 bg-zinc-900 relative transition-all duration-200 shrink-0 ${
                         activeMockup === thumb.key 
-                          ? 'border-[#d4af37] shadow-[0_0_12px_rgba(212,175,55,0.4)] scale-105 opacity-100' 
+                          ? 'border-accent shadow-[0_0_12px_rgb(var(--accent-main)/0.4)] scale-105 opacity-100' 
                           : 'border-zinc-700/50 opacity-50 hover:opacity-90 hover:border-zinc-500'
                       }`}
                     >
                       <img src={thumb.img} alt={thumb.alt} className="w-full h-full object-cover" />
                       {thumb.badge && (
-                        <div className="absolute bottom-0 inset-x-0 bg-black/85 py-0.5 text-[8px] text-[#d4af37] font-black uppercase tracking-wider text-center border-t border-[#d4af37]/20 select-none">
+                        <div className="absolute bottom-0 inset-x-0 bg-black/85 py-0.5 text-[8px] text-accent font-black uppercase tracking-wider text-center border-t border-accent/20 select-none">
                           {thumb.badge}
                         </div>
                       )}
@@ -444,9 +444,9 @@ export default function ProductDetail() {
                     }
                   }}
                   disabled={!canScrollDown}
-                  className={`w-8 h-8 rounded-full border border-zinc-700 bg-zinc-900/90 text-[#d4af37] flex items-center justify-center transition-all duration-200 shadow-md ${
+                  className={`w-8 h-8 rounded-full border border-zinc-700 bg-zinc-900/90 text-accent flex items-center justify-center transition-all duration-200 shadow-md ${
                     canScrollDown 
-                      ? 'opacity-100 hover:bg-zinc-800 hover:border-[#d4af37] cursor-pointer' 
+                      ? 'opacity-100 hover:bg-zinc-800 hover:border-accent cursor-pointer' 
                       : 'opacity-20 cursor-not-allowed border-zinc-800'
                   }`}
                   aria-label="Scroll Down"
@@ -465,7 +465,7 @@ export default function ProductDetail() {
                   {activeMockup === 'flat' ? (
                     <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fafaf9] via-[#f5f5f4] to-[#e7e5e4] dark:from-[#141416] dark:via-[#0c0c0e] dark:to-[#040405] overflow-hidden rounded-lg flex items-center justify-center p-6 shadow-inner border border-zinc-200/50 dark:border-zinc-800/30 animate-fade-in">
                       {/* Studio lights soft background glow (Premium warm gold spotlight in dark mode) */}
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0)_75%)] dark:bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.08)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0)_75%)] dark:bg-[radial-gradient(circle_at_center,rgb(var(--accent-main)/0.08)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
 
                       {/* Centered Flat Poster */}
                       <div 
@@ -504,7 +504,7 @@ export default function ProductDetail() {
                     /* Premium 3D Glossy Metal Print Mockup matching the exact perspective, metallic thickness edge, drop shadow, and reflection sheen */
                     <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-[#fafaf9] via-[#f5f5f4] to-[#e7e5e4] dark:from-[#141416] dark:via-[#0c0c0e] dark:to-[#040405] overflow-hidden rounded-lg flex items-center justify-center p-6 shadow-inner border border-zinc-200/50 dark:border-zinc-800/30 animate-fade-in">
                       {/* Studio lights soft background glow (Premium warm gold spotlight in dark mode) */}
-                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0)_75%)] dark:bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.08)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
+                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.95)_0%,rgba(255,255,255,0)_75%)] dark:bg-[radial-gradient(circle_at_center,rgb(var(--accent-main)/0.08)_0%,rgba(0,0,0,0)_80%)] pointer-events-none" />
 
                       {/* 3D Tilted Metal Plate Container with interactive hover effect */}
                       <div 
@@ -607,12 +607,12 @@ export default function ProductDetail() {
                           left: '26.5%',
                           top: '22%',
                           height: '18%',
-                          borderLeft: '1.5px dashed rgba(212,175,55,0.75)',
+                          borderLeft: '1.5px dashed rgb(var(--accent-main)/0.75)',
                           display: selectedSize === 'F4' ? 'flex' : 'none'
                         }}
                       >
                         <span 
-                          className="absolute bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
+                          className="absolute bg-zinc-950/95 border border-accent/45 text-accent text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
                           style={{
                             transform: 'rotate(-90deg)',
                             transformOrigin: 'center',
@@ -629,11 +629,11 @@ export default function ProductDetail() {
                           left: '12%',
                           top: '44%',
                           width: '13.5%',
-                          borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
+                          borderBottom: '1.5px dashed rgb(var(--accent-main)/0.75)',
                           display: selectedSize === 'F4' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                        <span className="absolute top-2.5 bg-zinc-950/95 border border-accent/45 text-accent text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
                           ↔️ {dimF4Val.split('x')[0]?.trim() || '21'} cm
                         </span>
                       </div>
@@ -642,7 +642,7 @@ export default function ProductDetail() {
                         onClick={() => setSelectedSize('F4')}
                         className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden z-20 ${
                           selectedSize === 'F4' 
-                            ? 'ring-2 ring-[#d4af37] scale-[1.05] shadow-[0_20px_45px_rgba(212,175,55,0.4)] opacity-100' 
+                            ? 'ring-2 ring-accent scale-[1.05] shadow-[0_20px_45px_rgb(var(--accent-main)/0.4)] opacity-100' 
                             : 'scale-[0.98] opacity-50 saturate-[0.6] hover:opacity-85 hover:saturate-100 hover:scale-100'
                         }`}
                         style={{
@@ -659,8 +659,8 @@ export default function ProductDetail() {
                             <img src={product.image_url} className="w-full h-full object-cover" alt="Poster F4" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             {selectedSize === 'F4' ? (
-                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-[#d4af37]/20">
-                                <span className="text-[7.5px] text-[#d4af37] font-black tracking-widest uppercase">F4 (AKTIF)</span>
+                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-accent/20">
+                                <span className="text-[7.5px] text-accent font-black tracking-widest uppercase">F4 (AKTIF)</span>
                               </div>
                             ) : (
                               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -681,12 +681,12 @@ export default function ProductDetail() {
                           left: '56.5%',
                           top: '16.5%',
                           height: '23.3%',
-                          borderLeft: '1.5px dashed rgba(212,175,55,0.75)',
+                          borderLeft: '1.5px dashed rgb(var(--accent-main)/0.75)',
                           display: selectedSize === 'A3' ? 'flex' : 'none'
                         }}
                       >
                         <span 
-                          className="absolute bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
+                          className="absolute bg-zinc-950/95 border border-accent/45 text-accent text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
                           style={{
                             transform: 'rotate(-90deg)',
                             transformOrigin: 'center',
@@ -703,11 +703,11 @@ export default function ProductDetail() {
                           left: '38%',
                           top: '44%',
                           width: '17.5%',
-                          borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
+                          borderBottom: '1.5px dashed rgb(var(--accent-main)/0.75)',
                           display: selectedSize === 'A3' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                        <span className="absolute top-2.5 bg-zinc-950/95 border border-accent/45 text-accent text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
                           ↔️ {dimA3Val.split('x')[0]?.trim() || '30'} cm
                         </span>
                       </div>
@@ -716,7 +716,7 @@ export default function ProductDetail() {
                         onClick={() => setSelectedSize('A3')}
                         className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden z-20 ${
                           selectedSize === 'A3' 
-                            ? 'ring-2 ring-[#d4af37] scale-[1.05] shadow-[0_20px_45px_rgba(212,175,55,0.4)] opacity-100' 
+                            ? 'ring-2 ring-accent scale-[1.05] shadow-[0_20px_45px_rgb(var(--accent-main)/0.4)] opacity-100' 
                             : 'scale-[0.98] opacity-50 saturate-[0.6] hover:opacity-85 hover:saturate-100 hover:scale-100'
                         }`}
                         style={{
@@ -733,8 +733,8 @@ export default function ProductDetail() {
                             <img src={product.image_url} className="w-full h-full object-cover" alt="Poster A3" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             {selectedSize === 'A3' ? (
-                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-[#d4af37]/20">
-                                <span className="text-[7.5px] text-[#d4af37] font-black tracking-widest uppercase">A3 (AKTIF)</span>
+                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-accent/20">
+                                <span className="text-[7.5px] text-accent font-black tracking-widest uppercase">A3 (AKTIF)</span>
                               </div>
                             ) : (
                               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -755,12 +755,12 @@ export default function ProductDetail() {
                           left: '91%',
                           top: '10.5%',
                           height: '29.3%',
-                          borderLeft: '1.5px dashed rgba(212,175,55,0.75)',
+                          borderLeft: '1.5px dashed rgb(var(--accent-main)/0.75)',
                           display: selectedSize === 'A3+' ? 'flex' : 'none'
                         }}
                       >
                         <span 
-                          className="absolute bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
+                          className="absolute bg-zinc-950/95 border border-accent/45 text-accent text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider"
                           style={{
                             transform: 'rotate(-90deg)',
                             transformOrigin: 'center',
@@ -777,11 +777,11 @@ export default function ProductDetail() {
                           left: '68%',
                           top: '44%',
                           width: '22%',
-                          borderBottom: '1.5px dashed rgba(212,175,55,0.75)',
+                          borderBottom: '1.5px dashed rgb(var(--accent-main)/0.75)',
                           display: selectedSize === 'A3+' ? 'flex' : 'none'
                         }}
                       >
-                        <span className="absolute top-2.5 bg-zinc-950/95 border border-[#d4af37]/45 text-[#d4af37] text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
+                        <span className="absolute top-2.5 bg-zinc-950/95 border border-accent/45 text-accent text-[7.5px] font-black px-1.5 py-0.5 rounded shadow-lg whitespace-nowrap z-30 tracking-wider">
                           ↔️ {dimA3PlusVal.split('x')[0]?.trim() || '32'} cm
                         </span>
                       </div>
@@ -790,7 +790,7 @@ export default function ProductDetail() {
                         onClick={() => setSelectedSize('A3+')}
                         className={`absolute cursor-pointer select-none transition-all duration-500 rounded-sm overflow-hidden z-20 ${
                           selectedSize === 'A3+' 
-                            ? 'ring-2 ring-[#d4af37] scale-[1.05] shadow-[0_20px_45px_rgba(212,175,55,0.4)] opacity-100' 
+                            ? 'ring-2 ring-accent scale-[1.05] shadow-[0_20px_45px_rgb(var(--accent-main)/0.4)] opacity-100' 
                             : 'scale-[0.98] opacity-50 saturate-[0.6] hover:opacity-85 hover:saturate-100 hover:scale-100'
                         }`}
                         style={{
@@ -807,8 +807,8 @@ export default function ProductDetail() {
                             <img src={product.image_url} className="w-full h-full object-cover" alt="Poster A3+" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             {selectedSize === 'A3+' ? (
-                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-[#d4af37]/20">
-                                <span className="text-[7.5px] text-[#d4af37] font-black tracking-widest uppercase">A3+ (AKTIF)</span>
+                              <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-accent/20">
+                                <span className="text-[7.5px] text-accent font-black tracking-widest uppercase">A3+ (AKTIF)</span>
                               </div>
                             ) : (
                               <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
@@ -1258,7 +1258,7 @@ export default function ProductDetail() {
                           e.stopPropagation();
                           setPosterRotation((prev) => (prev + 90) % 360);
                         }}
-                        className="bg-black/80 hover:bg-black text-[#d4af37] border border-[#d4af37]/30 hover:border-[#d4af37] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none animate-fade-in"
+                        className="bg-black/80 hover:bg-black text-accent border border-accent/30 hover:border-accent px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none animate-fade-in"
                       >
                         🔄 Putar Portrait (Kiri)
                       </button>
@@ -1267,7 +1267,7 @@ export default function ProductDetail() {
                           e.stopPropagation();
                           setDisplayLandscapeRotation((prev) => (prev + 90) % 360);
                         }}
-                        className="bg-black/80 hover:bg-black text-[#d4af37] border border-[#d4af37]/30 hover:border-[#d4af37] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none animate-fade-in"
+                        className="bg-black/80 hover:bg-black text-accent border border-accent/30 hover:border-accent px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none animate-fade-in"
                       >
                         🔄 Putar Landscape (Kanan)
                       </button>
@@ -1278,7 +1278,7 @@ export default function ProductDetail() {
                         e.stopPropagation();
                         setPosterRotation((prev) => (prev + 90) % 360);
                       }}
-                      className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-black text-[#d4af37] border border-[#d4af37]/30 hover:border-[#d4af37] px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none"
+                      className="absolute bottom-4 right-4 z-30 bg-black/80 hover:bg-black text-accent border border-accent/30 hover:border-accent px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-lg backdrop-blur-md transition-all active:scale-95 select-none"
                     >
                       🔄 Putar Gambar
                     </button>
@@ -1305,13 +1305,13 @@ export default function ProductDetail() {
                       onClick={() => setActiveMockup(thumb.key)}
                       className={`w-14 h-14 rounded-md overflow-hidden border-2 bg-zinc-900 shrink-0 transition-all duration-200 relative ${
                         activeMockup === thumb.key 
-                          ? 'border-[#d4af37] shadow-[0_0_8px_rgba(212,175,55,0.4)] opacity-100 scale-105' 
+                          ? 'border-accent shadow-[0_0_8px_rgb(var(--accent-main)/0.4)] opacity-100 scale-105' 
                           : 'border-zinc-700/50 opacity-50'
                       }`}
                     >
                       <img src={thumb.img} alt={thumb.alt} className="w-full h-full object-cover" />
                       {thumb.badge && (
-                        <div className="absolute bottom-0 inset-x-0 bg-black/85 py-0.5 text-[7px] text-[#d4af37] font-black uppercase tracking-wider text-center border-t border-[#d4af37]/20 select-none">
+                        <div className="absolute bottom-0 inset-x-0 bg-black/85 py-0.5 text-[7px] text-accent font-black uppercase tracking-wider text-center border-t border-accent/20 select-none">
                           {thumb.badge}
                         </div>
                       )}
@@ -1327,7 +1327,7 @@ export default function ProductDetail() {
             {/* Deskripsi Produk di bawah Foto */}
             <div className="bg-zinc-900/50 p-8 rounded-lg border border-zinc-800">
               <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
-                <span className="w-1 h-6 bg-[#d4af37] rounded-full"></span>
+                <span className="w-1 h-6 bg-accent rounded-full"></span>
                 {t.description}
               </h3>
               <div className="text-[var(--text-main)] opacity-80 leading-relaxed space-y-4">
@@ -1343,7 +1343,7 @@ export default function ProductDetail() {
           {/* Bagian Kanan: Info Sticky */}
           <div className="lg:col-span-5">
             <div className="glass p-8 rounded-2xl border border-zinc-200/80 dark:border-zinc-850/40 sticky top-28 shadow-2xl">
-              <div className="uppercase tracking-[0.2em] text-[10px] text-[#d4af37] font-black mb-3">
+              <div className="uppercase tracking-[0.2em] text-[10px] text-accent font-black mb-3">
                 {product.category} {product.subcategory && product.subcategory !== product.category ? `• ${product.subcategory}` : ''}
               </div>
               <h1 className="text-4xl font-black mb-4 tracking-tight leading-tight">{product.title}</h1>
@@ -1363,7 +1363,7 @@ export default function ProductDetail() {
                         onClick={() => setSelectedSize(size)}
                         className={`flex-1 py-3 px-2 rounded-xl border transition-all flex flex-col items-center justify-center gap-0.5 ${
                           active 
-                            ? 'bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] text-black border-transparent shadow-lg shadow-[#d4af37]/20 scale-[1.02]' 
+                            ? 'bg-gradient-to-r from-accent-light to-accent text-black border-transparent shadow-lg shadow-accent/20 scale-[1.02]' 
                             : 'bg-black/20 border-white/10 text-gray-400 hover:border-white/20 hover:text-white'
                         }`}
                       >
@@ -1384,7 +1384,7 @@ export default function ProductDetail() {
               <div className="mb-8 flex items-baseline gap-3 flex-wrap">
                 {priceInfo.hasDiscount ? (
                   <>
-                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+                    <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
                       Rp {priceInfo.discount.toLocaleString('id-ID')}
                     </span>
                     <span className="text-sm text-gray-500 line-through font-medium">
@@ -1392,7 +1392,7 @@ export default function ProductDetail() {
                     </span>
                   </>
                 ) : (
-                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
                     Rp {priceInfo.original.toLocaleString('id-ID')}
                   </span>
                 )}
@@ -1403,7 +1403,7 @@ export default function ProductDetail() {
                 className={`w-full py-5 rounded-2xl font-black text-lg uppercase tracking-widest transition-all transform active:scale-95 ${
                   added 
                     ? 'bg-green-600 text-white shadow-[0_0_30px_rgba(22,163,74,0.4)]'
-                    : 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] hover:brightness-110 shadow-[0_0_30px_rgba(212,175,55,0.25)] hover:shadow-[0_0_50px_rgba(212,175,55,0.4)] text-black'
+                    : 'bg-gradient-to-r from-accent-light via-accent to-accent-alt hover:brightness-110 shadow-[0_0_30px_rgb(var(--accent-main)/0.25)] hover:shadow-[0_0_50px_rgb(var(--accent-main)/0.4)] text-black'
                 }`}
               >
                 {added ? `✓ ${t.added}` : t.addToCart}
@@ -1427,14 +1427,14 @@ export default function ProductDetail() {
         {recommendations.length > 0 && (
           <div className="mt-20 pt-20 border-t border-black/5 dark:border-white/5">
             <h3 className="text-2xl font-black mb-10 flex items-center gap-3 uppercase tracking-tighter">
-              <span className="w-2 h-8 bg-[#d4af37] rounded-full"></span>
+              <span className="w-2 h-8 bg-accent rounded-full"></span>
               {t.recommendations}
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {recommendations.map((rec) => (
                 <Link key={rec.id} href={`/product/${rec.id}`}>
                   <div className="group cursor-pointer">
-                    <div className="aspect-[3/4] rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 relative shadow-lg group-hover:border-[#d4af37]/50 transition-all duration-500">
+                    <div className="aspect-[3/4] rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 relative shadow-lg group-hover:border-accent/50 transition-all duration-500">
                       {rec.image_url && (
                         <img 
                           src={rec.image_url} 
@@ -1443,21 +1443,21 @@ export default function ProductDetail() {
                         />
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                        <span className="w-full py-2 bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md text-center">
+                        <span className="w-full py-2 bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black text-[10px] font-black uppercase tracking-widest rounded-xl shadow-md text-center">
                           {t.view}
                         </span>
                       </div>
                     </div>
-                    <h4 className="font-bold text-sm mt-4 line-clamp-1 group-hover:text-[#d4af37] transition-colors uppercase tracking-tight">{rec.title}</h4>
+                    <h4 className="font-bold text-sm mt-4 line-clamp-1 group-hover:text-accent transition-colors uppercase tracking-tight">{rec.title}</h4>
                     {(() => {
                       const pInfoS = getPriceInfo(getText, 'F4')
                       return pInfoS.hasDiscount ? (
-                        <p className="text-xs text-[#d4af37] font-black mt-1">
+                        <p className="text-xs text-accent font-black mt-1">
                           <span className="line-through text-gray-500 mr-1.5 text-[10px]">Rp {pInfoS.original.toLocaleString('id-ID')}</span>
                           <span>Rp {pInfoS.discount.toLocaleString('id-ID')}</span>
                         </p>
                       ) : (
-                        <p className="text-xs text-[#d4af37] font-black mt-1">
+                        <p className="text-xs text-accent font-black mt-1">
                           Rp {pInfoS.original.toLocaleString('id-ID')}
                         </p>
                       )

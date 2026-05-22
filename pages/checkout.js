@@ -59,8 +59,6 @@ export default function Checkout(){
   
   // Order Info
   const [selectedSize, setSelectedSize] = useState('')
-  const [adminPhone, setAdminPhone] = useState('')
-  const [admins, setAdmins] = useState([])
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
 
   // Shipping Info (Rajaongkir)
@@ -78,30 +76,10 @@ export default function Checkout(){
     maximumFractionDigits: 0
   })
 
-  // Fetch Admins & Saved Profile
+  // Fetch Saved Profile
   useEffect(() => {
     async function initData() {
-      const hardcodedAdmins = [
-        { name: 'Admin Utama', phone: '491633949013' },
-        { name: 'Admin Kedua', phone: '6285183050120' }
-      ]
-
-      // 1. Fetch WA Admins
-      try {
-        const { data: waData, error: waErr } = await supabase.from('whatsapp_contacts').select('*').order('created_at', { ascending: true })
-        if (!waErr && waData && waData.length > 0) {
-          setAdmins(waData)
-          setAdminPhone(waData[0].phone)
-        } else {
-          setAdmins(hardcodedAdmins)
-          setAdminPhone(hardcodedAdmins[0].phone)
-        }
-      } catch (err) {
-        setAdmins(hardcodedAdmins)
-        setAdminPhone(hardcodedAdmins[0].phone)
-      }
-
-      // 2. Fetch User Profile
+      // 1. Fetch User Profile
       if (user) {
         setIsLoadingProfile(true)
         const { data, error } = await supabase
@@ -415,7 +393,7 @@ export default function Checkout(){
     fetchShippingCost()
   }, [selectedCity.id, selectedCourier, items])
 
-  async function handlePlaceOrder(event) {
+  async function handleContinueToPayment(event) {
     event.preventDefault()
     if (!name || !phone || !selectedProvince.name || !selectedCity.name || !selectedDistrict.name || !selectedSize || !selectedService || items.length === 0) return
 
@@ -440,52 +418,39 @@ export default function Checkout(){
       await supabase.from('user_profiles').upsert(profileData)
     }
 
-    const baseUrl = window.location.origin;
-    let message = `Halo LUMI FORGE, saya ingin memesan:\n\n`
-    
-    items.forEach((item, index) => {
-      const itemName = item.title || item.name || 'Produk'
-      message += `${index + 1}. ${itemName} (x${item.quantity})\n`
-      message += `   Harga: ${priceFormatter.format(item.price)}\n`
-      if (item.image_url) {
-        message += `   📥 Download: ${item.image_url}?download=\n`
-      }
-      message += `   🔗 Produk: ${baseUrl}/product/${item.id}\n\n`
-    })
+    const orderData = {
+      name,
+      phone,
+      province: selectedProvince.name,
+      city: selectedCity.name,
+      district: selectedDistrict.name,
+      postalCode,
+      streetAddress,
+      extraDetail,
+      selectedSize,
+      selectedCourier,
+      selectedService,
+      shippingCost
+    }
 
-    message += `*Ukuran yang dipilih: ${selectedSize}*\n`
-    message += `*Kurir Pengiriman: ${selectedCourier.toUpperCase()} (${selectedService.name} - ${selectedService.description})*\n`
-    message += `*Estimasi Pengiriman: ${selectedService.etd} Hari*\n`
-    message += `*Subtotal Produk: ${priceFormatter.format(subtotal)}*\n`
-    message += `*Ongkos Kirim: ${priceFormatter.format(shippingCost)}*\n`
-    message += `*Total Pembayaran: ${priceFormatter.format(subtotal + shippingCost)}*\n\n`
-    
-    message += `*Data Pengiriman:*\n`
-    message += `- Nama: ${name}\n`
-    message += `- No. Telp: ${phone}\n`
-    message += `- Wilayah: ${selectedProvince.name} > ${selectedCity.name} > ${selectedDistrict.name}\n`
-    message += `- Kode Pos: ${postalCode}\n`
-    message += `- Alamat: ${streetAddress}\n`
-    if (extraDetail) message += `- Detail Lain: ${extraDetail}\n`
-
-    const waUrl = `https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`
-    window.open(waUrl, '_blank')
+    sessionStorage.setItem('lumi_order_data', JSON.stringify(orderData))
+    router.push('/payment')
   }
 
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] transition-colors duration-300">
       <Header />
       <main className="pt-28 max-w-6xl mx-auto px-4 pb-20">
-        <h1 className="text-4xl font-black mb-10 tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif uppercase">Checkout</h1>
+        <h1 className="text-4xl font-black mb-10 tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif uppercase">Checkout</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
           <div className="lg:col-span-2 space-y-8">
             {/* Form Pengiriman */}
             <div className="glass p-8 md:p-10 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 blur-[60px] rounded-full"></div>
-              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] uppercase tracking-widest font-serif">Informasi Pengiriman</h2>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full"></div>
+              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark uppercase tracking-widest font-serif">Informasi Pengiriman</h2>
               
-              <form onSubmit={handlePlaceOrder} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <form onSubmit={handleContinueToPayment} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">Nama Lengkap</label>
                   <input
@@ -493,7 +458,7 @@ export default function Checkout(){
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
                   />
                 </div>
                 
@@ -505,7 +470,7 @@ export default function Checkout(){
                     required
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
                   />
                 </div>
 
@@ -525,7 +490,7 @@ export default function Checkout(){
                       setSelectedService(null)
                       setShippingCost(0)
                     }}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold cursor-pointer"
                   >
                     <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">Pilih Provinsi</option>
                     {provinces.map(p => <option key={p.id} value={p.id} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">{p.name}</option>)}
@@ -548,7 +513,7 @@ export default function Checkout(){
                       setSelectedService(null)
                       setShippingCost(0)
                     }}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
                   >
                     <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">Pilih Kota / Kabupaten</option>
                     {cities.map(c => <option key={c.id} value={c.id} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">{c.name}</option>)}
@@ -557,7 +522,7 @@ export default function Checkout(){
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">
-                    Kecamatan {isDistrictLoading && <span className="animate-pulse text-[#d4af37]">(Memuat...)</span>}
+                    Kecamatan {isDistrictLoading && <span className="animate-pulse text-accent">(Memuat...)</span>}
                   </label>
                   <select
                     required
@@ -568,7 +533,7 @@ export default function Checkout(){
                       setSelectedDistrict({ id: e.target.value, name: opt.text })
                       setPostalCode('')
                     }}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
                   >
                     <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">
                       {isDistrictLoading ? "Memuat Kecamatan..." : "Pilih Kecamatan"}
@@ -583,14 +548,14 @@ export default function Checkout(){
 
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-zinc-500 uppercase tracking-[0.2em] ml-1">
-                    Kode Pos / Kelurahan {isPostalLoading && <span className="animate-pulse text-[#d4af37]">(Memuat...)</span>}
+                    Kode Pos / Kelurahan {isPostalLoading && <span className="animate-pulse text-accent">(Memuat...)</span>}
                   </label>
                   <select
                     required
                     disabled={!selectedDistrict.name || isPostalLoading}
                     value={postalCode}
                     onChange={(e) => setPostalCode(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all text-[var(--text-main)] font-bold disabled:opacity-30 cursor-pointer"
                   >
                     <option value="" className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">
                       {isPostalLoading ? "Memuat Kode Pos..." : "Pilih Kelurahan (Kode Pos)"}
@@ -611,7 +576,7 @@ export default function Checkout(){
                     rows={2}
                     value={streetAddress}
                     onChange={(e) => setStreetAddress(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all resize-none placeholder:text-gray-400 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all resize-none placeholder:text-gray-400 font-bold"
                   />
                 </div>
 
@@ -621,7 +586,7 @@ export default function Checkout(){
                     placeholder="Contoh: Patokan depan masjid, warna pagar, dll"
                     value={extraDetail}
                     onChange={(e) => setExtraDetail(e.target.value)}
-                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
+                    className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-accent focus:bg-zinc-150 dark:focus:bg-white/10 outline-none transition-all placeholder:text-gray-400 font-bold"
                   />
                 </div>
               </form>
@@ -629,8 +594,8 @@ export default function Checkout(){
 
             {/* Pilihan Pengiriman (Rajaongkir) */}
             <div className="glass p-8 md:p-10 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-2xl relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-[#d4af37]/5 blur-[60px] rounded-full"></div>
-              <h2 className="font-black text-2xl mb-6 text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] uppercase tracking-widest font-serif">Pilihan Pengiriman</h2>
+              <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 blur-[60px] rounded-full"></div>
+              <h2 className="font-black text-2xl mb-6 text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark uppercase tracking-widest font-serif">Pilihan Pengiriman</h2>
 
               {!selectedCity.id ? (
                 <div className="p-6 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/30 dark:border-white/5 text-center">
@@ -660,8 +625,8 @@ export default function Checkout(){
                             }}
                             className={`py-4 px-2 rounded-2xl border font-black transition-all flex flex-col items-center justify-center gap-1 ${
                               isSelected
-                                ? 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] border-transparent shadow-[0_8px_20px_rgba(212,175,55,0.25)] text-black'
-                                : 'bg-zinc-100 dark:bg-white/5 border border-zinc-250 dark:border-white/10 hover:border-[#d4af37]/50 text-zinc-500'
+                                ? 'bg-gradient-to-r from-accent-light via-accent to-accent-alt border-transparent shadow-[0_8px_20px_rgb(var(--accent-main)/0.25)] text-black'
+                                : 'bg-zinc-100 dark:bg-white/5 border border-zinc-250 dark:border-white/10 hover:border-accent/50 text-zinc-500'
                             }`}
                           >
                             <span className="text-sm md:text-base tracking-widest uppercase font-serif font-black">{courier.id}</span>
@@ -677,8 +642,8 @@ export default function Checkout(){
                   {/* Loading Spinner */}
                   {isShippingLoading && (
                     <div className="flex flex-col items-center justify-center py-10 space-y-4">
-                      <div className="w-10 h-10 border-4 border-[#d4af37]/20 border-t-[#d4af37] rounded-full animate-spin"></div>
-                      <p className="text-[10px] font-black text-[#d4af37] uppercase tracking-[0.2em] animate-pulse">Menghitung Ongkos Kirim...</p>
+                      <div className="w-10 h-10 border-4 border-accent/20 border-t-accent rounded-full animate-spin"></div>
+                      <p className="text-[10px] font-black text-accent uppercase tracking-[0.2em] animate-pulse">Menghitung Ongkos Kirim...</p>
                     </div>
                   )}
 
@@ -705,14 +670,14 @@ export default function Checkout(){
                               }}
                               className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between relative group ${
                                 isSelected
-                                  ? 'border-[#d4af37] bg-[#d4af37]/5 shadow-[0_5px_15px_rgba(212,175,55,0.1)]'
-                                  : 'border-zinc-250 dark:border-white/10 bg-zinc-100/30 dark:bg-white/5 hover:border-[#d4af37]/50'
+                                  ? 'border-accent bg-accent/5 shadow-[0_5px_15px_rgb(var(--accent-main)/0.1)]'
+                                  : 'border-zinc-250 dark:border-white/10 bg-zinc-100/30 dark:bg-white/5 hover:border-accent/50'
                               }`}
                             >
                               <div className="flex justify-between items-start">
                                 <div>
                                   <span className={`text-xs font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-block mb-2 font-mono ${
-                                    isSelected ? 'bg-[#d4af37] text-black' : 'bg-zinc-250 dark:bg-white/10 text-zinc-400'
+                                    isSelected ? 'bg-accent text-black' : 'bg-zinc-250 dark:bg-white/10 text-zinc-400'
                                   }`}>
                                     {service.name}
                                   </span>
@@ -721,7 +686,7 @@ export default function Checkout(){
                                   </h4>
                                 </div>
                                 <div className="text-right">
-                                  <span className="text-base font-black text-[#d4af37] font-sans block">
+                                  <span className="text-base font-black text-accent font-sans block">
                                     {priceFormatter.format(service.cost)}
                                   </span>
                                   <span className="text-[9px] font-bold text-zinc-500 block uppercase tracking-wider mt-1">
@@ -736,8 +701,8 @@ export default function Checkout(){
                       
                       {/* Simulation Warning */}
                       {isMockingNotification && (
-                        <div className="mt-4 p-3 rounded-xl bg-[#d4af37]/5 border border-[#d4af37]/10 text-center">
-                          <p className="text-[9px] text-[#d4af37]/80 font-black uppercase tracking-widest leading-relaxed">
+                        <div className="mt-4 p-3 rounded-xl bg-accent/5 border border-accent/10 text-center">
+                          <p className="text-[9px] text-accent/80 font-black uppercase tracking-widest leading-relaxed">
                             💡 Mode Simulasi Aktif: Biaya kirim disimulasikan secara real-time dari Balikpapan.
                           </p>
                         </div>
@@ -748,23 +713,8 @@ export default function Checkout(){
               )}
             </div>
 
-            {/* Pilihan Admin & Ukuran */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              <div className="glass p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-xl">
-                <label className="block text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-[0.2em] ml-1">Kirim Order ke:</label>
-                <select
-                  value={adminPhone}
-                  onChange={(e) => setAdminPhone(e.target.value)}
-                  className="w-full p-4 rounded-2xl bg-zinc-100/50 dark:bg-white/5 border border-zinc-250/80 dark:border-white/10 focus:border-[#d4af37] outline-none transition-all text-[var(--text-main)] font-bold cursor-pointer"
-                >
-                  {admins.map((adm) => (
-                    <option key={adm.phone} value={adm.phone} className="bg-white dark:bg-[#0b0f12] text-black dark:text-white">
-                      {adm.name} ({adm.phone})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
+            {/* Ukuran & Pembayaran */}
+            <div className="grid grid-cols-1 gap-8">
               <div className="glass p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 shadow-xl">
                 <label className="block text-[10px] font-black text-zinc-500 mb-4 uppercase tracking-[0.2em] ml-1">Pilih Ukuran Cetak:</label>
                 <div className="grid grid-cols-3 gap-3">
@@ -775,8 +725,8 @@ export default function Checkout(){
                       onClick={() => setSelectedSize(s)}
                       className={`py-4 rounded-2xl border font-black transition-all ${
                         selectedSize === s
-                          ? 'bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] border-transparent shadow-[0_4px_15px_rgba(212,175,55,0.25)] text-black'
-                          : 'bg-zinc-100 dark:bg-white/5 border border-zinc-250 dark:border-white/10 hover:border-[#d4af37]/50 text-zinc-500'
+                          ? 'bg-gradient-to-r from-accent-light via-accent to-accent-alt border-transparent shadow-[0_4px_15px_rgb(var(--accent-main)/0.25)] text-black'
+                          : 'bg-zinc-100 dark:bg-white/5 border border-zinc-250 dark:border-white/10 hover:border-accent/50 text-zinc-500'
                       }`}
                     >
                       {s}
@@ -790,19 +740,19 @@ export default function Checkout(){
           {/* Ringkasan Pesanan (Sidebar) */}
           <div className="space-y-8">
             <div className="glass p-8 rounded-[2rem] border border-zinc-200/80 dark:border-zinc-850/40 sticky top-28 shadow-2xl relative overflow-hidden">
-               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-[#d4af37]/5 blur-[60px] rounded-full"></div>
-              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] uppercase tracking-widest font-serif">Detail Pesanan</h2>
+               <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-accent/5 blur-[60px] rounded-full"></div>
+              <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark uppercase tracking-widest font-serif">Detail Pesanan</h2>
               
               <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
                 {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 bg-zinc-100/50 dark:bg-white/5 p-4 rounded-2xl border border-zinc-250/30 dark:border-white/5 group hover:border-[#d4af37]/35 transition-all">
+                  <div key={item.id} className="flex gap-4 bg-zinc-100/50 dark:bg-white/5 p-4 rounded-2xl border border-zinc-250/30 dark:border-white/5 group hover:border-accent/35 transition-all">
                     <div className="w-14 h-18 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
                       <img src={item.image_url} className="w-full h-full object-cover" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col justify-center">
                       <div className="text-xs font-black uppercase tracking-tight truncate mb-1">{item.title}</div>
                       <div className="text-[10px] text-zinc-500 font-bold uppercase">Jumlah: {item.quantity}</div>
-                      <div className="text-sm font-black text-[#d4af37] mt-2 font-sans">{priceFormatter.format(item.price * item.quantity)}</div>
+                      <div className="text-sm font-black text-accent mt-2 font-sans">{priceFormatter.format(item.price * item.quantity)}</div>
                     </div>
                   </div>
                 ))}
@@ -816,29 +766,29 @@ export default function Checkout(){
                 
                 <div className="flex justify-between items-center text-sm">
                   <span className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em]">Ongkos Kirim</span>
-                  <span className="font-bold text-[#d4af37] font-sans">
+                  <span className="font-bold text-accent font-sans">
                     {shippingCost > 0 ? priceFormatter.format(shippingCost) : 'Rp 0'}
                   </span>
                 </div>
                 
                 <div className="flex justify-between items-center pt-4 border-t border-zinc-200/40 dark:border-zinc-800/40 mb-8">
                   <span className="text-zinc-500 font-black uppercase text-[10px] tracking-[0.2em]">Total Tagihan</span>
-                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+                  <span className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
                     {priceFormatter.format(subtotal + shippingCost)}
                   </span>
                 </div>
 
                 <button
-                  onClick={handlePlaceOrder}
+                  onClick={handleContinueToPayment}
                   disabled={items.length === 0 || !selectedSize || !name || !phone || !selectedDistrict.name || !streetAddress || !selectedService}
-                  className="w-full py-6 rounded-2xl bg-gradient-to-r from-[#25D366] via-[#128C7E] to-[#25D366] bg-[length:200%_100%] hover:bg-right font-black text-lg shadow-[0_15px_35px_rgba(37,211,102,0.4)] hover:scale-[1.03] active:scale-[0.97] disabled:opacity-20 disabled:cursor-not-allowed transition-all uppercase tracking-[0.2em] text-white"
+                  className="w-full py-6 rounded-2xl bg-gradient-to-r from-accent-light via-accent to-accent-dark bg-[length:200%_100%] hover:bg-right font-black text-lg shadow-[0_15px_35px_rgb(var(--accent-main)/0.4)] hover:scale-[1.03] active:scale-[0.97] disabled:opacity-20 disabled:cursor-not-allowed transition-all uppercase tracking-[0.2em] text-black"
                 >
-                  Order via WhatsApp
+                  Lanjutkan Pembayaran
                 </button>
                 
                 {(!selectedDistrict.name || !streetAddress || !selectedSize || !selectedService) && items.length > 0 && (
-                  <div className="mt-6 p-4 rounded-xl bg-[#d4af37]/10 border border-[#d4af37]/20">
-                    <p className="text-[9px] text-[#d4af37] text-center font-black uppercase tracking-widest leading-relaxed">
+                  <div className="mt-6 p-4 rounded-xl bg-accent/10 border border-accent/20">
+                    <p className="text-[9px] text-accent text-center font-black uppercase tracking-widest leading-relaxed">
                       ⚠️ Silakan lengkapi data pengiriman, pilih kurir & layanan, serta ukuran cetak untuk melanjutkan.
                     </p>
                   </div>

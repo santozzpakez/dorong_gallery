@@ -286,7 +286,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelS
             <select
               value={layoutSeriesSlug}
               onChange={(e) => onStage(slot.key, { text: e.target.value })}
-              className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-[#d4af37]/60 transition-all"
+              className="w-full bg-black/40 border border-white/10 rounded-lg px-2 py-1.5 text-[10px] text-white focus:outline-none focus:border-accent/60 transition-all"
             >
               <option value="">-- Kosongkan Slot --</option>
               {seriesList?.map(s => (
@@ -309,7 +309,7 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelS
                     if (e.key === 'Enter') { onStage(slot.key, { text: textVal.trim() }); setEditingText(false) }
                     if (e.key === 'Escape') setEditingText(false)
                   }}
-                  className="flex-1 text-xs px-2 py-1 rounded bg-black/40 border border-[#d4af37]/45 text-white outline-none"
+                  className="flex-1 text-xs px-2 py-1 rounded bg-black/40 border border-accent/45 text-white outline-none"
                 />
               </div>
             ) : (
@@ -879,7 +879,7 @@ export default function TemaAdmin() {
     return (
       <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white font-sans">
         <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#d4af37] mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent mx-auto"></div>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Memverifikasi Otorisasi Admin...</p>
         </div>
       </div>

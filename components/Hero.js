@@ -94,14 +94,14 @@ export default function Hero() {
           />
           
           {/* Subtle soft boundary fade to blend into the right column beautifully on desktop */}
-          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-r from-transparent to-[var(--bg)] z-10 hidden lg:block pointer-events-none" />
+          <div className="absolute top-0 bottom-0 right-0 w-8 bg-gradient-to-r from-transparent to-zinc-100 dark:to-zinc-900 z-10 hidden lg:block pointer-events-none" />
           
           {/* Bottom transition fade for mobile view */}
-          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[var(--bg)] to-transparent z-10 block lg:hidden pointer-events-none" />
+          <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-100 dark:from-zinc-900 to-transparent z-10 block lg:hidden pointer-events-none" />
 
           {/* Glowing gold status badge on video */}
-          <div className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-[#d4af37]/30 text-[9px] text-[#d4af37] font-black uppercase tracking-widest font-sans">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] animate-pulse shadow-[0_0_8px_rgba(212,175,55,0.8)]" />
+          <div className="absolute top-6 left-6 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/75 backdrop-blur-md border border-accent/30 text-[9px] text-accent font-black uppercase tracking-widest font-sans">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgb(var(--accent-main)/0.8)]" />
             {t.livePreview}
           </div>
         </motion.div>
@@ -111,19 +111,19 @@ export default function Hero() {
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="lg:col-span-4 flex flex-col justify-center p-8 sm:p-10 lg:p-14 space-y-6 text-left bg-[var(--bg)] relative border-t lg:border-t-0 lg:border-l border-zinc-900/10 dark:border-zinc-900"
+          className="lg:col-span-4 flex flex-col justify-center p-8 sm:p-10 lg:p-14 space-y-6 text-left bg-gradient-to-br from-zinc-100 to-zinc-300 dark:from-zinc-900 dark:to-zinc-950 relative border-t lg:border-t-0 lg:border-l border-zinc-300 dark:border-zinc-800"
         >
           {/* Inner gold glow orb */}
-          <div className="absolute -top-20 -right-20 w-48 h-48 bg-[#d4af37]/5 rounded-full filter blur-3xl pointer-events-none"></div>
+          <div className="absolute -top-20 -right-20 w-48 h-48 bg-accent/5 rounded-full filter blur-3xl pointer-events-none"></div>
           
           <div className="relative z-10 space-y-5">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/35 text-[#d4af37] text-[10px] font-black uppercase tracking-widest font-sans">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 border border-accent/35 text-accent text-[10px] font-black uppercase tracking-widest font-sans">
               {t.premiumSubli}
             </div>
             
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-[0.95] uppercase font-sans text-[var(--text-main)]">
               {t.title1}<br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif filter drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.25)] dark:drop-shadow-[0_2px_8px_rgba(212,175,55,0.2)]">
+              <span className="text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif filter drop-shadow-[0_1.5px_3px_rgba(0,0,0,0.25)] dark:drop-shadow-[0_2px_8px_rgb(var(--accent-main)/0.2)]">
                 {t.title2}
               </span>
             </h1>
@@ -136,13 +136,13 @@ export default function Hero() {
               <a 
                 href="#categories" 
                 onClick={scrollToCategories}
-                className="px-6 py-3 rounded-xl bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black font-black text-[10px] uppercase tracking-widest transition-all duration-300 hover:scale-105 shadow-md shadow-[#d4af37]/15 cursor-pointer"
+                className="px-6 py-3 rounded-xl bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black font-black text-[10px] uppercase tracking-widest transition-all duration-300 hover:scale-105 shadow-md shadow-accent/15 cursor-pointer"
               >
                 {t.shopNow}
               </a>
               <a 
                 href="/custom" 
-                className="px-6 py-3 rounded-xl border border-[#d4af37]/30 hover:bg-[#d4af37]/5 text-[var(--text-main)] font-black text-[10px] uppercase tracking-widest transition-all duration-300 hover:scale-105"
+                className="px-6 py-3 rounded-xl border border-accent/30 hover:bg-accent/5 text-[var(--text-main)] font-black text-[10px] uppercase tracking-widest transition-all duration-300 hover:scale-105"
               >
                 {t.customOrder}
               </a>

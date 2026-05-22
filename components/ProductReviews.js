@@ -264,7 +264,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
           <svg
             key={star}
             className={`${sizeClass} ${
-              star <= ratingValue ? 'text-[#d4af37]' : 'text-zinc-700'
+              star <= ratingValue ? 'text-accent' : 'text-zinc-700'
             } fill-current transition-colors duration-150`}
             viewBox="0 0 24 24"
           >
@@ -281,7 +281,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
       <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 border-b border-zinc-800/60 pb-6">
         <div>
           <h3 className="text-xl font-bold flex items-center gap-2 tracking-tight">
-            <span className="w-1 h-6 bg-[#d4af37] rounded-full shadow-[0_0_8px_rgba(212,175,55,0.6)]"></span>
+            <span className="w-1 h-6 bg-accent rounded-full shadow-[0_0_8px_rgb(var(--accent-main)/0.6)]"></span>
             {t.title}
           </h3>
           <p className="text-xs text-zinc-400 mt-1">{productTitle}</p>
@@ -293,7 +293,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
               setShowForm(true)
               setSubmitSuccess(false)
             }}
-            className="self-start sm:self-center px-5 py-2.5 bg-gradient-to-r from-[#f3e5ab]/10 to-[#d4af37]/15 hover:from-[#f3e5ab]/20 hover:to-[#d4af37]/30 border border-[#d4af37]/45 hover:border-[#d4af37] rounded-xl text-xs text-[#d4af37] font-black uppercase tracking-widest transition-all duration-300 shadow-md hover:shadow-[#d4af37]/10 active:scale-[0.98]"
+            className="self-start sm:self-center px-5 py-2.5 bg-gradient-to-r from-accent-light/10 to-accent/15 hover:from-accent-light/20 hover:to-accent/30 border border-accent/45 hover:border-accent rounded-xl text-xs text-accent font-black uppercase tracking-widest transition-all duration-300 shadow-md hover:shadow-accent/10 active:scale-[0.98]"
           >
             ✨ {t.writeReview}
           </button>
@@ -302,13 +302,13 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
 
       {/* Success Toast */}
       {submitSuccess && (
-        <div className="bg-[#d4af37]/10 border border-[#d4af37]/30 rounded-xl p-5 text-center space-y-3 animate-fade-in">
-          <div className="w-12 h-12 bg-gradient-to-tr from-[#f3e5ab] to-[#d4af37] text-black rounded-full flex items-center justify-center mx-auto shadow-lg shadow-[#d4af37]/20">
+        <div className="bg-accent/10 border border-accent/30 rounded-xl p-5 text-center space-y-3 animate-fade-in">
+          <div className="w-12 h-12 bg-gradient-to-tr from-accent-light to-accent text-black rounded-full flex items-center justify-center mx-auto shadow-lg shadow-accent/20">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
             </svg>
           </div>
-          <p className="text-sm font-semibold text-[#d4af37]">{t.successMessage}</p>
+          <p className="text-sm font-semibold text-accent">{t.successMessage}</p>
           <button
             onClick={() => {
               setSubmitSuccess(false)
@@ -327,7 +327,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
           onSubmit={handleSubmit}
           className="bg-zinc-900/60 p-6 rounded-xl border border-zinc-800/80 space-y-5 animate-fade-in shadow-inner"
         >
-          <h4 className="text-md font-bold text-[#d4af37] border-b border-zinc-800 pb-2 flex items-center gap-2">
+          <h4 className="text-md font-bold text-accent border-b border-zinc-800 pb-2 flex items-center gap-2">
             ✏️ {t.newReviewTitle}
           </h4>
 
@@ -346,7 +346,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 placeholder={t.yourNamePlaceholder}
-                className="w-full bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-all"
+                className="w-full bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-4 py-2.5 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-all"
               />
             </div>
 
@@ -361,7 +361,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                     onClick={() => setFormSize(sz)}
                     className={`flex-1 py-2.5 border rounded-xl text-xs font-black transition-all ${
                       formSize === sz 
-                        ? 'bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] border-transparent text-black shadow-lg shadow-[#d4af37]/10' 
+                        ? 'bg-gradient-to-r from-accent-light to-accent border-transparent text-black shadow-lg shadow-accent/10' 
                         : 'bg-zinc-950 border-zinc-800 text-zinc-400 hover:border-zinc-700'
                     }`}
                   >
@@ -389,7 +389,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                     <svg
                       className={`w-8 h-8 ${
                         star <= (hoverRating || formRating) 
-                          ? 'text-[#d4af37] drop-shadow-[0_0_4px_rgba(212,175,55,0.4)]' 
+                          ? 'text-accent drop-shadow-[0_0_4px_rgb(var(--accent-main)/0.4)]' 
                           : 'text-zinc-800'
                       } fill-current transition-colors duration-150`}
                       viewBox="0 0 24 24"
@@ -399,7 +399,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                   </button>
                 ))}
               </div>
-              <span className="text-xs font-black tracking-wider text-[#d4af37] uppercase">
+              <span className="text-xs font-black tracking-wider text-accent uppercase">
                 {(hoverRating || formRating) > 0 
                   ? t.ratingLabels[(hoverRating || formRating) - 1]
                   : '—'}
@@ -415,7 +415,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
               value={formComment}
               onChange={(e) => setFormComment(e.target.value)}
               placeholder={t.reviewTextPlaceholder}
-              className="w-full bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-[#d4af37] focus:ring-1 focus:ring-[#d4af37] rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-all resize-none scrollbar-thin"
+              className="w-full bg-zinc-950 border border-zinc-800 hover:border-zinc-700 focus:border-accent focus:ring-1 focus:ring-accent rounded-xl px-4 py-3 text-sm text-zinc-200 placeholder-zinc-600 outline-none transition-all resize-none scrollbar-thin"
             />
           </div>
 
@@ -434,8 +434,8 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
             <button
               type="submit"
               disabled={isSubmitting}
-              className={`px-5 py-2 bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] text-black font-black uppercase tracking-wider text-xs rounded-xl transition-all shadow-md active:scale-95 ${
-                isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-[#d4af37]/25'
+              className={`px-5 py-2 bg-gradient-to-r from-accent-light to-accent text-black font-black uppercase tracking-wider text-xs rounded-xl transition-all shadow-md active:scale-95 ${
+                isSubmitting ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-accent/25'
               }`}
             >
               {isSubmitting ? t.submitting : t.submit}
@@ -448,7 +448,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-center bg-zinc-900/30 p-6 rounded-xl border border-zinc-850/50">
         {/* Left column: Aggregate Big Number */}
         <div className="md:col-span-4 text-center md:border-r border-zinc-800/80 md:pr-8 py-2">
-          <div className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] tracking-tight drop-shadow-[0_4px_12px_rgba(212,175,55,0.15)] select-none">
+          <div className="text-5xl sm:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-accent-light to-accent tracking-tight drop-shadow-[0_4px_12px_rgb(var(--accent-main)/0.15)] select-none">
             {avgRating}
           </div>
           <div className="flex justify-center mt-3">
@@ -468,18 +468,18 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                 key={stars}
                 onClick={() => setActiveFilter(isFilterActive ? 'all' : String(stars))}
                 className={`w-full flex items-center text-left group/bar gap-3 text-xs font-medium text-zinc-400 hover:text-zinc-200 transition-colors p-1 rounded-md ${
-                  isFilterActive ? 'bg-[#d4af37]/5 ring-1 ring-[#d4af37]/20' : 'hover:bg-zinc-900/40'
+                  isFilterActive ? 'bg-accent/5 ring-1 ring-accent/20' : 'hover:bg-zinc-900/40'
                 }`}
               >
                 {/* Rating Label */}
                 <span className="w-12 font-bold select-none shrink-0 tracking-wider flex items-center justify-end gap-1">
-                  {stars} <span className="text-[#d4af37]">★</span>
+                  {stars} <span className="text-accent">★</span>
                 </span>
                 
                 {/* Percentage Bar */}
                 <div className="flex-1 h-2.5 bg-zinc-950 rounded-full overflow-hidden border border-zinc-850">
                   <div
-                    className={`h-full bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] transition-all duration-500 shadow-[0_0_6px_rgba(212,175,55,0.4)] ${
+                    className={`h-full bg-gradient-to-r from-accent-light to-accent transition-all duration-500 shadow-[0_0_6px_rgb(var(--accent-main)/0.4)] ${
                       isFilterActive ? 'opacity-100' : 'opacity-85 group-hover/bar:opacity-100'
                     }`}
                     style={{ width: `${percentage}%` }}
@@ -519,7 +519,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                 onClick={() => setActiveFilter(String(stars))}
                 className={`px-3 py-1.5 rounded-lg text-xs font-black transition-all flex items-center gap-1 ${
                   activeFilter === String(stars)
-                    ? 'bg-gradient-to-r from-[#f3e5ab] to-[#d4af37] text-black shadow-md shadow-[#d4af37]/10'
+                    ? 'bg-gradient-to-r from-accent-light to-accent text-black shadow-md shadow-accent/10'
                     : 'bg-zinc-900/80 hover:bg-zinc-800 border border-zinc-800/80 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
@@ -536,7 +536,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-700 focus:border-[#d4af37] px-2.5 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer transition-all"
+            className="bg-zinc-900 border border-zinc-800 text-zinc-300 hover:border-zinc-700 focus:border-accent px-2.5 py-1.5 rounded-lg text-xs font-bold outline-none cursor-pointer transition-all"
           >
             <option value="newest">Terbaru</option>
             <option value="helpful">Terpopuler</option>
@@ -577,7 +577,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-bold text-zinc-200 tracking-tight">{review.name}</span>
                         {review.isVerified && (
-                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-[#d4af37]/10 text-[9px] font-black text-[#d4af37] uppercase tracking-wider border border-[#d4af37]/20 select-none">
+                          <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-accent/10 text-[9px] font-black text-accent uppercase tracking-wider border border-accent/20 select-none">
                             ✓ {t.verified}
                           </span>
                         )}
@@ -609,7 +609,7 @@ export default function ProductReviews({ productId, productTitle = '', lang = 'i
                     onClick={() => handleHelpful(review.id)}
                     className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-black uppercase tracking-wider border transition-all ${
                       hasVoted
-                        ? 'bg-[#d4af37]/10 border-transparent text-[#d4af37]'
+                        ? 'bg-accent/10 border-transparent text-accent'
                         : 'bg-zinc-900/60 hover:bg-zinc-900 border-zinc-800/80 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300 active:scale-95'
                     }`}
                   >

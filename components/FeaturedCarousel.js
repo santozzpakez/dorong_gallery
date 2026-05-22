@@ -125,17 +125,17 @@ export default function FeaturedCarousel() {
     <section className="py-20 px-4 md:px-6 relative bg-[var(--bg)] overflow-hidden border-t border-zinc-900/10 dark:border-zinc-900">
       {/* BACKGROUND DECORATIONS */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-[#d4af37]/3 blur-[130px] rounded-full"></div>
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-accent/3 blur-[130px] rounded-full"></div>
       </div>
 
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Section Header */}
         <div className="flex flex-col items-center text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif">
+          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
             {t.title}
           </h2>
-          <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-[#d4af37] to-transparent mt-4" />
+          <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-accent to-transparent mt-4" />
         </div>
 
         {/* Premium Grid Layout */}
@@ -159,8 +159,8 @@ export default function FeaturedCarousel() {
             {/* Dark glass overlay with gold text info */}
             <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/10 to-transparent flex flex-col justify-end p-6 pointer-events-none">
               <div className="flex items-center gap-2.5 mb-1.5">
-                <div className="w-2 h-2 rounded-full bg-[#d4af37] animate-pulse shadow-[0_0_8px_rgba(212,175,55,0.8)]"></div>
-                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-[#d4af37]">
+                <div className="w-2 h-2 rounded-full bg-accent animate-pulse shadow-[0_0_8px_rgb(var(--accent-main)/0.8)]"></div>
+                <span className="text-[10px] font-black uppercase tracking-[0.25em] text-accent">
                   {t.playing} — {t.preview}
                 </span>
               </div>
@@ -174,7 +174,7 @@ export default function FeaturedCarousel() {
             
             {/* Header Column Detail */}
             <div className="mb-6">
-              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-[#f3e5ab] via-[#d4af37] to-[#aa7c11] font-serif leading-tight">
+              <h3 className="text-xl sm:text-2xl font-black uppercase tracking-wider text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif leading-tight">
                 {t.exploreTitle}
               </h3>
               <p className="text-zinc-500 dark:text-zinc-400 text-xs mt-2.5 leading-relaxed font-sans font-bold">
@@ -184,7 +184,7 @@ export default function FeaturedCarousel() {
 
             {/* Bronze Gold Button */}
             <div className="flex justify-between items-center mb-6">
-              <Link href="/anime" className="bg-gradient-to-r from-[#f3e5ab] via-[#d4af37] to-[#b39359] text-black font-black uppercase tracking-[0.15em] py-3 px-8 rounded-lg text-xs md:text-sm shadow-md shadow-[#d4af37]/15 transition-all hover:scale-105 inline-block">
+              <Link href="/anime" className="bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black font-black uppercase tracking-[0.15em] py-3 px-8 rounded-lg text-xs md:text-sm shadow-md shadow-accent/15 transition-all hover:scale-105 inline-block">
                 {t.exploreAll}
               </Link>
 
@@ -192,13 +192,13 @@ export default function FeaturedCarousel() {
               <div className="flex gap-2">
                 <button 
                   onClick={() => handleScroll('left')}
-                  className="w-10 h-10 rounded-full border border-zinc-350 dark:border-zinc-800 bg-white/40 dark:bg-black/40 text-zinc-700 dark:text-zinc-400 flex items-center justify-center hover:bg-[#d4af37]/10 hover:border-[#d4af37] hover:text-[#d4af37] transition-all"
+                  className="w-10 h-10 rounded-full border border-zinc-350 dark:border-zinc-800 bg-white/40 dark:bg-black/40 text-zinc-700 dark:text-zinc-400 flex items-center justify-center hover:bg-accent/10 hover:border-accent hover:text-accent transition-all"
                 >
                   &larr;
                 </button>
                 <button 
                   onClick={() => handleScroll('right')}
-                  className="w-10 h-10 rounded-full border border-zinc-350 dark:border-zinc-800 bg-white/40 dark:bg-black/40 text-zinc-700 dark:text-zinc-400 flex items-center justify-center hover:bg-[#d4af37]/10 hover:border-[#d4af37] hover:text-[#d4af37] transition-all"
+                  className="w-10 h-10 rounded-full border border-zinc-350 dark:border-zinc-800 bg-white/40 dark:bg-black/40 text-zinc-700 dark:text-zinc-400 flex items-center justify-center hover:bg-accent/10 hover:border-accent hover:text-accent transition-all"
                 >
                   &rarr;
                 </button>
@@ -218,7 +218,7 @@ export default function FeaturedCarousel() {
                   className="group snap-start flex-none w-[130px] sm:w-[155px] cursor-pointer"
                 >
                   {/* Portrait Card */}
-                  <div className="aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-800 bg-black relative shadow-lg transition-all duration-300 group-hover:border-[#d4af37]/50 group-hover:shadow-[0_10px_20px_rgba(212,175,55,0.15)]">
+                  <div className="aspect-[3/4] rounded-2xl overflow-hidden border border-zinc-800 bg-black relative shadow-lg transition-all duration-300 group-hover:border-accent/50 group-hover:shadow-[0_10px_20px_rgb(var(--accent-main)/0.15)]">
                     <img 
                       src={item.image} 
                       alt={item.name} 
@@ -229,17 +229,17 @@ export default function FeaturedCarousel() {
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                     
                     {/* Tiny gold arrow that pops up on hover */}
-                    <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/75 dark:bg-black/75 border border-zinc-800 flex items-center justify-center text-[#d4af37] opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-white/75 dark:bg-black/75 border border-zinc-800 flex items-center justify-center text-accent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                       &rarr;
                     </div>
                   </div>
 
                   {/* Character/Artist Labels Underneath Card */}
                   <div className="mt-3 text-left">
-                    <span className="text-[8px] text-[#d4af37] font-sans uppercase tracking-[0.1em] font-black block">
+                    <span className="text-[8px] text-accent font-sans uppercase tracking-[0.1em] font-black block">
                       {item.category}
                     </span>
-                    <h4 className="text-[var(--text-main)] font-bold text-[11px] sm:text-xs uppercase tracking-wider mt-0.5 truncate group-hover:text-[#d4af37] transition-colors leading-tight font-sans">
+                    <h4 className="text-[var(--text-main)] font-bold text-[11px] sm:text-xs uppercase tracking-wider mt-0.5 truncate group-hover:text-accent transition-colors leading-tight font-sans">
                       {item.name}
                     </h4>
                   </div>
