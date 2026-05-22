@@ -719,7 +719,7 @@ export default function TemaAdmin() {
 
     try {
       const dbUpdates = []
-      const CONCURRENCY_LIMIT = 3 // Parallel uploads limit
+      const CONCURRENCY_LIMIT = 1 // Process 1 by 1 to prevent Next.js from choking on large Base64 concurrent JSON parsing
       let count = 0
 
       // Helper to convert file/blob to base64
@@ -749,32 +749,43 @@ export default function TemaAdmin() {
 
           const base64Data = await toBase64(fileToUpload)
 
-          const { data: { session } } = await supabase.auth.getSession()
-          const token = session?.access_token
+          const doUpload = async () => {
+            const { data: { session } } = await supabase.auth.getSession()
+            const token = session?.access_token
 
-          // Gunakan Promise.race dengan timeout 15 detik agar proses upload tidak macet selamanya jika koneksi lambat/terputus
-          const uploadPromise = fetch('/api/upload-theme-asset', {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'Authorization': token ? `Bearer ${token}` : ''
-            },
-            body: JSON.stringify({
-              filePath,
-              base64Data,
-              contentType: fileToUpload.type || 'application/octet-stream'
+            const res = await fetch('/api/upload-theme-asset', {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Bearer ${token}` : ''
+              },
+              body: JSON.stringify({
+                filePath,
+                base64Data,
+                contentType: fileToUpload.type || 'application/octet-stream'
+              })
             })
-          }).then(async (res) => {
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Server upload failed')
-            return data
+            
+            if (!res.ok) {
+               let errorMsg = 'Server upload failed'
+               try {
+                  const data = await res.json()
+                  errorMsg = data.error || errorMsg
+               } catch(e) {
+                  errorMsg = await res.text() || errorMsg
+               }
+               throw new Error(errorMsg)
+            }
+            return await res.json()
+          }
+
+          let timeoutId;
+          const timeoutPromise = new Promise((_, reject) => {
+            timeoutId = setTimeout(() => reject(new Error('Koneksi Timeout (60 detik). File terlalu besar, coba kompres foto.')), 60000)
           })
 
-          const timeoutPromise = new Promise((_, reject) =>
-            setTimeout(() => reject(new Error('Koneksi Timeout (15 detik). Kemungkinan koneksi internet sedang lambat atau file terlalu besar. Silakan coba simpan kembali.')), 15000)
-          )
-
-          const uploadResult = await Promise.race([uploadPromise, timeoutPromise])
+          const uploadResult = await Promise.race([doUpload(), timeoutPromise])
+          clearTimeout(timeoutId)
           finalUrl = uploadResult.publicUrl
         }
 

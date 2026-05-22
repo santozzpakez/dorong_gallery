@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 export const config = {
   api: {
     bodyParser: {
-      sizeLimit: '15mb', // Support large files
+      sizeLimit: '50mb', // Support large files
     },
   },
 }
