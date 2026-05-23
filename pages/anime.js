@@ -10,6 +10,7 @@ export default function Anime() {
   const { lang } = useLanguage()
   const { assets, getUrl, getText, loaded } = useSiteAssets()
   const [seriesList, setSeriesList] = useState([])
+  const [allSeries, setAllSeries] = useState([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(0)
   const [showAllModal, setShowAllModal] = useState(false)
@@ -89,79 +90,84 @@ export default function Anime() {
     async function loadSeries() {
       if (!loaded) return // Tunggu Site Assets (Cache) siap
 
-      // ── 1. Ambil dari Cache Global (SUPER CEPAT) ──
-      const globalOptionsRaw = getText('global-category-options')
-      const globalCharsRaw = getText('global-character-options')
-      
-      let categories = []
-      let charsByType = {}
-      
-      try {
-        if (globalOptionsRaw) {
-          const parsed = JSON.parse(globalOptionsRaw)
-          categories = Array.isArray(parsed?.anime) ? parsed.anime : []
-        }
-        if (globalCharsRaw) {
-          charsByType = JSON.parse(globalCharsRaw)
-        }
-      } catch (err) {
-        console.warn('Gagal membaca cache kategori:', err)
-      }
-
-      // Fallback ke localStorage jika cache global kosong (untuk admin di browser yang sama)
-      if (categories.length === 0) {
-        try {
-          const raw = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
-          if (raw) categories = JSON.parse(raw)?.anime || []
-        } catch {}
-      }
-
-      // ── 2. Buat map dan hitung karakter ──
-      const seriesMap = new Map()
       const normalize = (name) => {
         if (!name) return ''
         const clean = name.replace(/^cover\s*[—\-]?\s*/i, '').trim()
         return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
       }
 
-      categories.forEach(name => {
-        const norm = normalize(name)
-        if (norm) {
-          // Ambil karakter dari cache global
-          const chars = charsByType?.anime?.[norm] || []
-          seriesMap.set(norm, new Set(chars))
-        }
-      })
+      const seriesMap = new Map()
 
-      // ── 3. Jalur Darurat: Scan Produk & Site Assets ──
-      if (seriesMap.size === 0 && hasSupabaseConfig && supabase) {
-        // A. Scan Products
-        const { data: pData } = await supabase.from('products').select('subcategory').eq('category', 'anime')
-        if (pData) {
-          pData.forEach(item => {
-            if (item.subcategory) {
-              const parts = item.subcategory.split(' - ')
-              const series = normalize(parts[0].trim())
-              const char = parts[1]?.trim() || ''
-              if (series) {
-                if (!seriesMap.has(series)) seriesMap.set(series, new Set())
-                if (char) seriesMap.get(series).add(char)
-              }
+      // ── 1. Ambil dari Cache Global ──
+      try {
+        const globalOptionsRaw = getText('global-category-options')
+        const globalCharsRaw = getText('global-character-options')
+        let charsByType = {}
+        
+        if (globalOptionsRaw) {
+          const parsed = JSON.parse(globalOptionsRaw)
+          const categories = Array.isArray(parsed?.anime) ? parsed.anime : []
+          if (globalCharsRaw) charsByType = JSON.parse(globalCharsRaw)
+          
+          categories.forEach(name => {
+            const norm = normalize(name)
+            if (norm) {
+              const chars = charsByType?.anime?.[norm] || []
+              seriesMap.set(norm, new Set(chars))
             }
           })
         }
-        // B. Scan Site Assets
-        const { data: aData } = await supabase.from('site_assets').select('key, label').like('key', 'anime-cover-%')
-        if (aData) {
-          aData.forEach(asset => {
-            const key = asset.key
-            if (key.includes('sidebar') || key.includes('slot')) return
-            const rawName = asset.label || key.replace('anime-cover-', '').replace(/-/g, ' ')
-            const series = normalize(rawName)
-            if (series && !seriesMap.has(series)) {
-              seriesMap.set(series, new Set())
+      } catch (err) {
+        console.warn('Gagal membaca cache kategori:', err)
+      }
+
+      // ── 2. Fallback localStorage ──
+      try {
+        const raw = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
+        if (raw) {
+          const categories = JSON.parse(raw)?.anime || []
+          categories.forEach(name => {
+            const norm = normalize(name)
+            if (norm && !seriesMap.has(norm)) {
+              seriesMap.set(norm, new Set())
             }
           })
+        }
+      } catch {}
+
+      // ── 3. SELALU Scan Produk dari Database (agar produk baru langsung muncul) ──
+      if (hasSupabaseConfig && supabase) {
+        try {
+          const { data: pData } = await supabase.from('products').select('subcategory').eq('category', 'anime')
+          if (pData) {
+            pData.forEach(item => {
+              if (item.subcategory) {
+                const parts = item.subcategory.split(' - ')
+                const series = normalize(parts[0].trim())
+                const char = parts[1]?.trim() || ''
+                if (series) {
+                  if (!seriesMap.has(series)) seriesMap.set(series, new Set())
+                  if (char) seriesMap.get(series).add(char)
+                }
+              }
+            })
+          }
+          
+          // Juga scan Site Assets untuk cover images
+          const { data: aData } = await supabase.from('site_assets').select('key, label').like('key', 'anime-cover-%')
+          if (aData) {
+            aData.forEach(asset => {
+              const key = asset.key
+              if (key.includes('sidebar') || key.includes('slot')) return
+              const rawName = asset.label || key.replace('anime-cover-', '').replace(/-/g, ' ')
+              const series = normalize(rawName)
+              if (series && !seriesMap.has(series)) {
+                seriesMap.set(series, new Set())
+              }
+            })
+          }
+        } catch (err) {
+          console.error('Gagal scan database:', err)
         }
       }
 
@@ -176,6 +182,9 @@ export default function Anime() {
       })
       formatted.sort((a, b) => a.name.localeCompare(b.name))
 
+      // Simpan SEMUA anime untuk modal "Semua Anime"
+      setAllSeries(formatted)
+
       // ── 5. Resolusi Layout Sidebar (Featured 10) ──
       const sidebarSlugs = []
       for (let i = 1; i <= 10; i++) {
@@ -183,14 +192,15 @@ export default function Anime() {
         if (s) sidebarSlugs.push(s)
       }
 
-      if (sidebarSlugs.length > 0) {
-        // Urutan dari Admin Layout
-        const featured = sidebarSlugs.map(slug => formatted.find(x => x.slug === slug)).filter(Boolean)
-        setSeriesList(featured)
-      } else {
-        // Fallback: ambil 10 pertama alfabet jika belum diatur sama sekali di admin
-        setSeriesList(formatted.slice(0, 10))
-      }
+      // Ambil yang sudah dikonfigurasi di sidebar
+      const featured = sidebarSlugs.map(slug => formatted.find(x => x.slug === slug)).filter(Boolean)
+      
+      // Auto-fill sisa slot dari database (agar panel tidak kosong)
+      const usedSlugs = new Set(featured.map(f => f.slug))
+      const remaining = formatted.filter(x => !usedSlugs.has(x.slug))
+      const finalList = [...featured, ...remaining].slice(0, 10)
+      
+      setSeriesList(finalList)
 
       setLoading(false)
     }
@@ -209,7 +219,7 @@ export default function Anime() {
           <div className="absolute right-0 top-0 w-80 h-80 bg-accent/3 rounded-full filter blur-[80px] pointer-events-none" />
           
           <div className="relative z-10">
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif">
               {t.title}
             </h1>
             <p className="text-zinc-400 mt-2 text-xs md:text-sm font-sans tracking-widest uppercase font-bold">
@@ -257,16 +267,16 @@ export default function Anime() {
                         href={`/anime/${series.slug}`}
                         key={series.slug} 
                         onMouseEnter={() => setActive(i)} 
-                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-accent shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                        className={`block group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-accent shadow-[0_4px_15px_rgba(212,175,55,0.3)] scale-105 relative z-10' : 'hover:scale-102'}`}
                       >
-                        <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                        <div className="h-16 md:h-20 bg-black border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
                           {displayImage ? (
                             <img src={displayImage} className="w-full h-full object-cover" alt={series.name} loading="lazy" decoding="async" />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900" />
+                            <div className="w-full h-full bg-zinc-800" />
                           )}
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
-                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                          <div className={`absolute inset-0 flex items-center justify-center p-1 text-center transition-all duration-300 ${isActive ? 'bg-black/20' : 'bg-black/70 group-hover:bg-black/40'}`}>
+                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans drop-shadow-md">
                               {getText(`anime-cover-${series.slug}`) || series.name}
                             </span>
                           </div>
@@ -285,14 +295,14 @@ export default function Anime() {
                     
                     return (
                       <Link href={`/anime/${activeSeries.slug}`} className="block group w-full h-full">
-                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-accent/45">
+                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-accent/45">
                           <div className="absolute inset-0 w-full h-full">
                             {displayImage ? (
                               <img 
                                 key={displayImage}
                                 src={displayImage} 
                                 alt={activeSeries.name} 
-                                className="w-full h-full object-cover opacity-60 dark:opacity-85 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700 transform-gpu"
+                                className="w-full h-full object-cover opacity-85 dark:opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 transform-gpu"
                                 loading="eager"
                                 decoding="async"
                               />
@@ -305,7 +315,7 @@ export default function Anime() {
                             <div className="mb-2">
                                <span className="px-2 py-0.5 bg-accent text-black text-[9px] font-black uppercase tracking-widest rounded">Featured Selection</span>
                             </div>
-                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
+                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif">
                               {getText(`anime-cover-${activeSeries.slug}`) || activeSeries.name}
                             </h2>
                             <div className="mt-4 flex gap-4">
@@ -331,16 +341,16 @@ export default function Anime() {
                         href={`/anime/${series.slug}`}
                         key={series.slug} 
                         onMouseEnter={() => setActive(i)} 
-                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-accent shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                        className={`block group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-accent shadow-[0_4px_15px_rgba(212,175,55,0.3)] scale-105 relative z-10' : 'hover:scale-102'}`}
                       >
-                        <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                        <div className="h-16 md:h-20 bg-black border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
                           {displayImage ? (
                             <img src={displayImage} className="w-full h-full object-cover" alt={series.name} loading="lazy" decoding="async" />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900" />
+                            <div className="w-full h-full bg-zinc-800" />
                           )}
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
-                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                          <div className={`absolute inset-0 flex items-center justify-center p-1 text-center transition-all duration-300 ${isActive ? 'bg-black/20' : 'bg-black/70 group-hover:bg-black/40'}`}>
+                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans drop-shadow-md">
                               {getText(`anime-cover-${series.slug}`) || series.name}
                             </span>
                           </div>
@@ -375,7 +385,7 @@ export default function Anime() {
                   </div>
                   
                   <div className="p-2 overflow-y-auto custom-scrollbar flex-grow bg-black/10">
-                    {seriesList
+                    {allSeries
                       .filter(s => s.name.toLowerCase().includes(searchAll.toLowerCase()))
                       .map((series) => (
                       <Link 
@@ -395,7 +405,7 @@ export default function Anime() {
                         <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent text-sm">→</span>
                       </Link>
                     ))}
-                    {seriesList.filter(s => s.name.toLowerCase().includes(searchAll.toLowerCase())).length === 0 && (
+                    {allSeries.filter(s => s.name.toLowerCase().includes(searchAll.toLowerCase())).length === 0 && (
                       <div className="text-center py-10 text-zinc-500 text-sm italic">{t.notFound}</div>
                     )}
                   </div>

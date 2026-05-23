@@ -10,6 +10,7 @@ export default function Kpop() {
   const { lang } = useLanguage()
   const { assets, getUrl, getText, loaded } = useSiteAssets()
   const [groups, setGroups] = useState([])
+  const [allGroups, setAllGroups] = useState([])
   const [loading, setLoading] = useState(true)
   const [active, setActive] = useState(0)
   const [showAllModal, setShowAllModal] = useState(false)
@@ -141,8 +142,9 @@ export default function Kpop() {
         }
       })
 
-      // ── 3. Jalur Darurat: Scan Produk & Site Assets ──
-      if (groupMap.size === 0 && hasSupabaseConfig && supabase) {
+      // ── 3. SELALU Scan Produk & Site Assets (agar produk baru langsung muncul) ──
+      if (hasSupabaseConfig && supabase) {
+        try {
         // A. Scan Products
         const { data: pData } = await supabase.from('products').select('subcategory').eq('category', 'kpop')
         if (pData) {
@@ -171,10 +173,16 @@ export default function Kpop() {
             }
           })
         }
+        } catch (err) {
+          console.error('Gagal scan database kpop:', err)
+        }
       }
 
       const groupList = Array.from(groupMap.values())
       groupList.sort((a, b) => a.name.localeCompare(b.name))
+
+      // Simpan SEMUA grup untuk modal
+      setAllGroups(groupList)
 
       // Featured Sidebar
       const sidebarSlugs = []
@@ -183,12 +191,15 @@ export default function Kpop() {
         if (s) sidebarSlugs.push(s)
       }
 
-      if (sidebarSlugs.length > 0) {
-        const featured = sidebarSlugs.map(slug => groupList.find(x => x.slug === slug)).filter(Boolean)
-        setGroups(featured)
-      } else {
-        setGroups(groupList.slice(0, 10))
-      }
+      // Ambil yang sudah dikonfigurasi di sidebar
+      const featured = sidebarSlugs.map(slug => groupList.find(x => x.slug === slug)).filter(Boolean)
+      
+      // Auto-fill sisa slot dari database
+      const usedSlugs = new Set(featured.map(f => f.slug))
+      const remaining = groupList.filter(x => !usedSlugs.has(x.slug))
+      const finalList = [...featured, ...remaining].slice(0, 10)
+      
+      setGroups(finalList)
 
       setLoading(false)
     }
@@ -200,7 +211,7 @@ export default function Kpop() {
   const rightGroups = displayGroups.slice(5, 10)
 
   return (
-    <div className="min-h-screen bg-[#08080a] dark:bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
       <main className="flex-grow pt-32 max-w-6xl mx-auto px-4 w-full pb-16">
         
@@ -210,7 +221,7 @@ export default function Kpop() {
           <div className="absolute right-0 top-0 w-80 h-80 bg-accent/3 rounded-full filter blur-[80px] pointer-events-none" />
           
           <div className="relative z-10">
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif">
               {t.title}
             </h1>
             <p className="text-zinc-400 mt-2 text-xs md:text-sm font-sans tracking-widest uppercase font-bold">
@@ -256,18 +267,18 @@ export default function Kpop() {
                         href={`/kpop/${g.slug}`}
                         key={g.slug}
                         onMouseEnter={() => setActive(i)}
-                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-accent shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                        className={`block group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-accent shadow-[0_4px_15px_rgba(212,175,55,0.3)] scale-105 relative z-10' : 'hover:scale-102'}`}
                       >
-                        <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                        <div className="h-16 md:h-20 bg-black border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
                           {displayImage ? (
                             <img src={displayImage} className="w-full h-full object-cover" alt={g.name} loading="lazy" decoding="async" />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center">
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                               <span className="text-zinc-400 dark:text-zinc-600 text-[9px] text-center px-1 font-bold">{t.noImage}</span>
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
-                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                          <div className={`absolute inset-0 flex items-center justify-center p-1 text-center transition-all duration-300 ${isActive ? 'bg-black/20' : 'bg-black/70 group-hover:bg-black/40'}`}>
+                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans drop-shadow-md">
                               {getText(g.assetKey) || g.name}
                             </span>
                           </div>
@@ -284,14 +295,14 @@ export default function Kpop() {
                     const displayImage = assets[activeGroup.assetKey] || getUrl(activeGroup.assetKey) || ''
                     return (
                       <Link href={`/kpop/${activeGroup.slug}`} className="block group w-full h-full">
-                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-accent/45">
+                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-accent/45">
                           <div className="absolute inset-0 w-full h-full">
                             {displayImage ? (
                               <img
                                 key={displayImage}
                                 src={displayImage}
                                 alt={activeGroup.name}
-                                className="w-full h-full object-cover opacity-60 dark:opacity-85 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700 transform-gpu"
+                                className="w-full h-full object-cover opacity-85 dark:opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 transform-gpu"
                                 loading="eager"
                                 decoding="async"
                               />
@@ -306,7 +317,7 @@ export default function Kpop() {
                             <div className="mb-2">
                               <span className="px-2 py-0.5 bg-accent text-black text-[9px] font-black uppercase tracking-widest rounded">{t.topIdol}</span>
                             </div>
-                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
+                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif">
                               {getText(activeGroup.assetKey) || activeGroup.name}
                             </h2>
                             <div className="mt-4 flex gap-4">
@@ -330,18 +341,18 @@ export default function Kpop() {
                         href={`/kpop/${g.slug}`}
                         key={g.slug}
                         onMouseEnter={() => setActive(i)}
-                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-accent shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                        className={`block group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-accent shadow-[0_4px_15px_rgba(212,175,55,0.3)] scale-105 relative z-10' : 'hover:scale-102'}`}
                       >
-                        <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                        <div className="h-16 md:h-20 bg-black border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
                           {displayImage ? (
                             <img src={displayImage} className="w-full h-full object-cover" alt={g.name} loading="lazy" decoding="async" />
                           ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center">
+                            <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                               <span className="text-zinc-400 dark:text-zinc-650 text-[9px] text-center px-1 font-bold">{t.noImage}</span>
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
-                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                          <div className={`absolute inset-0 flex items-center justify-center p-1 text-center transition-all duration-300 ${isActive ? 'bg-black/20' : 'bg-black/70 group-hover:bg-black/40'}`}>
+                            <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans drop-shadow-md">
                               {getText(g.assetKey) || g.name}
                             </span>
                           </div>
@@ -376,7 +387,7 @@ export default function Kpop() {
                   </div>
 
                   <div className="p-2 overflow-y-auto custom-scrollbar flex-grow bg-black/10">
-                    {groups
+                    {allGroups
                       .filter(g => g.name.toLowerCase().includes(searchAll.toLowerCase()))
                       .map((g) => (
                         <Link
@@ -396,7 +407,7 @@ export default function Kpop() {
                           <span className="opacity-0 group-hover:opacity-100 transition-opacity text-accent text-sm">→</span>
                         </Link>
                       ))}
-                    {groups.filter(g => g.name.toLowerCase().includes(searchAll.toLowerCase())).length === 0 && (
+                    {allGroups.filter(g => g.name.toLowerCase().includes(searchAll.toLowerCase())).length === 0 && (
                       <div className="text-center py-10 text-zinc-500 text-sm italic">{t.notFound}</div>
                     )}
                   </div>

@@ -109,7 +109,7 @@ export default function Home(){
                 <span className="relative z-10 text-black/70">✧</span>
               </span>
               
-              <h2 className="relative z-10 text-5xl sm:text-6xl md:text-7xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#dfb342] via-[#bf953f] to-[#8a5d19] font-serif text-center filter drop-shadow-[0_2px_8px_rgba(212,175,55,0.25)] dark:drop-shadow-[0_2px_15px_rgba(212,175,55,0.4)]">
+              <h2 className="relative z-10 text-5xl sm:text-6xl md:text-7xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-[#dfb342] via-[#bf953f] to-[#8a5d19] dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif text-center filter drop-shadow-[0_2px_8px_rgba(212,175,55,0.25)] dark:drop-shadow-[0_2px_15px_rgba(255,255,255,0.25)]">
                 COLLECTIONS
               </h2>
               

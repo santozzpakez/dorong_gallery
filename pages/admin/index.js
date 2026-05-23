@@ -3,96 +3,13 @@ import Link from 'next/link'
 import Footer from '../../components/Footer'
 import { useEffect, useMemo, useState } from 'react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabaseClient'
-import Cropper from 'react-easy-crop'
+
 import { useAuth } from '../../context/AuthContext'
 import { useRouter } from 'next/router'
 import { useSiteAssets } from '../../lib/siteAssets'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// --- COMPRESSION HELPER ---
-async function compressImage(file, maxWidth = 1200) {
-  if (!file) return null
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.readAsDataURL(file)
-    reader.onload = (event) => {
-      const img = new Image()
-      img.src = event.target.result
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas')
-          let width = img.width
-          let height = img.height
 
-          if (width > maxWidth) {
-            height *= maxWidth / width
-            width = maxWidth
-          }
-
-          canvas.width = width
-          canvas.height = height
-          const ctx = canvas.getContext('2d')
-          ctx.drawImage(img, 0, 0, width, height)
-          canvas.toBlob((blob) => {
-            if (!blob) {
-              reject(new Error('Gagal membuat blob gambar'))
-              return
-            }
-            resolve(blob)
-          }, 'image/webp', 0.8)
-        } catch (err) {
-          reject(err)
-        }
-      }
-      img.onerror = (err) => reject(new Error('Gagal memuat gambar ke canvas'))
-    }
-    reader.onerror = (err) => reject(new Error('Gagal membaca file gambar'))
-  })
-}
-
-// --- CROPPING HELPER ---
-async function getCroppedImg(imageSrc, pixelCrop) {
-  const image = await new Promise((resolve, reject) => {
-    const img = new Image()
-    img.addEventListener('load', () => resolve(img))
-    img.addEventListener('error', (error) => reject(error))
-    img.src = imageSrc
-  })
-
-  // Optimasi: Batasi ukuran maksimal agar upload cepat
-  const MAX_WIDTH = 1200
-  let targetWidth = pixelCrop.width
-  let targetHeight = pixelCrop.height
-
-  if (pixelCrop.width > MAX_WIDTH) {
-    const scale = MAX_WIDTH / pixelCrop.width
-    targetWidth = MAX_WIDTH
-    targetHeight = pixelCrop.height * scale
-  }
-
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')
-  canvas.width = targetWidth
-  canvas.height = targetHeight
-
-  ctx.drawImage(
-    image,
-    pixelCrop.x,
-    pixelCrop.y,
-    pixelCrop.width,
-    pixelCrop.height,
-    0,
-    0,
-    targetWidth,
-    targetHeight
-  )
-
-  return new Promise((resolve) => {
-    canvas.toBlob((blob) => {
-      resolve(blob)
-    }, 'image/webp', 0.8) // Kualitas 80% (Sangat cukup untuk website)
-  })
-}
 
 const STORAGE_TYPES = 'dorong_admin_type_options'
 const STORAGE_CHARS = 'dorong_admin_characters_by_type'
@@ -411,13 +328,23 @@ export default function Admin() {
   useEffect(() => {
     async function initCategories() {
       try {
-        // 1. Start with default or local storage
-        let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
-        let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
+        // 1. Start with default or local storage or global cache
+        let globalTypes = {}
+        let globalChars = {}
+        try {
+          const rawTypes = getText('global-category-options')
+          if (rawTypes) globalTypes = JSON.parse(rawTypes)
+          const rawChars = getText('global-character-options')
+          if (rawChars) globalChars = JSON.parse(rawChars)
+        } catch (e) {}
+
+        let types = mergeTypes(loadJson(STORAGE_TYPES, Object.keys(globalTypes).length > 0 ? globalTypes : defaultTypes), defaultTypes)
+        let chars = mergeCharsByType(loadJson(STORAGE_CHARS, Object.keys(globalChars).length > 0 ? globalChars : defaultCharactersByType), defaultCharactersByType)
 
         // 2. Fetch all products to find existing categories/subcategories
         if (hasSupabaseConfig && supabase) {
           try {
+
             const { data, error } = await supabase.from('products').select('category, subcategory')
             if (!error && data) {
               data.forEach(p => {
@@ -453,35 +380,6 @@ export default function Admin() {
                   }
                 }
               })
-              // B. Sync from Site Assets (Hanya jika kategori tersebut punya data valid)
-              // Kita tidak lagi otomatis menambahkan kategori dari Site Assets jika produknya sudah dihapus,
-              // kecuali kategori tersebut memang punya aset gambar yang terdaftar.
-              const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label, image_url')
-              if (!aErr && aData) {
-                aData.forEach(asset => {
-                  if (!asset.image_url) return // Lewati jika tidak ada gambarnya
-
-                  let rawName = ''
-                  if (asset.key.startsWith('anime-cover-')) {
-                    rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
-                  } else if (asset.key.startsWith('kpop-group-')) {
-                    rawName = asset.label || asset.key.replace('kpop-group-', '').replace(/-/g, ' ')
-                  } else if (asset.key.startsWith('aesthetic-') && !asset.key.includes('sidebar')) {
-                    rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
-                  }
-
-                  if (rawName) {
-                    const cleanName = rawName.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-                    const formattedName = cleanName.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
-                    const cat = asset.key.startsWith('anime') ? 'anime' : asset.key.startsWith('kpop') ? 'kpop' : asset.key.startsWith('aesthetic') ? 'aesthetic' : 'custom'
-                    if (types[cat]) {
-                      if (!types[cat].includes(formattedName)) {
-                        types[cat].push(formattedName)
-                      }
-                    }
-                  }
-                })
-              }
             }
           } catch (err) {
             console.error('Failed to sync categories from DB:', err)
@@ -496,9 +394,7 @@ export default function Admin() {
             types[cat].forEach(raw => {
               if (!raw || typeof raw !== 'string') return
               try {
-                // Bersihkan "Cover", "Cover - ", dsb
                 const clean = raw.replace(/^cover\s*[—\-]?\s*/i, '').trim()
-                // Format ke Title Case
                 const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
                 if (formatted) uniqueNames.add(formatted)
               } catch (err) {
@@ -508,6 +404,7 @@ export default function Admin() {
           }
           finalTypes[cat] = Array.from(uniqueNames).sort()
         })
+
 
         setTypeOptions(finalTypes)
         setCharactersByType(chars)
@@ -987,31 +884,12 @@ export default function Admin() {
   function handleImageChange(event) {
     const file = event.target.files?.[0]
     if (!file) return
-    const url = URL.createObjectURL(file)
-    setCropData({ url, file })
+    setImageFile(file)
+    setImagePreview(URL.createObjectURL(file))
     
     // Auto-fill title from file name (without extension)
     const fileName = file.name.split('.').slice(0, -1).join('.')
     setForm(prev => ({ ...prev, title: fileName }))
-  }
-
-  const handleFinishCrop = async (useCrop = true) => {
-    if (!cropData) return
-    let finalBlob = cropData.file
-    let finalUrl = cropData.url
-
-    if (useCrop && croppedAreaPixels) {
-      finalBlob = await getCroppedImg(cropData.url, croppedAreaPixels)
-      finalUrl = URL.createObjectURL(finalBlob)
-    } else {
-      // Jika tidak di-crop, tetap kompres
-      finalBlob = await compressImage(cropData.file)
-      finalUrl = URL.createObjectURL(finalBlob)
-    }
-
-    setImageFile(finalBlob)
-    setImagePreview(finalUrl)
-    setCropData(null)
   }
 
   const handleBatchFilesChange = (e) => {
@@ -1022,8 +900,8 @@ export default function Admin() {
     const titles = files.map(f => f.name.split('.').slice(0, -1).join('.'))
     setBatchTitles(titles)
     
-    // Generate previews
-    const previews = files.map(f => URL.createObjectURL(f))
+    // Generate previews (max 20 to avoid memory issues)
+    const previews = files.slice(0, 20).map(f => URL.createObjectURL(f))
     setBatchPreviews(previews)
   }
 
@@ -1050,179 +928,170 @@ export default function Admin() {
       return next
     })
     
-    // Clear textarea after paste for better UX (optional)
     e.target.value = ''
+  }
+
+  // Upload satu file ke Supabase Storage dan return public URL
+  async function uploadFileToSupabase(file, index) {
+    const safeName = sanitizeFileName(file.name)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const filePath = `products/${Date.now()}-${index}-${safeName}.${ext}`
+    
+    const { error } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file, {
+        upsert: false,
+        contentType: file.type || 'image/jpeg',
+        cacheControl: '31536000'
+      })
+
+    if (error) throw new Error(error.message)
+
+    return supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
   }
 
   async function handleSubmit(event) {
     event.preventDefault()
-    if (uploadMode === 'single' && !imageFile) {
-      setStatusMessage('Pilih gambar dulu ya.')
-      return
-    }
-    if (uploadMode === 'batch' && batchFiles.length === 0) {
-      setStatusMessage('Pilih beberapa gambar dulu ya.')
-      return
-    }
-    if (uploadMode === 'single' && !form.title) {
-      setStatusMessage('Lengkapi judul produk dulu ya.')
-      return
-    }
+    
     if (!hasSupabaseConfig || !supabase) {
-      setStatusMessage('Supabase belum dikonfigurasi di .env.local (URL + anon key). Restart npm run dev setelah mengubah .env.local.')
+      alert('Supabase belum dikonfigurasi!')
       return
     }
-    const priceNum = 99000 // Default value for legacy DB column
+
+    // Validasi umum
     const needsHierarchy = form.category === 'anime' || form.category === 'kpop'
     if (needsHierarchy && (!form.typeName || !form.characterName)) {
-      setStatusMessage('Pilih judul/series dulu, lalu pilih karakter (atau tambah baru).')
+      alert('Pilih judul/series dan karakter terlebih dahulu.')
       return
     }
     if (form.category === 'aesthetic' && !form.typeName) {
-      setStatusMessage('Pilih jenis/tema dulu ya.')
+      alert('Pilih tema aesthetic terlebih dahulu.')
       return
     }
 
+    const priceNum = 99000
+    const seriesName = (needsHierarchy || form.category === 'aesthetic') ? form.typeName : '-'
+    const characterName = needsHierarchy ? form.characterName : null
+    const subcategory = needsHierarchy ? `${seriesName} - ${characterName}` : (form.category === 'aesthetic' ? seriesName : form.category)
+
     setIsSubmitting(true)
-    setStatusMessage('Menyiapkan pengunggahan...')
 
     try {
-      const seriesName = (needsHierarchy || form.category === 'aesthetic') ? form.typeName : '-'
-      const characterName = needsHierarchy ? form.characterName : null
-      const subcategory = needsHierarchy ? `${seriesName} - ${characterName}` : (form.category === 'aesthetic' ? seriesName : form.category)
-
-      if (uploadMode === 'batch') {
-        const imageFiles = Array.from(batchFiles).filter(file =>
-          file.type.match(/^image\/(jpeg|png|webp|gif|jpg)$/i)
-        )
-
-        if (imageFiles.length === 0) {
-          setStatusMessage('Tidak ada file gambar valid yang dipilih.')
+      // ==================== SINGLE UPLOAD ====================
+      if (uploadMode === 'single') {
+        if (!imageFile) {
+          alert('Pilih gambar dulu!')
+          setIsSubmitting(false)
+          return
+        }
+        if (!form.title || form.title.trim() === '') {
+          alert('Judul produk tidak boleh kosong!')
           setIsSubmitting(false)
           return
         }
 
-        setTotalBatchImages(imageFiles.length)
-        setUploadProgress(0)
-        setStatusMessage(`Memulai upload ${imageFiles.length} gambar secara paralel...`)
+        setStatusMessage('Mengunggah gambar...')
+        
+        let publicUrl
+        try {
+          publicUrl = await uploadFileToSupabase(imageFile, 0)
+        } catch (uploadErr) {
+          alert(`Upload gambar gagal: ${uploadErr.message}`)
+          setIsSubmitting(false)
+          return
+        }
 
-        const CONCURRENCY_LIMIT = 5 // Upload 5 gambar sekaligus
-        const payloads = []
-        let uploadedCount = 0
+        setStatusMessage('Menyimpan ke database...')
+        
+        const { data, error } = await supabase.from('products').insert({
+          title: form.title.trim(),
+          price: priceNum,
+          category: form.category,
+          subcategory: subcategory,
+          notes: form.notes,
+          image_url: publicUrl
+        }).select('*').single()
 
-        // Fungsi helper untuk upload satu file
-        const uploadOneFile = async (file, index) => {
-          // KOMPRESI OTOMATIS: Kecilkan ukuran file sebelum upload
-          const compressed = await compressImage(file)
-          const safeName = sanitizeFileName(file.name)
-          const filePath = `products/${Date.now()}-${index}-${safeName}`
+        if (error) {
+          alert(`Gagal simpan ke database: ${error.message}`)
+          setIsSubmitting(false)
+          return
+        }
+
+        // Berhasil!
+        setSavedProducts(prev => [data, ...prev])
+        setForm(prev => ({ ...prev, title: '' }))
+        setImageFile(null)
+        setImagePreview('')
+        setStatusMessage('Produk berhasil disimpan!')
+        setShowSuccessModal(true)
+        return
+      }
+
+      // ==================== BATCH UPLOAD ====================
+      if (batchFiles.length === 0) {
+        alert('Pilih gambar dulu!')
+        setIsSubmitting(false)
+        return
+      }
+
+      const totalFiles = batchFiles.length
+      setTotalBatchImages(totalFiles)
+      setUploadProgress(0)
+      setStatusMessage(`Memulai upload ${totalFiles} gambar...`)
+
+      const successPayloads = []
+      
+      // Upload SATU PER SATU agar browser tidak freeze
+      for (let i = 0; i < totalFiles; i++) {
+        const file = batchFiles[i]
+        const title = (batchTitles[i] || '').trim() || file.name.split('.').slice(0, -1).join('.')
+        
+        setStatusMessage(`Mengunggah ${i + 1} dari ${totalFiles}: "${title}"`)
+
+        try {
+          const publicUrl = await uploadFileToSupabase(file, i)
           
-          const { error: upErr } = await supabase.storage.from('product-images').upload(filePath, compressed, {
-            upsert: false,
-            contentType: 'image/webp',
-            cacheControl: '31536000'
-          })
-
-          if (upErr) throw new Error(`Gagal upload ${file.name}: ${upErr.message}`)
-
-          const publicUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
-          
-          const finalTitle = batchTitles[index] || file.name.split('.').slice(0, -1).join('.')
-          
-          payloads.push({
-            title: finalTitle,
+          successPayloads.push({
+            title: title,
             price: priceNum,
             category: form.category,
             subcategory: subcategory,
             notes: form.notes,
             image_url: publicUrl
           })
-
-          uploadedCount++
-          setUploadProgress(uploadedCount)
+        } catch (err) {
+          console.error(`File ${i + 1} gagal:`, err.message)
+          // Lanjut ke file berikutnya
         }
 
-        // Jalankan dengan pembatasan jumlah paralel (concurrency)
-        for (let i = 0; i < imageFiles.length; i += CONCURRENCY_LIMIT) {
-          const chunk = imageFiles.slice(i, i + CONCURRENCY_LIMIT)
-          await Promise.all(chunk.map((file, idx) => uploadOneFile(file, i + idx)))
-        }
+        setUploadProgress(i + 1)
+      }
 
-        // Terakhir, simpan semua ke database sekaligus (Batch Insert)
+      // Simpan semua yang berhasil ke database
+      if (successPayloads.length > 0) {
         setStatusMessage('Menyimpan data ke database...')
-        const { error: dbErr } = await supabase.from('products').insert(payloads)
-
+        const { error: dbErr } = await supabase.from('products').insert(successPayloads)
+        
         if (dbErr) {
-          setStatusMessage(`Gagal simpan ke DB: ${dbErr.message}`)
+          alert(`Gagal simpan ke database: ${dbErr.message}`)
           setIsSubmitting(false)
           return
         }
-
-        setStatusMessage(`Berhasil! ${payloads.length} produk tersimpan.`)
-        setShowSuccessModal(true)
-        
-        // Refresh list
-        const { data: pData } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-        if (pData) setSavedProducts(pData)
-        setBatchFiles([])
-        return
       }
 
-      // Single Upload Mode
-      setTotalBatchImages(1)
-      setUploadProgress(0)
-      setStatusMessage('Mengunggah gambar...')
-      
-      const compressedImage = imageFile
-      const safeName = sanitizeFileName(imageFile.name || form.title || 'product-image')
-      const filePath = `products/${Date.now()}-${safeName}.webp`
-      
-      const { error: uploadErr } = await supabase.storage.from('product-images').upload(filePath, compressedImage, {
-        upsert: false,
-        contentType: 'image/webp',
-        cacheControl: '31536000'
-      })
-
-      if (uploadErr) {
-        setStatusMessage(`Upload gagal: ${uploadErr.message}`)
-        setIsSubmitting(false)
-        return
-      }
-      
-      setUploadProgress(1)
-
-      const publicUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
-      const payload = {
-        title: form.title,
-        price: priceNum,
-        category: form.category,
-        subcategory: subcategory,
-        notes: form.notes,
-        image_url: publicUrl
-      }
-
-      const { data, error } = await supabase.from('products').insert(payload).select('*').single()
-      if (error) {
-        setStatusMessage(`Simpan ke database gagal: ${error.message}`)
-        return
-      }
-
-      setSavedProducts((prev) => [data, ...prev])
-      setForm((prev) => ({
-        ...prev,
-        title: '',
-        price: '',
-        typeName: typeOptions[form.category]?.[0] || '',
-        characterName: pickFirstCharacter(form.category, typeOptions[form.category]?.[0] || ''),
-        notes: '✨ Premium Collectible Metal Prints - LUMI FORGE Exclusive ✨\n\nDibuat dengan teknologi Sublimation High Press tercanggih untuk hasil warna yang super vibrant dan detail ultra-tajam. Material berkualitas tinggi yang anti-luntur, tahan lama, dan memberikan kesan mewah yang elegan di setiap sudut ruanganmu. Pilihan terbaik untuk dekorasi kelas dunia!'
-      }))
-      setImageFile(null)
-      setImagePreview('')
-      setStatusMessage('Product berhasil disimpan ke Supabase.')
+      // Berhasil!
+      const { data: freshData } = await supabase.from('products').select('*').order('created_at', { ascending: false })
+      if (freshData) setSavedProducts(freshData)
+      setBatchFiles([])
+      setBatchTitles([])
+      setBatchPreviews([])
+      setStatusMessage(`${successPayloads.length} dari ${totalFiles} produk berhasil disimpan!`)
       setShowSuccessModal(true)
+
     } catch (err) {
       console.error(err)
-      setStatusMessage(`Terjadi kesalahan: ${err.message || 'Gagal terhubung ke server'}`)
+      alert(`Terjadi kesalahan: ${err.message}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -1378,7 +1247,16 @@ export default function Admin() {
                   {imagePreview && (
                     <div className="mt-3">
                       <p className="text-xs text-gray-500 mb-1">Preview:</p>
-                      <img src={imagePreview} alt="Preview" className="w-full max-h-80 object-contain rounded bg-white/5 border border-white/10" />
+                      <img src={imagePreview} alt="Preview" className="w-full max-h-80 object-contain rounded bg-white/5 border border-white/10 mb-4" />
+                      
+                      <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Judul Produk</p>
+                      <input 
+                        type="text" 
+                        value={form.title}
+                        onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
+                        placeholder="Masukkan judul produk..."
+                        className="w-full bg-zinc-100 dark:bg-black/40 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--text-main)] focus:border-purple-500/50 outline-none transition-all"
+                      />
                     </div>
                   )}
                 </>
@@ -1415,7 +1293,7 @@ export default function Admin() {
                         </p>
                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar space-y-2 pr-2">
                           {batchFiles.map((f, i) => (
-                            <div key={i} className="flex gap-3 items-center bg-white/5 p-2 rounded-xl border border-white/5 hover:border-white/10 transition-all">
+                            <div key={i} className="flex gap-3 items-center bg-zinc-200/50 dark:bg-white/5 p-2 rounded-xl border border-zinc-300 dark:border-white/5 hover:border-zinc-400 dark:hover:border-white/10 transition-all">
                               {/* Thumbnail */}
                               <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0 border border-white/10">
                                 <img src={batchPreviews[i]} alt="Preview" className="w-full h-full object-cover" />
@@ -1432,7 +1310,7 @@ export default function Admin() {
                                   value={batchTitles[i] || ''} 
                                   onChange={(e) => updateBatchTitle(i, e.target.value)}
                                   placeholder="Masukkan judul produk..."
-                                  className="w-full bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:border-purple-500/50 outline-none transition-all"
+                                  className="w-full bg-zinc-100 dark:bg-black/40 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-[var(--text-main)] focus:border-purple-500/50 outline-none transition-all"
                                 />
                               </div>
                             </div>
@@ -1443,17 +1321,17 @@ export default function Admin() {
                   )}
 
                   {isSubmitting && totalBatchImages > 0 && (
-                    <div className="mt-4 p-4 rounded-2xl bg-black/40 border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in duration-300">
+                    <div className="mt-4 p-4 rounded-2xl bg-zinc-100 dark:bg-black/40 border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in duration-300">
                       <div className="flex justify-between items-end mb-2">
                         <div className="flex flex-col">
                           <span className="text-[10px] uppercase tracking-widest text-gray-500 font-black">Status Upload</span>
-                          <span className="text-xs font-bold text-white flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-2">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                             {uploadProgress === totalBatchImages ? 'Hampir Selesai...' : `Mengunggah ${uploadProgress} dari ${totalBatchImages}`}
                           </span>
                         </div>
                         <div className="text-right">
-                          <span className="text-2xl font-black text-purple-400 italic">
+                          <span className="text-2xl font-black text-purple-600 dark:text-purple-400 italic">
                             {Math.round((uploadProgress / totalBatchImages) * 100)}%
                           </span>
                         </div>
@@ -1500,7 +1378,7 @@ export default function Admin() {
 
             {/* Langkah 2 — Pilih Jenis / Series (hanya untuk anime, kpop, aesthetic) */}
             {showHierarchy && (
-              <div className="rounded-lg border border-white/10 bg-black/20 p-4 space-y-4">
+              <div className="rounded-lg border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-black/20 p-4 space-y-4 shadow-sm">
                 {/* Langkah 2 — Pilih Jenis */}
                 <div>
                   <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">Langkah 2 — {labels.step1}</p>
@@ -1513,7 +1391,7 @@ export default function Admin() {
                       onChange={(e) => setSearchType(e.target.value)}
                       onBlur={() => setTimeout(() => setSearchType(''), 200)}
                       placeholder={`Cari ${labels.step1}...`}
-                      className="w-full bg-black/40 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-blue-500/50 outline-none transition-all"
+                      className="w-full bg-white dark:bg-black/40 border border-zinc-300 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-blue-500/50 outline-none transition-all text-[var(--text-main)] placeholder:text-gray-500"
                     />
                   </div>
 
@@ -1526,17 +1404,17 @@ export default function Admin() {
                             value={renameTypeVal}
                             onChange={e => setRenameTypeVal(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') commitRenameType(); if (e.key === 'Escape') setRenamingType(null) }}
-                            className="flex-1 px-3 py-2 rounded-lg text-sm bg-black/40 border border-blue-400/50 text-white outline-none"
+                            className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-black/40 border border-blue-400/50 text-[var(--text-main)] outline-none"
                           />
                           <button type="button" onClick={commitRenameType} className="px-4 py-2 rounded-lg bg-green-500/30 text-green-300 text-xs font-bold hover:bg-green-500/50 transition-colors">SIMPAN</button>
                           <button type="button" onClick={() => setRenamingType(null)} className="px-3 py-2 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20 transition-colors">BATAL</button>
                         </div>
                       ) : (
-                        <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.typeName === name ? 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                        <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.typeName === name ? 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10 text-blue-800 dark:text-blue-200' : 'bg-white dark:bg-white/5 border-zinc-300 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/10'}`}>
                           <button
                             type="button"
                             onClick={() => handleTypeNameChange(name)}
-                            className="flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide"
+                            className="flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide text-zinc-800 dark:text-zinc-200"
                           >
                             {form.typeName === name && <span className="mr-2">🔷</span>}
                             {name}
@@ -1566,7 +1444,7 @@ export default function Admin() {
                       onChange={(e) => setNewTypeName(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNewType())}
                       placeholder={labels.addType}
-                      className="flex-1 p-2 rounded bg-black/30 text-sm"
+                      className="flex-1 p-2 rounded bg-white dark:bg-black/30 text-[var(--text-main)] text-sm border border-zinc-300 dark:border-transparent placeholder:text-gray-500"
                     />
                     <button type="button" onClick={addNewType} className="px-3 py-2 rounded bg-green-500/20 text-green-300 text-sm hover:bg-green-500/30">
                       + Tambah
@@ -1590,7 +1468,7 @@ export default function Admin() {
                       onChange={(e) => setSearchChar(e.target.value)}
                       onBlur={() => setTimeout(() => setSearchChar(''), 200)}
                       placeholder={`Cari ${labels.step2}...`}
-                      className="w-full bg-black/40 border border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-orange-500/50 outline-none transition-all"
+                      className="w-full bg-white dark:bg-black/40 border border-zinc-300 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-orange-500/50 outline-none transition-all text-[var(--text-main)] placeholder:text-gray-500"
                     />
                   </div>
 
@@ -1608,17 +1486,17 @@ export default function Admin() {
                                 value={renameCharVal}
                                 onChange={e => setRenameCharVal(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') commitRenameChar(); if (e.key === 'Escape') setRenamingChar(null) }}
-                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-black/40 border border-orange-400/50 text-white outline-none"
+                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-black/40 border border-orange-400/50 text-[var(--text-main)] outline-none"
                               />
                               <button type="button" onClick={commitRenameChar} className="px-4 py-2 rounded-lg bg-green-500/30 text-green-300 text-xs font-bold hover:bg-green-500/50 transition-colors">SIMPAN</button>
                               <button type="button" onClick={() => setRenamingChar(null)} className="px-3 py-2 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20 transition-colors">BATAL</button>
                             </div>
                           ) : (
-                            <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.characterName === name ? 'bg-orange-500/20 border-orange-500/50 shadow-lg shadow-orange-500/10' : 'bg-white/5 border-white/5 hover:bg-white/10'}`}>
+                            <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.characterName === name ? 'bg-orange-500/20 border-orange-500/50 shadow-lg shadow-orange-500/10 text-orange-800 dark:text-orange-200' : 'bg-white dark:bg-white/5 border-zinc-300 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/10'}`}>
                               <button
                                 type="button"
                                 onClick={() => updateField('characterName', name)}
-                                className="flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide"
+                                className="flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide text-zinc-800 dark:text-zinc-200"
                               >
                                 {form.characterName === name && <span className="mr-2">🔶</span>}
                                 {name}
@@ -1649,7 +1527,7 @@ export default function Admin() {
                       onChange={(e) => setNewCharacterName(e.target.value)}
                       onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNewCharacter())}
                       placeholder={labels.addChar}
-                      className="flex-1 p-2 rounded bg-black/30 text-sm"
+                      className="flex-1 p-2 rounded bg-white dark:bg-black/30 text-[var(--text-main)] text-sm border border-zinc-300 dark:border-transparent placeholder:text-gray-500"
                     />
                     <button type="button" onClick={addNewCharacter} className="px-3 py-2 rounded bg-green-500/20 text-green-300 text-sm hover:bg-green-500/30">
                       + Tambah
@@ -1660,7 +1538,7 @@ export default function Admin() {
               </div>
             )}
             
-            <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded bg-black/20" />
+            <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded bg-zinc-100 dark:bg-black/20 text-[var(--text-main)] border border-zinc-300 dark:border-white/5" />
 
             {/* Tombol Simpan Produk */}
             <button
@@ -2143,46 +2021,7 @@ export default function Admin() {
         )}
       </AnimatePresence>
 
-      {/* CROP MODAL */}
-      {cropData && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/90 p-4 backdrop-blur-md">
-          <div className="bg-[#121212] rounded-2xl w-full max-w-4xl overflow-hidden shadow-2xl border border-white/10">
-            <div className="p-4 border-b border-white/10 flex justify-between items-center bg-zinc-900">
-              <div className="flex items-center gap-4">
-                <h3 className="font-black uppercase tracking-widest text-white text-xs">Crop Product Image</h3>
-                <div className="flex bg-black/40 p-1 rounded-lg border border-white/5">
-                  <button type="button" onClick={() => setCropAspect(3/4)} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${cropAspect === 3/4 ? 'bg-purple-500 text-white' : 'text-gray-500 hover:text-white'}`}>3:4</button>
-                  <button type="button" onClick={() => setCropAspect(1)} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${cropAspect === 1 ? 'bg-purple-500 text-white' : 'text-gray-500 hover:text-white'}`}>1:1</button>
-                  <button type="button" onClick={() => setCropAspect(16/9)} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${cropAspect === 16/9 ? 'bg-purple-500 text-white' : 'text-gray-500 hover:text-white'}`}>16:9</button>
-                  <button type="button" onClick={() => setCropAspect(null)} className={`px-3 py-1 rounded text-[10px] font-bold transition-all ${cropAspect === null ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/20' : 'text-gray-500 hover:text-white'}`}>✨ Manual / Bebas</button>
-                </div>
-              </div>
-              <button type="button" onClick={() => setCropData(null)} className="text-gray-500 hover:text-white p-2">✕</button>
-            </div>
-            <div className="relative h-[400px] bg-black">
-              <Cropper
-                image={cropData.url}
-                crop={crop}
-                zoom={zoom}
-                aspect={cropAspect}
-                onCropChange={setCrop}
-                onCropComplete={(_, pixels) => setCroppedAreaPixels(pixels)}
-                onZoomChange={setZoom}
-              />
-            </div>
-            <div className="p-6 bg-zinc-900 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex items-center gap-4 w-full md:w-auto">
-                <span className="text-[10px] font-bold uppercase text-gray-500">Zoom</span>
-                <input type="range" value={zoom} min={1} max={3} step={0.1} onChange={(e) => setZoom(Number(e.target.value))} className="flex-1 md:w-64 h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500" />
-              </div>
-              <div className="flex gap-3 w-full md:w-auto">
-                <button type="button" onClick={() => handleFinishCrop(false)} className="flex-1 md:flex-none px-6 py-3 rounded-xl border border-white/10 text-gray-400 text-[10px] font-black uppercase tracking-widest hover:bg-white/5 transition-all">Tanpa Crop</button>
-                <button type="button" onClick={() => handleFinishCrop(true)} className="flex-1 md:flex-none px-10 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-blue-600 text-white text-[10px] font-black uppercase tracking-[0.2em] shadow-xl shadow-purple-500/20 hover:scale-105 active:scale-95 transition-all">Terapkan Crop</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
       {/* SECURITY MODAL */}
       <AnimatePresence>
         {showSecurityModal && (

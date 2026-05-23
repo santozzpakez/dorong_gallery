@@ -327,17 +327,17 @@ export default function Header() {
       </AnimatePresence>
 
       {/* Row 1: Brand bar */}
-      <div className="relative z-30 bg-gradient-to-b from-zinc-700 via-zinc-600 to-zinc-800 border-b border-zinc-500 dark:border-zinc-700 shadow-md transition-colors duration-500">
+      <div className="relative z-30 bg-gradient-to-b from-zinc-700 via-zinc-600 to-zinc-800 dark:from-[#a87f17] dark:via-[#cf9e20] dark:to-[#8a660f] border-b border-zinc-500 dark:border-[#6e520c] shadow-md transition-colors duration-500">
         <div className="w-full px-4 md:px-8 py-1 md:py-1.5 flex items-center justify-between">
           <div className="flex items-center gap-4 md:gap-6">
             <button 
               onClick={() => setIsSidebarOpen(true)}
-              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900 rounded-xl transition-colors group border border-transparent hover:border-zinc-200 dark:hover:border-zinc-800/40"
+              className="p-2 hover:bg-zinc-100 dark:hover:bg-zinc-900/50 rounded-xl transition-colors group border border-transparent hover:border-zinc-200 dark:hover:border-zinc-700/50"
             >
               <div className="space-y-1.5">
-                <span className="block w-5 h-[3px] bg-accent rounded-full transition-transform group-hover:w-6"></span>
-                <span className="block w-6 h-[3px] bg-accent rounded-full transition-transform"></span>
-                <span className="block w-4 h-[3px] bg-accent rounded-full transition-transform group-hover:w-6"></span>
+                <span className="block w-5 h-[3px] bg-accent dark:bg-zinc-300 rounded-full transition-transform group-hover:w-6"></span>
+                <span className="block w-6 h-[3px] bg-accent dark:bg-zinc-300 rounded-full transition-transform"></span>
+                <span className="block w-4 h-[3px] bg-accent dark:bg-zinc-300 rounded-full transition-transform group-hover:w-6"></span>
               </div>
             </button>
             <Link href="/" className="flex items-center gap-4 group">
@@ -356,7 +356,7 @@ export default function Header() {
                 )}
               </div>
               
-              <span className="relative z-10 text-2xl md:text-3xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-white via-accent-light to-accent drop-shadow-md font-serif">
+              <span className="relative z-10 text-2xl md:text-3xl font-black tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-white via-accent-light to-accent dark:from-zinc-200 dark:via-zinc-200 dark:to-zinc-200 drop-shadow-md dark:drop-shadow-none font-serif">
                 LUMI FORGE
               </span>
             </Link>
@@ -521,7 +521,7 @@ export default function Header() {
       </AnimatePresence>
 
       {/* Row 2: Nav bar — semi-transparent dengan backdrop blur */}
-      <div className="relative z-10 bg-gradient-to-b from-zinc-600 via-zinc-700 to-zinc-800 border-b border-zinc-500 dark:border-zinc-700 shadow-md transition-colors duration-500">
+      <div className="relative z-10 bg-gradient-to-b from-zinc-600 via-zinc-700 to-zinc-800 dark:from-[#8a660f] dark:via-[#a87f17] dark:to-[#73540a] border-b border-zinc-500 dark:border-[#6e520c] shadow-md transition-colors duration-500">
         <div className="w-full px-4 md:px-8 py-2 md:py-2.5 flex items-center justify-between">
           <nav className="flex gap-6 text-sm items-center">
             {navLinks.map(({ href, name }) => (

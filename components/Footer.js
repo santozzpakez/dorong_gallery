@@ -86,12 +86,12 @@ export default function Footer() {
       <div className="relative z-10 h-[1px] bg-gradient-to-r from-transparent via-accent/35 to-transparent" />
 
       {/* Row 2: Main footer content */}
-      <div className="relative z-10 bg-gradient-to-b from-zinc-700 via-zinc-800 to-zinc-900 border-t border-zinc-600 py-12 px-6 transition-colors duration-500">
+      <div className="relative z-10 bg-gradient-to-b from-zinc-700 via-zinc-800 to-zinc-900 dark:from-[#a87f17] dark:via-[#8a660f] dark:to-[#73540a] border-t border-zinc-600 dark:border-[#cf9e20] py-12 px-6 transition-colors duration-500">
         <div className="max-w-6xl mx-auto">
           {/* Brand row */}
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 mb-10">
             <div>
-              <span className="text-2xl font-black tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-b from-white via-accent-light to-accent drop-shadow-md font-serif">
+              <span className="text-2xl font-black tracking-[0.25em] text-transparent bg-clip-text bg-gradient-to-b from-white via-accent-light to-accent dark:from-zinc-200 dark:via-zinc-200 dark:to-zinc-200 drop-shadow-md dark:drop-shadow-none font-serif">
                 LUMI FORGE
               </span>
               <p className="text-[9px] text-zinc-400 mt-1.5 uppercase tracking-[0.25em] font-sans">

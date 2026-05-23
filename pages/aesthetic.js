@@ -90,8 +90,9 @@ export default function Aesthetic() {
         }
       })
 
-      // 3. Scan Produk (Jalur Darurat)
-      if (themeMap.size === 0 && hasSupabaseConfig && supabase) {
+      // 3. SELALU Scan Produk (agar tema baru langsung muncul)
+      if (hasSupabaseConfig && supabase) {
+        try {
         const { data } = await supabase.from('products').select('subcategory').eq('category', 'aesthetic')
         if (data) {
           data.forEach(p => {
@@ -103,6 +104,9 @@ export default function Aesthetic() {
               }
             }
           })
+        }
+        } catch (err) {
+          console.error('Gagal scan database aesthetic:', err)
         }
       }
 
@@ -129,7 +133,7 @@ export default function Aesthetic() {
           <div className="absolute right-0 top-0 w-80 h-80 bg-accent/3 rounded-full filter blur-[80px] pointer-events-none" />
           
           <div className="relative z-10">
-            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
+            <h1 className="text-3xl md:text-4xl font-black uppercase tracking-[0.15em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif">
               {t.title}
             </h1>
             <p className="text-zinc-400 mt-2 text-xs md:text-sm font-sans tracking-widest uppercase font-bold">
@@ -174,19 +178,19 @@ export default function Aesthetic() {
                       <div
                         key={g.slug}
                         onMouseEnter={() => setActive(i)}
-                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-accent shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                        className={`block group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-accent shadow-[0_4px_15px_rgba(212,175,55,0.3)] scale-105 relative z-10' : 'hover:scale-102'}`}
                       >
                         <Link href={`/aesthetic/${g.slug}`}>
-                          <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                          <div className="h-16 md:h-20 bg-black border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
                             {displayImage ? (
                               <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center">
+                              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                 <span className="text-zinc-400 dark:text-zinc-650 text-[9px] text-center px-1 font-bold">{t.noImage}</span>
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
-                              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                            <div className={`absolute inset-0 flex items-center justify-center p-1 text-center transition-all duration-300 ${isActive ? 'bg-black/20' : 'bg-black/70 group-hover:bg-black/40'}`}>
+                              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans drop-shadow-md">
                                 {getText(g.assetKey) || g.name}
                               </span>
                             </div>
@@ -204,14 +208,14 @@ export default function Aesthetic() {
                     const displayImage = assets[activeTheme.assetKey] || getUrl(activeTheme.assetKey) || ''
                     return (
                       <Link href={`/aesthetic/${activeTheme.slug}`} className="block group w-full h-full">
-                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-white dark:bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-accent/45">
+                        <div className="rounded-2xl overflow-hidden border border-zinc-200 dark:border-zinc-850 bg-black h-full min-h-[300px] relative flex items-center justify-center shadow-2xl transition-all duration-300 hover:border-accent/45">
                           <div className="absolute inset-0 w-full h-full">
                             {displayImage ? (
                               <img
                                 key={displayImage}
                                 src={displayImage}
                                 alt={activeTheme.name}
-                                className="w-full h-full object-cover opacity-60 dark:opacity-85 group-hover:opacity-85 group-hover:scale-105 transition-all duration-700 transform-gpu"
+                                className="w-full h-full object-cover opacity-85 dark:opacity-85 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700 transform-gpu"
                               />
                             ) : (
                               <div className="absolute inset-0 bg-gradient-to-b from-zinc-200 to-zinc-300 dark:from-zinc-850 dark:to-zinc-950 flex items-center justify-center text-zinc-405 dark:text-zinc-555 text-sm text-center px-4 font-bold">
@@ -224,7 +228,7 @@ export default function Aesthetic() {
                             <div className="mb-2">
                               <span className="px-2 py-0.5 bg-accent text-black text-[9px] font-black uppercase tracking-widest rounded">{t.topTheme}</span>
                             </div>
-                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
+                            <h2 className="text-3xl md:text-5xl font-black uppercase tracking-wide text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif">
                               {getText(activeTheme.assetKey) || activeTheme.name}
                             </h2>
                             <div className="mt-4 flex gap-4">
@@ -247,19 +251,19 @@ export default function Aesthetic() {
                       <div
                         key={g.slug}
                         onMouseEnter={() => setActive(i)}
-                        className={`block cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-1 ring-accent shadow-[0_4px_15px_rgb(var(--accent-main)/0.2)] scale-103 opacity-100' : 'opacity-50 hover:opacity-90'}`}
+                        className={`block group cursor-pointer rounded-lg overflow-hidden transition-all duration-300 min-w-[100px] md:min-w-0 flex-1 ${isActive ? 'ring-2 ring-accent shadow-[0_4px_15px_rgba(212,175,55,0.3)] scale-105 relative z-10' : 'hover:scale-102'}`}
                       >
                         <Link href={`/aesthetic/${g.slug}`}>
-                          <div className="h-16 md:h-20 bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
+                          <div className="h-16 md:h-20 bg-black border border-zinc-200 dark:border-zinc-850 shadow-sm relative">
                             {displayImage ? (
                               <img src={displayImage} className="w-full h-full object-cover" alt={g.name} />
                             ) : (
-                              <div className="w-full h-full bg-gradient-to-br from-zinc-200 to-zinc-300 dark:from-zinc-800 dark:to-zinc-900 flex items-center justify-center">
+                              <div className="w-full h-full bg-zinc-800 flex items-center justify-center">
                                 <span className="text-zinc-400 dark:text-zinc-650 text-[9px] text-center px-1 font-bold">{t.noImage}</span>
                               </div>
                             )}
-                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center p-1 text-center hover:bg-black/35 transition-all">
-                              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans">
+                            <div className={`absolute inset-0 flex items-center justify-center p-1 text-center transition-all duration-300 ${isActive ? 'bg-black/20' : 'bg-black/70 group-hover:bg-black/40'}`}>
+                              <span className="text-white text-[9px] md:text-[10px] font-black uppercase tracking-wider leading-tight font-sans drop-shadow-md">
                                 {getText(g.assetKey) || g.name}
                               </span>
                             </div>

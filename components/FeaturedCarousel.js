@@ -131,11 +131,20 @@ export default function FeaturedCarousel() {
       <div className="max-w-6xl mx-auto relative z-10">
         
         {/* Section Header */}
-        <div className="flex flex-col items-center text-center mb-12">
-          <h2 className="text-4xl md:text-5xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark font-serif">
-            {t.title}
-          </h2>
-          <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-accent to-transparent mt-4" />
+        <div className="w-full mb-12 py-12 flex flex-col justify-center items-center relative overflow-hidden z-10 px-4">
+          {/* Horizontal Vignette Background - Smooth Edges */}
+          <div className="absolute inset-y-0 left-0 w-[25%] md:w-[35%] bg-gradient-to-r from-zinc-700/15 to-transparent pointer-events-none" />
+          <div className="absolute inset-y-0 right-0 w-[25%] md:w-[35%] bg-gradient-to-l from-zinc-700/15 to-transparent pointer-events-none" />
+          
+          {/* Background Glow Behind Title */}
+          <div className="absolute left-1/2 -translate-x-1/2 w-full max-w-4xl h-full bg-gradient-to-r from-transparent via-accent/5 dark:via-accent/10 to-transparent blur-3xl pointer-events-none" />
+          
+          <div className="relative flex flex-col items-center text-center">
+            <h2 className="text-4xl md:text-5xl font-black uppercase tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark dark:from-zinc-200 dark:via-zinc-400 dark:to-zinc-600 font-serif filter drop-shadow-[0_2px_8px_rgba(212,175,55,0.25)] dark:drop-shadow-[0_2px_15px_rgba(255,255,255,0.25)]">
+              {t.title}
+            </h2>
+            <div className="h-[1px] w-24 bg-gradient-to-r from-transparent via-accent to-transparent mt-4 shadow-[0_0_5px_rgba(212,175,55,0.3)]" />
+          </div>
         </div>
 
         {/* Premium Grid Layout */}

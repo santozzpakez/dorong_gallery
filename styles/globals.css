@@ -20,17 +20,17 @@
 
 html.dark {
   /* DARK MODE VARIABLES */
-  --bg: #050505;
-  --text-main: #e6eef8;
+  --bg: #050505; /* Tetap dark */
+  --text-main: #e5e7eb; /* Silver/grey */
   --panel: rgba(15, 15, 20, 0.6);
-  --accent: #d4af37;
+  --accent: #d4af37; /* Kembalikan accent ke gold agar elemen lain tetap bagus */
   --accent-purple: #b39359;
 
-  /* Accent Colors (RGB for Tailwind opacity support) */
-  --accent-light: 243 229 171; /* #f3e5ab */
-  --accent-main: 212 175 55;   /* #d4af37 */
-  --accent-dark: 170 124 17;   /* #aa7c11 */
-  --accent-alt: 179 147 89;    /* #b39359 */
+  /* Accent Colors */
+  --accent-light: 243 229 171;
+  --accent-main: 212 175 55;
+  --accent-dark: 170 124 17;
+  --accent-alt: 179 147 89;
 }
 
 html, body, #__next {
