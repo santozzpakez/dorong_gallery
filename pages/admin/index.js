@@ -510,40 +510,47 @@ export default function Admin() {
     if (!listsReady || !hasLoadedFromDb.current || typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_TYPES, JSON.stringify(typeOptions))
     window.localStorage.setItem(STORAGE_CHARS, JSON.stringify(charactersByType))
-    
-    if (hasSupabaseConfig && supabase && adminRole) {
-      const typeStr = JSON.stringify(typeOptions)
-      const charStr = JSON.stringify(charactersByType)
-      
-      // Update cache context langsung
-      updateText('global-category-options', typeStr)
-      updateText('global-character-options', charStr)
+  }, [typeOptions, charactersByType, listsReady])
 
-      // Debounce Supabase upsert agar kalau user ketik banyak sekaligus tidak error/bentrok koneksi
-      const timer = setTimeout(() => {
-        supabase.from('site_assets').upsert([
-          {
-            key: 'global-category-options',
-            text_value: typeStr,
-            label: 'Global Category List Cache',
-            category: 'system',
-            updated_at: new Date().toISOString()
-          },
-          {
-            key: 'global-character-options',
-            text_value: charStr,
-            label: 'Global Character List Cache',
-            category: 'system',
-            updated_at: new Date().toISOString()
-          }
-        ], { onConflict: 'key' }).then(({ error }) => {
-          if (error) console.error('Auto-save error:', error)
-        })
-      }, 1500)
-
-      return () => clearTimeout(timer)
+  async function handleManualSaveLists() {
+    if (!hasSupabaseConfig || !supabase || !adminRole) {
+      alert('Gagal: Supabase tidak terhubung atau Anda bukan admin.')
+      return
     }
-  }, [typeOptions, charactersByType, listsReady, adminRole])
+    
+    setStatusMessage('Menyimpan daftar ke database...')
+    const typeStr = JSON.stringify(typeOptions)
+    const charStr = JSON.stringify(charactersByType)
+    
+    updateText('global-category-options', typeStr)
+    updateText('global-character-options', charStr)
+
+    const { error } = await supabase.from('site_assets').upsert([
+      {
+        key: 'global-category-options',
+        text_value: typeStr,
+        label: 'Global Category List Cache',
+        category: 'system',
+        updated_at: new Date().toISOString()
+      },
+      {
+        key: 'global-character-options',
+        text_value: charStr,
+        label: 'Global Character List Cache',
+        category: 'system',
+        updated_at: new Date().toISOString()
+      }
+    ], { onConflict: 'key' })
+    
+    if (error) {
+      console.error('Manual save error:', error)
+      alert(`Gagal menyimpan daftar: ${error.message}`)
+      setStatusMessage(`❌ Gagal menyimpan: ${error.message}`)
+    } else {
+      setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
+      alert('Berhasil disimpan ke database!')
+    }
+  }
 
   useEffect(() => {
     // Tunggu sampai status login & role benar-benar selesai dimuat
@@ -1493,7 +1500,16 @@ export default function Admin() {
 
             {/* Langkah 1 — Pilih Kategori */}
             <div>
-              <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">Langkah 1 — Kategori</p>
+              <div className="flex justify-between items-center mb-3">
+                <p className="text-xs uppercase tracking-wide text-gray-500">Langkah 1 — Kategori</p>
+                <button
+                  type="button"
+                  onClick={handleManualSaveLists}
+                  className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-green-500/30 active:scale-95 flex items-center gap-2"
+                >
+                  <span>💾</span> Simpan Daftar Karakter
+                </button>
+              </div>
               <div className="flex flex-wrap gap-2 mb-3">
                 {['anime', 'kpop', 'aesthetic'].map((cat) => (
                   <button
