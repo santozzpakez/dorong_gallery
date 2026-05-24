@@ -549,7 +549,8 @@ export default function Admin() {
       updateText('global-category-options', typeStr)
       updateText('global-character-options', charStr)
 
-      const { error } = await supabase.from('site_assets').upsert([
+      // Tambahkan timeout 5 detik untuk mencegah hang di Supabase
+      const upsertPromise = supabase.from('site_assets').upsert([
         {
           key: 'global-category-options',
           text_value: typeStr,
@@ -564,7 +565,13 @@ export default function Admin() {
           category: 'system',
           updated_at: new Date().toISOString()
         }
-      ], { onConflict: 'key' })
+      ], { onConflict: 'key' });
+      
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Koneksi ke database timeout (Lebih dari 5 detik).')), 5000)
+      );
+
+      const { error } = await Promise.race([upsertPromise, timeoutPromise]);
       
       if (error) {
         throw new Error(error.message)
