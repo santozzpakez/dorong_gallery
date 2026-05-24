@@ -535,45 +535,49 @@ export default function Admin() {
     setSaveListTotal(totalChars)
     setSaveListProgress(0)
 
-    // Simulasi loading animasi "satu per satu" yang diminta user (waktu dinamis)
-    const delayMs = Math.max(20, Math.min(200, 2000 / totalChars));
-    for (let i = 1; i <= totalChars; i++) {
-      setSaveListProgress(i)
-      await new Promise(resolve => setTimeout(resolve, delayMs))
-    }
-
-    const typeStr = JSON.stringify(typeOptions)
-    const charStr = JSON.stringify(charactersByType)
-    
-    updateText('global-category-options', typeStr)
-    updateText('global-character-options', charStr)
-
-    const { error } = await supabase.from('site_assets').upsert([
-      {
-        key: 'global-category-options',
-        text_value: typeStr,
-        label: 'Global Category List Cache',
-        category: 'system',
-        updated_at: new Date().toISOString()
-      },
-      {
-        key: 'global-character-options',
-        text_value: charStr,
-        label: 'Global Character List Cache',
-        category: 'system',
-        updated_at: new Date().toISOString()
+    try {
+      // Simulasi loading animasi "satu per satu" yang diminta user (waktu dinamis)
+      const delayMs = Math.max(20, Math.min(200, 2000 / totalChars));
+      for (let i = 1; i <= totalChars; i++) {
+        setSaveListProgress(i)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
       }
-    ], { onConflict: 'key' })
-    
-    setIsSavingLists(false)
-    setSaveListTotal(0)
 
-    if (error) {
-      console.error('Manual save error:', error)
-      alert(`Gagal menyimpan daftar: ${error.message}`)
-      setStatusMessage(`❌ Gagal menyimpan: ${error.message}`)
-    } else {
-      setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
+      const typeStr = JSON.stringify(typeOptions)
+      const charStr = JSON.stringify(charactersByType)
+      
+      updateText('global-category-options', typeStr)
+      updateText('global-character-options', charStr)
+
+      const { error } = await supabase.from('site_assets').upsert([
+        {
+          key: 'global-category-options',
+          text_value: typeStr,
+          label: 'Global Category List Cache',
+          category: 'system',
+          updated_at: new Date().toISOString()
+        },
+        {
+          key: 'global-character-options',
+          text_value: charStr,
+          label: 'Global Character List Cache',
+          category: 'system',
+          updated_at: new Date().toISOString()
+        }
+      ], { onConflict: 'key' })
+      
+      if (error) {
+        throw new Error(error.message)
+      } else {
+        setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
+      }
+    } catch (err) {
+      console.error('Manual save error:', err)
+      alert(`Gagal menyimpan daftar: ${err.message || 'Unknown error'}`)
+      setStatusMessage(`❌ Gagal menyimpan: ${err.message || 'Unknown error'}`)
+    } finally {
+      setIsSavingLists(false)
+      setSaveListTotal(0)
     }
   }
 
