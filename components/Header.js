@@ -216,7 +216,7 @@ export default function Header() {
                       <p className="text-xs font-black truncate text-white">
                         {user.user_metadata?.full_name || user.email || user.phone}
                       </p>
-                      <button onClick={logout} className="text-[9px] text-red-500 font-black uppercase tracking-widest hover:text-red-400 mt-0.5">Logout</button>
+                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }} className="text-[9px] text-red-500 font-black uppercase tracking-widest hover:text-red-400 mt-0.5 cursor-pointer">Logout</button>
                     </div>
                   </div>
                 ) : (
@@ -421,8 +421,8 @@ export default function Header() {
             {user ? (
               <div className="flex items-center gap-3">
                 <button
-                  onClick={logout}
-                  className="px-4 py-1.5 rounded-full bg-red-700/90 border border-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_10px_rgba(185,28,28,0.2)] hover:shadow-[0_0_15px_rgba(185,28,28,0.4)]"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }}
+                  className="px-4 py-1.5 rounded-full bg-red-700/90 border border-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_10px_rgba(185,28,28,0.2)] hover:shadow-[0_0_15px_rgba(185,28,28,0.4)] cursor-pointer"
                 >
                   {t.logout}
                 </button>

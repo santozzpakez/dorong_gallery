@@ -80,19 +80,43 @@ export default function MemberCollectionPage() {
     }
 
     async function loadData() {
-      // 1. Dapatkan nama asli grup dan member dari Admin localStorage
-      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
-      const STORAGE_TYPES = 'dorong_admin_type_options'
-      
+      // 1. Dapatkan nama asli grup dan member dari Supabase (BUKAN localStorage)
       let adminMembers = {}
       let adminGroups = []
+      
       try {
-        const rawMembers = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_CHARS) : null
-        if (rawMembers) adminMembers = JSON.parse(rawMembers)?.kpop || {}
-        
-        const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
-        if (rawTypes) adminGroups = JSON.parse(rawTypes)?.kpop || []
+        if (hasSupabaseConfig && supabase) {
+          const { data: cacheData } = await supabase
+            .from('site_assets')
+            .select('key, text_value')
+            .in('key', ['global-category-options', 'global-character-options'])
+
+          if (cacheData) {
+            cacheData.forEach(row => {
+              if (row.key === 'global-category-options' && row.text_value) {
+                try { adminGroups = JSON.parse(row.text_value)?.kpop || [] } catch {}
+              }
+              if (row.key === 'global-character-options' && row.text_value) {
+                try { adminMembers = JSON.parse(row.text_value)?.kpop || {} } catch {}
+              }
+            })
+          }
+        }
       } catch { /* abaikan */ }
+
+      // Fallback ke localStorage jika Supabase gagal
+      if (adminGroups.length === 0) {
+        try {
+          const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
+          if (rawTypes) adminGroups = JSON.parse(rawTypes)?.kpop || []
+        } catch {}
+      }
+      if (Object.keys(adminMembers).length === 0) {
+        try {
+          const rawMembers = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_characters_by_type') : null
+          if (rawMembers) adminMembers = JSON.parse(rawMembers)?.kpop || {}
+        } catch {}
+      }
 
       const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
       const cleanSlug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '').replace(/s$/, '')

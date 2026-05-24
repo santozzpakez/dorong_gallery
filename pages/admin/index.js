@@ -1,7 +1,7 @@
 import Header from '../../components/Header'
 import Link from 'next/link'
 import Footer from '../../components/Footer'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { hasSupabaseConfig, supabase } from '../../lib/supabaseClient'
 
 import { useAuth } from '../../context/AuthContext'
@@ -169,8 +169,15 @@ export default function Admin() {
   const [activeTab, setActiveTab] = useState('products') // 'products', 'content', 'admins', 'pricing'
   const [adminList, setAdminList] = useState([])
   const [newAdminEmail, setNewAdminEmail] = useState('')
+  const [newAdminPassword, setNewAdminPassword] = useState('')
   const [newAdminRole, setNewAdminRole] = useState('regular')
   const [imagePreview, setImagePreview] = useState('')
+  
+  // UI Toggles for step 2 & 3
+  const [showSearchType, setShowSearchType] = useState(false)
+  const [showAddType, setShowAddType] = useState(false)
+  const [showSearchChar, setShowSearchChar] = useState(false)
+  const [showAddChar, setShowAddChar] = useState(false)
   const [imageFile, setImageFile] = useState(null)
   
   // Crop state
@@ -181,6 +188,7 @@ export default function Admin() {
   const [cropAspect, setCropAspect] = useState(3/4)
   const [savedProducts, setSavedProducts] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSavingCategories, setIsSavingCategories] = useState(false)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [statusMessage, setStatusMessage] = useState('')
   const [newTypeName, setNewTypeName] = useState('')
@@ -188,6 +196,7 @@ export default function Admin() {
   const [typeOptions, setTypeOptions] = useState(defaultTypes)
   const [charactersByType, setCharactersByType] = useState(defaultCharactersByType)
   const [listsReady, setListsReady] = useState(false)
+  const hasLoadedFromDb = useRef(false)
   const [selectedProducts, setSelectedProducts] = useState([])
   const [isDeleting, setIsDeleting] = useState(false)
   const [currentFolder, setCurrentFolder] = useState([])
@@ -328,18 +337,50 @@ export default function Admin() {
   useEffect(() => {
     async function initCategories() {
       try {
-        // 1. Start with default or local storage or global cache
+        // 1. Langsung fetch dari Supabase (BUKAN dari cache getText)
+        //    agar selalu dapat data terbaru baik saat F5 maupun client-side navigation
         let globalTypes = {}
         let globalChars = {}
-        try {
-          const rawTypes = getText('global-category-options')
-          if (rawTypes) globalTypes = JSON.parse(rawTypes)
-          const rawChars = getText('global-character-options')
-          if (rawChars) globalChars = JSON.parse(rawChars)
-        } catch (e) {}
 
-        let types = mergeTypes(loadJson(STORAGE_TYPES, Object.keys(globalTypes).length > 0 ? globalTypes : defaultTypes), defaultTypes)
-        let chars = mergeCharsByType(loadJson(STORAGE_CHARS, Object.keys(globalChars).length > 0 ? globalChars : defaultCharactersByType), defaultCharactersByType)
+        if (hasSupabaseConfig && supabase) {
+          try {
+            const { data: cacheData } = await supabase
+              .from('site_assets')
+              .select('key, text_value')
+              .in('key', ['global-category-options', 'global-character-options'])
+
+            if (cacheData) {
+              cacheData.forEach(row => {
+                if (row.key === 'global-category-options' && row.text_value) {
+                  try { globalTypes = JSON.parse(row.text_value) } catch {}
+                }
+                if (row.key === 'global-character-options' && row.text_value) {
+                  try { globalChars = JSON.parse(row.text_value) } catch {}
+                }
+              })
+            }
+          } catch (e) {
+            console.error('Failed to fetch global cache from Supabase:', e)
+          }
+        }
+
+        // Fallback ke getText jika Supabase gagal
+        if (Object.keys(globalTypes).length === 0) {
+          try {
+            const rawTypes = getText('global-category-options')
+            if (rawTypes) globalTypes = JSON.parse(rawTypes)
+          } catch {}
+        }
+        if (Object.keys(globalChars).length === 0) {
+          try {
+            const rawChars = getText('global-character-options')
+            if (rawChars) globalChars = JSON.parse(rawChars)
+          } catch {}
+        }
+
+        // Abaikan localStorage yang sering nyangkut (ghost data), jadikan Supabase (globalTypes) sebagai SATU-SATUNYA base source
+        let types = mergeTypes(Object.keys(globalTypes).length > 0 ? globalTypes : defaultTypes, defaultTypes)
+        let chars = mergeCharsByType(Object.keys(globalChars).length > 0 ? globalChars : defaultCharactersByType, defaultCharactersByType)
 
         // 2. Fetch all products to find existing categories/subcategories
         if (hasSupabaseConfig && supabase) {
@@ -384,6 +425,44 @@ export default function Admin() {
           } catch (err) {
             console.error('Failed to sync categories from DB:', err)
           }
+
+          // 2b. Scan Site Assets untuk cover yang sudah diupload (kpop-group-*, aesthetic-*, anime-cover-*)
+          try {
+            const { data: assetData } = await supabase.from('site_assets').select('key, label').or('key.like.kpop-group-%,key.like.kpop-%,key.like.aesthetic-%,key.like.anime-cover-%')
+            if (assetData) {
+              const normalize = (name) => {
+                if (!name) return ''
+                const clean = name.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+                return clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+              }
+              assetData.forEach(asset => {
+                const key = asset.key
+                if (key.includes('sidebar') || key.includes('slot')) return
+                let cat = null, typeName = ''
+                if (key.startsWith('kpop-group-') || (key.startsWith('kpop-') && !key.includes('sidebar') && !key.includes('slot'))) {
+                  cat = 'kpop'
+                  const rawName = asset.label || key.replace('kpop-group-', '').replace('kpop-', '').replace(/-/g, ' ')
+                  typeName = normalize(rawName)
+                } else if (key.startsWith('aesthetic-')) {
+                  cat = 'aesthetic'
+                  const rawName = asset.label || key.replace('aesthetic-', '').replace(/-/g, ' ')
+                  typeName = normalize(rawName)
+                } else if (key.startsWith('anime-cover-')) {
+                  cat = 'anime'
+                  const rawName = asset.label || key.replace('anime-cover-', '').replace(/-/g, ' ')
+                  typeName = normalize(rawName)
+                }
+                if (cat && typeName) {
+                  if (!types[cat]) types[cat] = []
+                  if (!types[cat].includes(typeName)) {
+                    types[cat].push(typeName)
+                  }
+                }
+              })
+            }
+          } catch (err) {
+            console.error('Failed to scan site_assets for categories:', err)
+          }
         }
 
         // --- 3. FINAL SANITIZATION (Bersihkan & Gabungkan semua duplikat) ---
@@ -419,48 +498,48 @@ export default function Admin() {
       } catch (globalErr) {
         console.error('Fatal error in initCategories:', globalErr)
       } finally {
+        hasLoadedFromDb.current = true
         setListsReady(true)
       }
     }
 
     initCategories()
-  }, [loaded])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    if (!listsReady || typeof window === 'undefined') return
+    if (!listsReady || !hasLoadedFromDb.current || typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_TYPES, JSON.stringify(typeOptions))
-    
-    // Sync ke Supabase agar User Biasa (Public) bisa memuat lebih cepat (Tanpa scan ribuan produk)
-    if (hasSupabaseConfig && supabase && adminRole) {
-      supabase.from('site_assets').upsert({
-        key: 'global-category-options',
-        text_value: JSON.stringify(typeOptions),
-        label: 'Global Category List Cache',
-        category: 'system',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'key' }).then(({ error }) => {
-        if (error) console.error('Failed to sync global categories:', error)
-      })
-    }
-  }, [typeOptions, listsReady, adminRole])
-
-  useEffect(() => {
-    if (!listsReady || typeof window === 'undefined') return
     window.localStorage.setItem(STORAGE_CHARS, JSON.stringify(charactersByType))
     
-    // Sync characters juga agar public tetap punya daftar karakter lengkap
+    // Auto-save langsung ke Supabase tanpa debounce, tapi menggunakan 1 batch request (array)
+    // agar tidak terjadi koneksi bentrok (locking) di database.
     if (hasSupabaseConfig && supabase && adminRole) {
-       supabase.from('site_assets').upsert({
-        key: 'global-character-options',
-        text_value: JSON.stringify(charactersByType),
-        label: 'Global Character List Cache',
-        category: 'system',
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'key' }).then(({ error }) => {
-        if (error) console.error('Failed to sync global characters:', error)
+      const typeStr = JSON.stringify(typeOptions)
+      const charStr = JSON.stringify(charactersByType)
+      
+      updateText('global-category-options', typeStr)
+      updateText('global-character-options', charStr)
+
+      supabase.from('site_assets').upsert([
+        {
+          key: 'global-category-options',
+          text_value: typeStr,
+          label: 'Global Category List Cache',
+          category: 'system',
+          updated_at: new Date().toISOString()
+        },
+        {
+          key: 'global-character-options',
+          text_value: charStr,
+          label: 'Global Character List Cache',
+          category: 'system',
+          updated_at: new Date().toISOString()
+        }
+      ], { onConflict: 'key' }).then(({ error }) => {
+        if (error) console.error('Auto-save error:', error)
       })
     }
-  }, [charactersByType, listsReady, adminRole])
+  }, [typeOptions, charactersByType, listsReady, adminRole])
 
   useEffect(() => {
     // Tunggu sampai status login & role benar-benar selesai dimuat
@@ -536,13 +615,36 @@ export default function Admin() {
 
   const handleAddAdmin = async (e) => {
     e.preventDefault()
-    if (!newAdminEmail) return
-    const { error } = await supabase.from('site_admins').insert([{ email: newAdminEmail, role: newAdminRole }])
-    if (error) {
-      alert(error.message)
-    } else {
+    if (!newAdminEmail || !newAdminPassword) {
+      alert("Email dan Password wajib diisi!")
+      return
+    }
+
+    try {
+      const res = await fetch('/api/create-admin', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          email: newAdminEmail,
+          password: newAdminPassword,
+          role: newAdminRole
+        })
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Terjadi kesalahan saat menambahkan admin')
+      }
+
       setNewAdminEmail('')
+      setNewAdminPassword('')
       fetchAdmins()
+      alert("Admin berhasil ditambahkan!")
+    } catch (error) {
+      alert(error.message)
     }
   }
 
@@ -686,7 +788,7 @@ export default function Admin() {
       const cat = form.category
       const oldSlug = oldName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
       const newSlug = newName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-      const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-group-' : 'aesthetic-'
+      const assetPrefix = cat === 'anime' ? 'anime-cover-' : cat === 'kpop' ? 'kpop-' : 'aesthetic-'
       
       setStatusMessage(`Sedang memigrasi data dari "${oldName}" ke "${newName}"...`)
 
@@ -810,8 +912,8 @@ export default function Admin() {
 
         // 2. Hapus Aset (Cover) dari site_assets
         const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
-        const assetKey = cat === 'anime' ? `anime-cover-${slug}` : cat === 'kpop' ? `kpop-group-${slug}` : `aesthetic-${slug}`
-        await supabase.from('site_assets').delete().eq('key', assetKey)
+        const assetKeysToDelete = cat === 'anime' ? [`anime-cover-${slug}`] : cat === 'kpop' ? [`kpop-${slug}`, `kpop-group-${slug}`] : [`aesthetic-${slug}`]
+        await supabase.from('site_assets').delete().in('key', assetKeysToDelete)
 
         // 3. Update State Lokal
         setTypeOptions(prev => {
@@ -931,27 +1033,44 @@ export default function Admin() {
     e.target.value = ''
   }
 
-  // Upload satu file ke Supabase Storage dan return public URL
+  // Upload satu file ke Supabase Storage dan return public URL (dengan timeout 30 detik)
   async function uploadFileToSupabase(file, index) {
     const safeName = sanitizeFileName(file.name)
     const ext = file.name.split('.').pop() || 'jpg'
     const filePath = `products/${Date.now()}-${index}-${safeName}.${ext}`
-    
-    const { error } = await supabase.storage
-      .from('product-images')
-      .upload(filePath, file, {
-        upsert: false,
-        contentType: file.type || 'image/jpeg',
-        cacheControl: '31536000'
-      })
 
-    if (error) throw new Error(error.message)
+    // Bungkus upload dengan timeout 30 detik agar tidak hang selamanya
+    let timeoutId
+    try {
+      const result = await Promise.race([
+        supabase.storage
+          .from('product-images')
+          .upload(filePath, file, {
+            upsert: false,
+            contentType: file.type || 'image/jpeg',
+            cacheControl: '31536000'
+          }),
+        new Promise((_, reject) => {
+          timeoutId = setTimeout(() => reject(new Error('Upload timeout setelah 30 detik. Coba lagi.')), 30000)
+        })
+      ])
 
-    return supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
+      clearTimeout(timeoutId)
+
+      if (result.error) throw new Error(result.error.message)
+
+      return supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
+    } catch (err) {
+      clearTimeout(timeoutId)
+      throw err
+    }
   }
 
   async function handleSubmit(event) {
-    event.preventDefault()
+    event?.preventDefault?.()
+    
+    // Cegah double-submit
+    if (isSubmitting) return
     
     if (!hasSupabaseConfig || !supabase) {
       alert('Supabase belum dikonfigurasi!')
@@ -960,8 +1079,8 @@ export default function Admin() {
 
     // Validasi umum
     const needsHierarchy = form.category === 'anime' || form.category === 'kpop'
-    if (needsHierarchy && (!form.typeName || !form.characterName)) {
-      alert('Pilih judul/series dan karakter terlebih dahulu.')
+    if (needsHierarchy && !form.typeName) {
+      alert('Pilih judul/series atau grup terlebih dahulu.')
       return
     }
     if (form.category === 'aesthetic' && !form.typeName) {
@@ -971,8 +1090,10 @@ export default function Admin() {
 
     const priceNum = 99000
     const seriesName = (needsHierarchy || form.category === 'aesthetic') ? form.typeName : '-'
-    const characterName = needsHierarchy ? form.characterName : null
-    const subcategory = needsHierarchy ? `${seriesName} - ${characterName}` : (form.category === 'aesthetic' ? seriesName : form.category)
+    const characterName = needsHierarchy ? (form.characterName || '') : null
+    const subcategory = needsHierarchy
+      ? (characterName ? `${seriesName} - ${characterName}` : seriesName)
+      : (form.category === 'aesthetic' ? seriesName : form.category)
 
     setIsSubmitting(true)
 
@@ -1023,6 +1144,8 @@ export default function Admin() {
         setForm(prev => ({ ...prev, title: '' }))
         setImageFile(null)
         setImagePreview('')
+        const singleInput = document.getElementById('single-file-upload')
+        if (singleInput) singleInput.value = ''
         setStatusMessage('Produk berhasil disimpan!')
         setShowSuccessModal(true)
         return
@@ -1047,51 +1170,58 @@ export default function Admin() {
         const file = batchFiles[i]
         const title = (batchTitles[i] || '').trim() || file.name.split('.').slice(0, -1).join('.')
         
+        setUploadProgress(i)
         setStatusMessage(`Mengunggah ${i + 1} dari ${totalFiles}: "${title}"`)
 
         try {
+          // 1. Upload ke Storage
           const publicUrl = await uploadFileToSupabase(file, i)
           
-          successPayloads.push({
+          const payload = {
             title: title,
             price: priceNum,
             category: form.category,
             subcategory: subcategory,
             notes: form.notes,
             image_url: publicUrl
-          })
+          }
+
+          // 2. Insert ke Database langsung satu per satu
+          const { data: insertedData, error: dbErr } = await supabase.from('products').insert([payload]).select('*')
+          
+          if (dbErr) {
+            throw new Error(`Gagal simpan DB: ${dbErr.message}`)
+          }
+
+          // 3. Tambahkan ke daftar sukses & update tampilan tabel admin secara realtime
+          const newProduct = insertedData[0]
+          successPayloads.push(newProduct)
+          setSavedProducts(prev => [newProduct, ...prev])
+
         } catch (err) {
           console.error(`File ${i + 1} gagal:`, err.message)
+          setStatusMessage(`⚠️ File ${i + 1} gagal: ${err.message}. Lanjut ke berikutnya...`)
           // Lanjut ke file berikutnya
         }
-
-        setUploadProgress(i + 1)
       }
-
-      // Simpan semua yang berhasil ke database
-      if (successPayloads.length > 0) {
-        setStatusMessage('Menyimpan data ke database...')
-        const { error: dbErr } = await supabase.from('products').insert(successPayloads)
-        
-        if (dbErr) {
-          alert(`Gagal simpan ke database: ${dbErr.message}`)
-          setIsSubmitting(false)
-          return
-        }
-      }
+      
+      setUploadProgress(totalFiles)
+      setTotalBatchImages(0) // Sembunyikan progress bar
 
       // Berhasil!
-      const { data: freshData } = await supabase.from('products').select('*').order('created_at', { ascending: false })
-      if (freshData) setSavedProducts(freshData)
       setBatchFiles([])
       setBatchTitles([])
       setBatchPreviews([])
+      const batchInput = document.getElementById('batch-file-upload')
+      if (batchInput) batchInput.value = ''
       setStatusMessage(`${successPayloads.length} dari ${totalFiles} produk berhasil disimpan!`)
       setShowSuccessModal(true)
 
     } catch (err) {
-      console.error(err)
+      console.error('Upload error:', err)
       alert(`Terjadi kesalahan: ${err.message}`)
+      setUploadProgress(0)
+      setTotalBatchImages(0)
     } finally {
       setIsSubmitting(false)
     }
@@ -1163,43 +1293,43 @@ export default function Admin() {
 
   if (loading || !adminRole) {
     return (
-      <div className="min-h-screen bg-[#070709] flex flex-col items-center justify-center text-white font-sans">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#070709] flex flex-col items-center justify-center text-gray-900 dark:text-white font-sans transition-colors duration-300">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-accent mx-auto"></div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-500">Memverifikasi Otorisasi Admin...</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500 dark:text-zinc-500">Memverifikasi Otorisasi Admin...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#07090b] to-[#0b0f12] text-white">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#070709] text-gray-900 dark:text-white transition-colors duration-300">
       <Header />
-      <main className="pt-28 max-w-6xl mx-auto px-4">
-        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <div className="flex gap-4 mb-8 border-b border-white/10 pb-4 overflow-x-auto custom-scrollbar">
+      <main className="pt-28 max-w-6xl mx-auto px-4 pb-20">
+        <h1 className="text-3xl font-bold mb-2 text-gray-900 dark:text-white">Admin Dashboard</h1>
+        <div className="flex gap-4 mb-8 border-b border-gray-200 dark:border-white/10 pb-4 overflow-x-auto custom-scrollbar">
           <button 
             onClick={() => setActiveTab('products')}
-            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'products' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-white'}`}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'products' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'}`}
           >
             📦 Products & Gallery
           </button>
           
           <button 
             onClick={() => setActiveTab('pricing')}
-            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pricing' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-white'}`}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pricing' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'}`}
           >
             💰 Pricing Control
           </button>
 
-          <Link href="/admin/tema" className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-gray-500 hover:text-white flex items-center gap-2`}>
+          <Link href="/admin/tema" className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-gray-500 hover:text-gray-800 dark:hover:text-white flex items-center gap-2`}>
             🎨 Site Assets
           </Link>
 
           {adminRole === 'superior' && (
             <button 
               onClick={() => setActiveTab('admins')}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admins' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/40 scale-105' : 'text-gray-500 hover:text-white border border-white/5'}`}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admins' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/40 scale-105' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white border border-transparent dark:border-white/5'}`}
             >
               👥 Admin Management
             </button>
@@ -1243,7 +1373,7 @@ export default function Admin() {
               {uploadMode === 'single' ? (
                 <>
                   <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Upload Gambar</p>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="p-2 rounded bg-black/20 w-full" />
+                  <input id="single-file-upload" type="file" accept="image/*" onChange={handleImageChange} className="p-2 rounded bg-gray-100 dark:bg-black/20 border border-gray-200 dark:border-transparent w-full text-sm text-gray-700 dark:text-gray-300" />
                   {imagePreview && (
                     <div className="mt-3">
                       <p className="text-xs text-gray-500 mb-1">Preview:</p>
@@ -1255,7 +1385,7 @@ export default function Admin() {
                         value={form.title}
                         onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
                         placeholder="Masukkan judul produk..."
-                        className="w-full bg-zinc-100 dark:bg-black/40 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-[var(--text-main)] focus:border-purple-500/50 outline-none transition-all"
+                        className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-purple-500/50 outline-none transition-all"
                       />
                     </div>
                   )}
@@ -1264,11 +1394,12 @@ export default function Admin() {
                 <>
                   <p className="text-xs uppercase tracking-wide text-gray-500 mb-2">Upload Banyak Gambar Sekaligus</p>
                   <input
+                    id="batch-file-upload"
                     type="file"
                     accept="image/*"
                     multiple
                     onChange={handleBatchFilesChange}
-                    className="p-2 rounded bg-black/20 w-full"
+                    className="p-2 rounded bg-gray-100 dark:bg-black/20 border border-gray-200 dark:border-transparent w-full text-sm text-gray-700 dark:text-gray-300"
                   />
                   {batchFiles.length > 0 && (
                     <div className="mt-4 space-y-4">
@@ -1280,20 +1411,20 @@ export default function Admin() {
                         </div>
                         <textarea
                           placeholder="Paste daftar nama di sini..."
-                          className="w-full h-20 p-3 rounded-lg bg-black/40 border border-white/5 text-xs focus:border-purple-500/50 outline-none transition-all placeholder:text-gray-700"
+                          className="w-full h-20 p-3 rounded-lg bg-white dark:bg-black/40 border border-gray-200 dark:border-white/5 text-xs focus:border-purple-500/50 outline-none transition-all placeholder:text-gray-400 text-gray-900 dark:text-white"
                           onChange={handleBulkPaste}
                         ></textarea>
                       </div>
 
                       {/* Individual File List */}
-                      <div className="p-3 bg-black/40 rounded-xl border border-white/5 space-y-3">
+                      <div className="p-3 bg-gray-50 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-white/5 space-y-3">
                         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-black mb-2 flex items-center gap-2">
                           <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
                           Review {batchFiles.length} File & Judul:
                         </p>
                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar space-y-2 pr-2">
                           {batchFiles.map((f, i) => (
-                            <div key={i} className="flex gap-3 items-center bg-zinc-200/50 dark:bg-white/5 p-2 rounded-xl border border-zinc-300 dark:border-white/5 hover:border-zinc-400 dark:hover:border-white/10 transition-all">
+                            <div key={i} className="flex gap-3 items-center bg-white dark:bg-white/5 p-2 rounded-xl border border-gray-200 dark:border-white/5 hover:border-gray-300 dark:hover:border-white/10 transition-all shadow-sm dark:shadow-none">
                               {/* Thumbnail */}
                               <div className="w-12 h-12 rounded-lg overflow-hidden bg-black flex-shrink-0 border border-white/10">
                                 <img src={batchPreviews[i]} alt="Preview" className="w-full h-full object-cover" />
@@ -1310,7 +1441,7 @@ export default function Admin() {
                                   value={batchTitles[i] || ''} 
                                   onChange={(e) => updateBatchTitle(i, e.target.value)}
                                   placeholder="Masukkan judul produk..."
-                                  className="w-full bg-zinc-100 dark:bg-black/40 border border-zinc-300 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-[var(--text-main)] focus:border-purple-500/50 outline-none transition-all"
+                                  className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-900 dark:text-white focus:border-purple-500/50 outline-none transition-all"
                                 />
                               </div>
                             </div>
@@ -1321,13 +1452,13 @@ export default function Admin() {
                   )}
 
                   {isSubmitting && totalBatchImages > 0 && (
-                    <div className="mt-4 p-4 rounded-2xl bg-zinc-100 dark:bg-black/40 border border-purple-500/30 shadow-[0_0_20px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in duration-300">
+                    <div className="mt-4 p-4 rounded-2xl bg-white dark:bg-black/40 border border-purple-500/30 shadow-sm dark:shadow-[0_0_20px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in duration-300">
                       <div className="flex justify-between items-end mb-2">
                         <div className="flex flex-col">
                           <span className="text-[10px] uppercase tracking-widest text-gray-500 font-black">Status Upload</span>
                           <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-2">
                             <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            {uploadProgress === totalBatchImages ? 'Hampir Selesai...' : `Mengunggah ${uploadProgress} dari ${totalBatchImages}`}
+                            {uploadProgress >= totalBatchImages ? 'Hampir Selesai...' : `Mengunggah file ${uploadProgress + 1} dari ${totalBatchImages}`}
                           </span>
                         </div>
                         <div className="text-right">
@@ -1378,22 +1509,67 @@ export default function Admin() {
 
             {/* Langkah 2 — Pilih Jenis / Series (hanya untuk anime, kpop, aesthetic) */}
             {showHierarchy && (
-              <div className="rounded-lg border border-zinc-200 dark:border-white/10 bg-zinc-100 dark:bg-black/20 p-4 space-y-4 shadow-sm">
+              <div className={`rounded-lg border border-gray-200 dark:border-white/10 bg-white dark:bg-black/20 p-4 shadow-sm grid grid-cols-1 gap-4 ${labels.step2 ? 'lg:grid-cols-2' : ''}`}>
                 {/* Langkah 2 — Pilih Jenis */}
-                <div>
-                  <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">Langkah 2 — {labels.step1}</p>
-                  {/* Search Bar for Types */}
-                  <div className="relative mb-3">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">🔍</span>
-                    <input 
-                      type="text"
-                      value={searchType}
-                      onChange={(e) => setSearchType(e.target.value)}
-                      onBlur={() => setTimeout(() => setSearchType(''), 200)}
-                      placeholder={`Cari ${labels.step1}...`}
-                      className="w-full bg-white dark:bg-black/40 border border-zinc-300 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-blue-500/50 outline-none transition-all text-[var(--text-main)] placeholder:text-gray-500"
-                    />
+                <div className="flex flex-col h-full">
+                  <div className="flex justify-between items-center mb-3">
+                    <p className="text-xs uppercase tracking-wide text-gray-500">Langkah 2 — {labels.step1}</p>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        type="button" 
+                        onClick={() => setShowSearchType(!showSearchType)} 
+                        className={`p-1.5 rounded-lg transition-colors ${showSearchType ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-200 dark:bg-white/10 text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'}`}
+                        title="Cari"
+                      >
+                        🔍
+                      </button>
+                      <button 
+                        type="button" 
+                        onClick={() => setShowAddType(!showAddType)} 
+                        className={`p-1.5 rounded-lg transition-colors ${showAddType ? 'bg-green-500/30 text-green-300' : 'bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20'}`}
+                        title="Tambah Baru"
+                      >
+                        ➕
+                      </button>
+                    </div>
                   </div>
+
+                  {/* Search Bar for Types */}
+                  {showSearchType && (
+                    <div className="relative mb-3 animate-fade-in">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">🔍</span>
+                      <input 
+                        type="text"
+                        autoFocus
+                        value={searchType}
+                        onChange={(e) => setSearchType(e.target.value)}
+                        placeholder={`Cari ${labels.step1}...`}
+                        className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-blue-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
+                      />
+                    </div>
+                  )}
+
+                  {/* Tambah Jenis Baru */}
+                  {showAddType && (
+                    <div className="flex gap-2 mb-3 animate-fade-in">
+                      <input
+                        autoFocus
+                        value={newTypeName}
+                        onChange={(e) => setNewTypeName(e.target.value)}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault()
+                            addNewType()
+                          }
+                        }}
+                        placeholder={labels.addType}
+                        className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-white text-sm border border-gray-200 dark:border-transparent placeholder:text-gray-400 focus:border-green-500/50 outline-none transition-all"
+                      />
+                      <button type="button" onClick={() => { addNewType(); }} className="px-3 py-2 rounded-xl bg-green-500/20 text-green-600 dark:text-green-300 text-sm font-medium hover:bg-green-500/30 transition-colors">
+                        Simpan
+                      </button>
+                    </div>
+                  )}
 
                   <div className="flex flex-col gap-2 mb-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                     {activeTypeOptions.filter(name => name.toLowerCase().includes(searchType.toLowerCase())).map((name) => (
@@ -1404,7 +1580,7 @@ export default function Admin() {
                             value={renameTypeVal}
                             onChange={e => setRenameTypeVal(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') commitRenameType(); if (e.key === 'Escape') setRenamingType(null) }}
-                            className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-black/40 border border-blue-400/50 text-[var(--text-main)] outline-none"
+                            className="flex-1 px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-black/40 border border-blue-400/50 text-gray-900 dark:text-white outline-none"
                           />
                           <button type="button" onClick={commitRenameType} className="px-4 py-2 rounded-lg bg-green-500/30 text-green-300 text-xs font-bold hover:bg-green-500/50 transition-colors">SIMPAN</button>
                           <button type="button" onClick={() => setRenamingType(null)} className="px-3 py-2 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20 transition-colors">BATAL</button>
@@ -1437,40 +1613,72 @@ export default function Admin() {
                       )
                     ))}
                   </div>
-                  {/* Tambah Jenis Baru */}
-                  <div className="flex gap-2">
-                    <input
-                      value={newTypeName}
-                      onChange={(e) => setNewTypeName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNewType())}
-                      placeholder={labels.addType}
-                      className="flex-1 p-2 rounded bg-white dark:bg-black/30 text-[var(--text-main)] text-sm border border-zinc-300 dark:border-transparent placeholder:text-gray-500"
-                    />
-                    <button type="button" onClick={addNewType} className="px-3 py-2 rounded bg-green-500/20 text-green-300 text-sm hover:bg-green-500/30">
-                      + Tambah
-                    </button>
-                  </div>
                 </div>
 
                 {/* Langkah 3 — Pilih Karakter (Sembunyikan jika Decor) */}
                 {labels.step2 && (
-                  <div>
-                    <p className="text-xs uppercase tracking-wide text-gray-500 mb-3">Langkah 3 — {labels.step2}</p>
-                  <p className="text-sm text-gray-400 mb-2">
-                    Kategori: <strong>{form.typeName}</strong>
-                  </p>
-                  {/* Search Bar for Characters */}
-                  <div className="relative mb-3">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">🔍</span>
-                    <input 
-                      type="text"
-                      value={searchChar}
-                      onChange={(e) => setSearchChar(e.target.value)}
-                      onBlur={() => setTimeout(() => setSearchChar(''), 200)}
-                      placeholder={`Cari ${labels.step2}...`}
-                      className="w-full bg-white dark:bg-black/40 border border-zinc-300 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-orange-500/50 outline-none transition-all text-[var(--text-main)] placeholder:text-gray-500"
-                    />
-                  </div>
+                  <div className="flex flex-col h-full">
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-gray-500">Langkah 3 — {labels.step2}</p>
+                        <p className="text-[10px] text-gray-400 mt-1">Kategori: <strong className="text-gray-600 dark:text-gray-300">{form.typeName}</strong></p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button 
+                          type="button" 
+                          onClick={() => setShowSearchChar(!showSearchChar)} 
+                          className={`p-1.5 rounded-lg transition-colors ${showSearchChar ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-200 dark:bg-white/10 text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'}`}
+                          title="Cari"
+                        >
+                          🔍
+                        </button>
+                        <button 
+                          type="button" 
+                          onClick={() => setShowAddChar(!showAddChar)} 
+                          className={`p-1.5 rounded-lg transition-colors ${showAddChar ? 'bg-green-500/30 text-green-300' : 'bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20'}`}
+                          title="Tambah Baru"
+                        >
+                          ➕
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Search Bar for Characters */}
+                    {showSearchChar && (
+                      <div className="relative mb-3 animate-fade-in">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-xs">🔍</span>
+                        <input 
+                          type="text"
+                          autoFocus
+                          value={searchChar}
+                          onChange={(e) => setSearchChar(e.target.value)}
+                          placeholder={`Cari ${labels.step2}...`}
+                          className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-orange-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
+                        />
+                      </div>
+                    )}
+
+                    {/* Tambah Karakter Baru */}
+                    {showAddChar && (
+                      <div className="flex gap-2 mb-3 animate-fade-in">
+                        <input
+                          autoFocus
+                          value={newCharacterName}
+                          onChange={(e) => setNewCharacterName(e.target.value)}
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault()
+                              addNewCharacter()
+                            }
+                          }}
+                          placeholder={labels.addChar}
+                          className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-white text-sm border border-gray-200 dark:border-transparent placeholder:text-gray-400 focus:border-green-500/50 outline-none transition-all"
+                        />
+                        <button type="button" onClick={() => { addNewCharacter(); }} className="px-3 py-2 rounded-xl bg-green-500/20 text-green-600 dark:text-green-300 text-sm font-medium hover:bg-green-500/30 transition-colors">
+                          Simpan
+                        </button>
+                      </div>
+                    )}
 
                   {activeCharacterOptions.length === 0 ? (
                     <p className="text-sm text-amber-300/80 mb-2">Belum ada karakter. Ketik nama baru lalu klik Tambah.</p>
@@ -1486,7 +1694,7 @@ export default function Admin() {
                                 value={renameCharVal}
                                 onChange={e => setRenameCharVal(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') commitRenameChar(); if (e.key === 'Escape') setRenamingChar(null) }}
-                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-white dark:bg-black/40 border border-orange-400/50 text-[var(--text-main)] outline-none"
+                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-black/40 border border-orange-400/50 text-gray-900 dark:text-white outline-none"
                               />
                               <button type="button" onClick={commitRenameChar} className="px-4 py-2 rounded-lg bg-green-500/30 text-green-300 text-xs font-bold hover:bg-green-500/50 transition-colors">SIMPAN</button>
                               <button type="button" onClick={() => setRenamingChar(null)} className="px-3 py-2 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20 transition-colors">BATAL</button>
@@ -1520,28 +1728,17 @@ export default function Admin() {
                         ))}
                     </div>
                   )}
-                  {/* Tambah Karakter Baru */}
-                  <div className="flex gap-2">
-                    <input
-                      value={newCharacterName}
-                      onChange={(e) => setNewCharacterName(e.target.value)}
-                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), addNewCharacter())}
-                      placeholder={labels.addChar}
-                      className="flex-1 p-2 rounded bg-white dark:bg-black/30 text-[var(--text-main)] text-sm border border-zinc-300 dark:border-transparent placeholder:text-gray-500"
-                    />
-                    <button type="button" onClick={addNewCharacter} className="px-3 py-2 rounded bg-green-500/20 text-green-300 text-sm hover:bg-green-500/30">
-                      + Tambah
-                    </button>
-                    </div>
-                  </div>
-                )}
+                </div>
+              )}
               </div>
             )}
+
             
-            <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded bg-zinc-100 dark:bg-black/20 text-[var(--text-main)] border border-zinc-300 dark:border-white/5" />
+            <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded-xl bg-gray-50 dark:bg-black/40 text-gray-900 dark:text-white border border-gray-200 dark:border-white/5 placeholder:text-gray-400 focus:border-purple-500/50 outline-none transition-all" />
 
             {/* Tombol Simpan Produk */}
             <button
+              type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
               className={`w-full py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${isSubmitting
@@ -1572,11 +1769,11 @@ export default function Admin() {
           </form>
 
           <aside className="glass p-5 rounded">
-            <h3 className="font-semibold mb-3">Image Preview</h3>
+            <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Image Preview</h3>
             {imagePreview ? (
               <img src={imagePreview} alt="Product preview" className="w-full h-64 object-cover rounded-md" />
             ) : (
-              <div className="w-full h-64 rounded-md bg-white/5 border border-white/10 flex items-center justify-center text-gray-400 text-sm">
+              <div className="w-full h-64 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-400 text-sm">
                 Belum ada gambar dipilih
               </div>
             )}
@@ -1585,7 +1782,7 @@ export default function Admin() {
 
         <div className="mt-8 glass rounded p-5">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-            <h2 className="text-xl font-semibold">Manajemen Produk</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Manajemen Produk</h2>
             {selectedProducts.length > 0 && (
               <button
                 onClick={handleDeleteSelected}
@@ -1598,8 +1795,8 @@ export default function Admin() {
           </div>
 
           {/* Breadcrumbs */}
-          <div className="flex items-center gap-2 text-sm text-gray-400 mb-6 bg-black/20 p-2 rounded">
-            <button onClick={() => setCurrentFolder([])} className="hover:text-white flex items-center gap-1">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 mb-6 bg-gray-100 dark:bg-black/20 p-2 rounded-xl">
+            <button onClick={() => setCurrentFolder([])} className="hover:text-gray-900 dark:hover:text-white flex items-center gap-1">
               🏠 Root
             </button>
             {currentFolder.map((folder, index) => (
@@ -1607,7 +1804,7 @@ export default function Admin() {
                 <span>/</span>
                 <button
                   onClick={() => setCurrentFolder(currentFolder.slice(0, index + 1))}
-                  className="hover:text-white capitalize truncate max-w-[150px]"
+                  className="hover:text-gray-900 dark:hover:text-white capitalize truncate max-w-[150px]"
                 >
                   {folder}
                 </button>
@@ -1626,17 +1823,17 @@ export default function Admin() {
                 <button
                   key={folderName}
                   onClick={() => setCurrentFolder([...currentFolder, folderName])}
-                  className="flex flex-col items-center justify-center p-6 bg-white/5 border border-white/10 rounded-xl hover:bg-white/10 hover:border-purple-500/30 transition-all group"
+                  className="flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 hover:border-purple-500/30 transition-all group"
                 >
                   <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📁</div>
-                  <span className="text-sm font-medium capitalize text-center truncate w-full">{folderName}</span>
+                  <span className="text-sm font-medium capitalize text-center truncate w-full text-gray-700 dark:text-gray-200">{folderName}</span>
                 </button>
               ))}
             </div>
           ) : (
             <div className="space-y-3">
-              <div className="flex justify-between items-center bg-white/5 p-3 rounded mb-4">
-                <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-white">
+              <div className="flex justify-between items-center bg-gray-100 dark:bg-white/5 p-3 rounded-xl border border-gray-200 dark:border-transparent mb-4">
+                <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-gray-900 dark:hover:text-white text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
                     className="w-4 h-4 rounded border-white/20 bg-black/30 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900 cursor-pointer"
@@ -1844,11 +2041,11 @@ export default function Admin() {
 
         {activeTab === 'admins' && adminRole === 'superior' && (
           <div className="space-y-8 animate-in fade-in duration-500">
-            <div className="glass p-8 rounded-3xl border border-white/10">
-              <h2 className="text-xl font-black uppercase tracking-widest mb-6 flex items-center gap-3">
+            <div className="glass p-8 rounded-3xl border border-gray-200 dark:border-white/10">
+              <h2 className="text-xl font-black uppercase tracking-widest mb-6 flex items-center gap-3 text-gray-900 dark:text-white">
                 <span className="text-2xl">➕</span> Tambah Admin Baru
               </h2>
-              <form onSubmit={handleAddAdmin} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+              <form onSubmit={handleAddAdmin} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Email Address</label>
                   <input 
@@ -1856,8 +2053,20 @@ export default function Admin() {
                     value={newAdminEmail}
                     onChange={(e) => setNewAdminEmail(e.target.value)}
                     placeholder="admin@example.com"
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-blue-500 outline-none transition-all"
+                    className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl px-6 py-4 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-400"
                     required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-gray-500 ml-1">Password</label>
+                  <input 
+                    type="password"
+                    value={newAdminPassword}
+                    onChange={(e) => setNewAdminPassword(e.target.value)}
+                    placeholder="Minimal 6 karakter"
+                    className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl px-6 py-4 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all placeholder:text-gray-400"
+                    required
+                    minLength={6}
                   />
                 </div>
                 <div className="space-y-2">
@@ -1865,7 +2074,7 @@ export default function Admin() {
                   <select 
                     value={newAdminRole}
                     onChange={(e) => setNewAdminRole(e.target.value)}
-                    className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-white focus:border-blue-500 outline-none transition-all appearance-none"
+                    className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-2xl px-6 py-4 text-gray-900 dark:text-white focus:border-blue-500 outline-none transition-all appearance-none"
                   >
                     <option value="regular">Regular Admin (Staff)</option>
                     <option value="superior">Superior Admin (Owner)</option>
@@ -1880,8 +2089,8 @@ export default function Admin() {
               </form>
             </div>
 
-            <div className="glass p-8 rounded-3xl border border-white/10">
-              <h2 className="text-xl font-black uppercase tracking-widest mb-6 flex items-center gap-3">
+            <div className="glass p-8 rounded-3xl border border-gray-200 dark:border-white/10">
+              <h2 className="text-xl font-black uppercase tracking-widest mb-6 flex items-center gap-3 text-gray-900 dark:text-white">
                 <span className="text-2xl">📋</span> Daftar Team Admin
               </h2>
               <div className="overflow-x-auto">

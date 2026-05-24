@@ -1,0 +1,218 @@
+[
+  {
+    "key": "anime-sidebar-slot-1",
+    "label": "Slot Kiri #1"
+  },
+  {
+    "key": "kpop-bts",
+    "label": "Cover — Bts"
+  },
+  {
+    "key": "home-video-3",
+    "label": "Video 3"
+  },
+  {
+    "key": "home-video-4",
+    "label": "Video 4"
+  },
+  {
+    "key": "home-video-5",
+    "label": "Video 5"
+  },
+  {
+    "key": "home-video",
+    "label": "Video 1 (Utama)"
+  },
+  {
+    "key": "home-video-2",
+    "label": "Video 2"
+  },
+  {
+    "key": "header-bg",
+    "label": "Background Header (Semua Halaman)"
+  },
+  {
+    "key": "home-bg",
+    "label": "Background Homepage (Di Belakang Koleksi)"
+  },
+  {
+    "key": "footer-bg",
+    "label": "Background Footer (Semua Halaman)"
+  },
+  {
+    "key": "cover-decor",
+    "label": "Cover Decor (Homepage)"
+  },
+  {
+    "key": "anime-cover-naruto",
+    "label": "Cover — Naruto"
+  },
+  {
+    "key": "anime-cover-solo-leveling",
+    "label": "Cover — Solo Leveling"
+  },
+  {
+    "key": "anime-cover-tokyo-ghoul",
+    "label": "Cover — Tokyo Ghoul"
+  },
+  {
+    "key": "anime-cover-one-piece",
+    "label": "Cover — One Piece"
+  },
+  {
+    "key": "anime-cover-jujutsu-kaisen",
+    "label": "Cover — Jujutsu Kaisen"
+  },
+  {
+    "key": "anime-cover-deathnote",
+    "label": "Cover — Deathnote"
+  },
+  {
+    "key": "anime-cover-dragon-ball",
+    "label": "Cover — Dragon Ball"
+  },
+  {
+    "key": "anime-cover-bleach",
+    "label": "Cover — Bleach"
+  },
+  {
+    "key": "anime-cover-attack-on-titan",
+    "label": "Cover — Attack On Titan"
+  },
+  {
+    "key": "anime-cover-kuroko-no-basket",
+    "label": "Cover — Kuroko No Basket"
+  },
+  {
+    "key": "anime-cover-haikyuu",
+    "label": "Cover — Haikyuu!!"
+  },
+  {
+    "key": "kpop-babymonster",
+    "label": "Cover — Babymonster"
+  },
+  {
+    "key": "kpop-aespa",
+    "label": "Cover — Aespa"
+  },
+  {
+    "key": "kpop-ive",
+    "label": "Cover — Ive"
+  },
+  {
+    "key": "kpop-newjeans",
+    "label": "Cover — Newjeans"
+  },
+  {
+    "key": "kpop-seventeen",
+    "label": "Cover — Seventeen"
+  },
+  {
+    "key": "kpop-twice",
+    "label": "Cover — Twice"
+  },
+  {
+    "key": "cover-kpop",
+    "label": "Cover K-pop (Homepage)"
+  },
+  {
+    "key": "cover-anime",
+    "label": "Cover Anime (Homepage)"
+  },
+  {
+    "key": "cover-custom",
+    "label": "Cover Custom (Homepage)"
+  },
+  {
+    "key": "kpop-straykids",
+    "label": "Cover — Straykids"
+  },
+  {
+    "key": "kpop-blackpink",
+    "label": "Cover — Blackpink"
+  },
+  {
+    "key": "anime-cover-wuthering-waves",
+    "label": "Cover — Wuthering Waves"
+  },
+  {
+    "key": "global-category-options",
+    "label": "Global Category List Cache"
+  },
+  {
+    "key": "aesthetic-cyberpunk",
+    "label": "Cover — Cyberpunk"
+  },
+  {
+    "key": "aesthetic-naure",
+    "label": "Cover — Naure"
+  },
+  {
+    "key": "aesthetic-black-white",
+    "label": "Cover — Black & White"
+  },
+  {
+    "key": "aesthetic-gaming-room",
+    "label": "Cover — Gaming Room"
+  },
+  {
+    "key": "aesthetic-minimalis",
+    "label": "Cover — Minimalis"
+  },
+  {
+    "key": "aesthetic-dark-luxury",
+    "label": "Cover — Dark Luxury"
+  },
+  {
+    "key": "aesthetic-cafe",
+    "label": "Cover — Cafe"
+  },
+  {
+    "key": "aesthetic-music",
+    "label": "Cover — Music"
+  },
+  {
+    "key": "aesthetic-kids",
+    "label": "Cover — Kids"
+  },
+  {
+    "key": "aesthetic-japanesse",
+    "label": "Cover — Japanesse"
+  },
+  {
+    "key": "aesthetic-retro-vintage",
+    "label": "Cover — Retro Vintage"
+  },
+  {
+    "key": "cover-aesthetic",
+    "label": "Cover Aesthetic (Homepage)"
+  },
+  {
+    "key": "anime-cover-honkai-star-rail",
+    "label": "Cover — Honkai Star Rail"
+  },
+  {
+    "key": "anime-cover-honkai-impact",
+    "label": "Cover — Honkai Impact"
+  },
+  {
+    "key": "global-character-options",
+    "label": "Global Character List Cache"
+  },
+  {
+    "key": "parent-logo",
+    "label": "Logo Perusahaan Induk (Footer)"
+  },
+  {
+    "key": "mockup-studio-right",
+    "label": "Poster Studio Kanan (Default: Sunset/Mountain)"
+  },
+  {
+    "key": "mockup-studio-left",
+    "label": "Poster Studio Kiri (Default: Tracer/Overwatch)"
+  },
+  {
+    "key": "logo",
+    "label": "Logo Website (Top Left)"
+  }
+]

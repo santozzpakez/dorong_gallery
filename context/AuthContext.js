@@ -98,11 +98,57 @@ export function AuthProvider({ children }) {
     return { data, error }
   }
 
-  const logout = async () => {
-    await supabase.auth.signOut()
+  const logout = async (e) => {
+    if (e && e.preventDefault) e.preventDefault()
+    if (e && e.stopPropagation) e.stopPropagation()
+
+    // 1. Langkah pertama: Hapus SEMUA data auth dari browser SEBELUM signOut
+    //    Ini memastikan meskipun signOut gagal/hang, user tetap ter-logout
+    try {
+      if (typeof window !== 'undefined') {
+        // Hapus dari localStorage
+        const lsKeysToRemove = []
+        for (let i = 0; i < window.localStorage.length; i++) {
+          const key = window.localStorage.key(i)
+          if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+            lsKeysToRemove.push(key)
+          }
+        }
+        lsKeysToRemove.forEach(k => window.localStorage.removeItem(k))
+
+        // Hapus dari sessionStorage juga
+        const ssKeysToRemove = []
+        for (let i = 0; i < window.sessionStorage.length; i++) {
+          const key = window.sessionStorage.key(i)
+          if (key && (key.startsWith('sb-') || key.includes('supabase'))) {
+            ssKeysToRemove.push(key)
+          }
+        }
+        ssKeysToRemove.forEach(k => window.sessionStorage.removeItem(k))
+      }
+    } catch (cleanupErr) {
+      console.warn('Storage cleanup error:', cleanupErr)
+    }
+
+    // 2. Coba signOut ke server dengan timeout 3 detik (jangan sampai hang)
+    try {
+      if (supabase) {
+        const signOutPromise = supabase.auth.signOut({ scope: 'local' })
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('SignOut timeout')), 3000)
+        )
+        await Promise.race([signOutPromise, timeoutPromise])
+      }
+    } catch (err) {
+      console.warn('SignOut server call failed/timed out:', err)
+    }
+
+    // 3. Reset state
     setUser(null)
     setAdminRole(null)
-    router.push('/')
+
+    // 4. Hard redirect — pasti jalan
+    window.location.replace('/')
   }
 
   return (

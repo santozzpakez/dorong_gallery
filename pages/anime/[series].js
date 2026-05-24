@@ -65,19 +65,43 @@ export default function AnimeSeriesPage() {
     }
 
     async function loadCharacters() {
-      // ── 1. Baca definisi karakter dari Admin (localStorage) ──
-      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
-      const STORAGE_TYPES = 'dorong_admin_type_options'
-      
+      // ── 1. Baca definisi karakter dari Supabase (BUKAN localStorage) ──
       let adminChars = {}
       let adminSeries = []
+      
       try {
-        const rawChars = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_CHARS) : null
-        if (rawChars) adminChars = JSON.parse(rawChars)?.anime || {}
-        
-        const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_TYPES) : null
-        if (rawTypes) adminSeries = JSON.parse(rawTypes)?.anime || []
+        if (hasSupabaseConfig && supabase) {
+          const { data: cacheData } = await supabase
+            .from('site_assets')
+            .select('key, text_value')
+            .in('key', ['global-category-options', 'global-character-options'])
+
+          if (cacheData) {
+            cacheData.forEach(row => {
+              if (row.key === 'global-category-options' && row.text_value) {
+                try { adminSeries = JSON.parse(row.text_value)?.anime || [] } catch {}
+              }
+              if (row.key === 'global-character-options' && row.text_value) {
+                try { adminChars = JSON.parse(row.text_value)?.anime || {} } catch {}
+              }
+            })
+          }
+        }
       } catch { /* abaikan */ }
+
+      // Fallback ke localStorage jika Supabase gagal
+      if (adminSeries.length === 0) {
+        try {
+          const rawTypes = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_type_options') : null
+          if (rawTypes) adminSeries = JSON.parse(rawTypes)?.anime || []
+        } catch {}
+      }
+      if (Object.keys(adminChars).length === 0) {
+        try {
+          const rawChars = typeof window !== 'undefined' ? window.localStorage.getItem('dorong_admin_characters_by_type') : null
+          if (rawChars) adminChars = JSON.parse(rawChars)?.anime || {}
+        } catch {}
+      }
 
       // Cari nama asli series dari slug dengan pencocokan cerdas (mendukung singular/plural)
       const toSlug = (str) => str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')

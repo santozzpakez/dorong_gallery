@@ -67,35 +67,61 @@ export default function KpopGroupPage() {
     if (!groupSlug) return
 
     async function loadMembers() {
-      // ── 1. Baca daftar member dari localStorage (definisi admin) ──
-      const STORAGE_TYPES = 'dorong_admin_type_options'
-      const STORAGE_CHARS = 'dorong_admin_characters_by_type'
+      // ── 1. Baca daftar member dari Supabase (BUKAN localStorage) ──
       let resolvedGroupName = groupSlug.replace(/-/g, ' ')
-
-      // Cari nama grup yang sebenarnya dari daftar admin
       let adminMembers = []
+
       try {
-        const rawTypes = window.localStorage.getItem(STORAGE_TYPES)
-        const rawChars = window.localStorage.getItem(STORAGE_CHARS)
-        if (rawTypes) {
-          const types = JSON.parse(rawTypes)
-          const kpopGroups = types?.kpop || []
-          // Cocokkan slug untuk menemukan nama asli grup
-          const matched = kpopGroups.find(name =>
-            name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === groupSlug
-          )
-          if (matched) resolvedGroupName = matched
+        if (hasSupabaseConfig && supabase) {
+          const { data: cacheData } = await supabase
+            .from('site_assets')
+            .select('key, text_value')
+            .in('key', ['global-category-options', 'global-character-options'])
+
+          if (cacheData) {
+            let kpopGroups = []
+            let kpopChars = {}
+            cacheData.forEach(row => {
+              if (row.key === 'global-category-options' && row.text_value) {
+                try { kpopGroups = JSON.parse(row.text_value)?.kpop || [] } catch {}
+              }
+              if (row.key === 'global-character-options' && row.text_value) {
+                try { kpopChars = JSON.parse(row.text_value)?.kpop || {} } catch {}
+              }
+            })
+            const matched = kpopGroups.find(name =>
+              name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === groupSlug
+            )
+            if (matched) resolvedGroupName = matched
+            const groupEntry = Object.entries(kpopChars).find(([gName]) =>
+              gName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === groupSlug
+            )
+            if (groupEntry) adminMembers = groupEntry[1] || []
+          }
         }
-        if (rawChars) {
-          const chars = JSON.parse(rawChars)
-          const kpopChars = chars?.kpop || {}
-          // Cari member berdasarkan nama grup yang cocok
-          const groupEntry = Object.entries(kpopChars).find(([gName]) =>
-            gName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === groupSlug
-          )
-          if (groupEntry) adminMembers = groupEntry[1] || []
-        }
-      } catch { /* abaikan error localStorage */ }
+      } catch { /* abaikan */ }
+
+      // Fallback ke localStorage jika Supabase gagal
+      if (adminMembers.length === 0) {
+        try {
+          const rawTypes = window.localStorage.getItem('dorong_admin_type_options')
+          const rawChars = window.localStorage.getItem('dorong_admin_characters_by_type')
+          if (rawTypes) {
+            const kpopGroups = JSON.parse(rawTypes)?.kpop || []
+            const matched = kpopGroups.find(name =>
+              name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === groupSlug
+            )
+            if (matched) resolvedGroupName = matched
+          }
+          if (rawChars) {
+            const kpopChars = JSON.parse(rawChars)?.kpop || {}
+            const groupEntry = Object.entries(kpopChars).find(([gName]) =>
+              gName.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-') === groupSlug
+            )
+            if (groupEntry) adminMembers = groupEntry[1] || []
+          }
+        } catch { /* abaikan */ }
+      }
 
       setGroupName(resolvedGroupName)
 

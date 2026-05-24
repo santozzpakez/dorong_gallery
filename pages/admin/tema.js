@@ -432,11 +432,9 @@ export default function TemaAdmin() {
   useEffect(() => {
     async function loadDynamicSlots() {
       try {
-        // --- 1. Get from LocalStorage (Admin Definitions) ---
-        const STORAGE_TYPES = 'dorong_admin_type_options'
-        const STORAGE_CHARS = 'dorong_admin_characters_by_type'
-        let types = mergeTypes(loadJson(STORAGE_TYPES, null), defaultTypes)
-        let chars = mergeCharsByType(loadJson(STORAGE_CHARS, null), defaultCharactersByType)
+        // --- 1. Get Base Definitions (Abaikan LocalStorage yang suka nyangkut, gunakan default) ---
+        let types = JSON.parse(JSON.stringify(defaultTypes))
+        let chars = JSON.parse(JSON.stringify(defaultCharactersByType))
         
         // Sanitize types object to guarantee arrays are assigned
         if (types && typeof types === 'object') {
