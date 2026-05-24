@@ -178,18 +178,12 @@ export default function KpopGroupPage() {
       }
 
       // ── 4. Format & sort A–Z ──
-      const formatted = Array.from(memberMap.keys()).map(member => {
-        const mSlug = member.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-        return {
-          name: member,
-          slug: mSlug,
-          count: memberMap.get(member).count,
-          image: memberMap.get(member).image
-        }
+      const formattedMembers = Array.from(memberMap.entries()).map(([name, data]) => {
+        const slug = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
+        return { name, slug, ...data }
       })
-
-      formatted.sort((a, b) => a.name.localeCompare(b.name))
-      setMemberList(formatted)
+      formattedMembers.sort((a, b) => a.name.localeCompare(b.name))
+      setMemberList(formattedMembers)
       setLoading(false)
     }
 
