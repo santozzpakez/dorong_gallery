@@ -487,9 +487,29 @@ export default function Admin() {
           finalTypes[cat] = Array.from(uniqueNames).sort()
         })
 
+        const finalChars = {}
+        Object.keys(chars).forEach(cat => {
+          finalChars[cat] = {}
+          const catObj = chars[cat] || {}
+          Object.keys(catObj).forEach(rawKey => {
+            const clean = rawKey.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+            const formattedKey = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+            
+            const list = catObj[rawKey] || []
+            const cleanList = list.map(item => {
+              if (!item || typeof item !== 'string') return ''
+              return item.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ').trim()
+            }).filter(Boolean)
+            
+            if (formattedKey) {
+              const existing = finalChars[cat][formattedKey] || []
+              finalChars[cat][formattedKey] = [...new Set([...existing, ...cleanList])].sort()
+            }
+          })
+        })
 
         setTypeOptions(finalTypes)
-        setCharactersByType(chars)
+        setCharactersByType(finalChars)
 
         const firstType = finalTypes.anime?.[0] || 'One Piece'
         const firstChar = chars.anime?.[firstType]?.[0] || ''
@@ -549,29 +569,35 @@ export default function Admin() {
       updateText('global-category-options', typeStr)
       updateText('global-character-options', charStr)
 
-      // Tambahkan timeout 5 detik untuk mencegah hang di Supabase
-      const upsertPromise = supabase.from('site_assets').upsert([
-        {
-          key: 'global-category-options',
-          text_value: typeStr,
-          label: 'Global Category List Cache',
-          category: 'system',
-          updated_at: new Date().toISOString()
-        },
-        {
-          key: 'global-character-options',
-          text_value: charStr,
-          label: 'Global Character List Cache',
-          category: 'system',
-          updated_at: new Date().toISOString()
-        }
-      ], { onConflict: 'key' });
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Koneksi ke database timeout (Lebih dari 5 detik).')), 5000)
+      // Gunakan helper Promise.resolve dan timer clean-up untuk menghindari postgrest-thenable bug
+      const upsertTask = Promise.resolve(
+        supabase.from('site_assets').upsert([
+          {
+            key: 'global-category-options',
+            text_value: typeStr,
+            label: 'Global Category List Cache',
+            category: 'system',
+            updated_at: new Date().toISOString()
+          },
+          {
+            key: 'global-character-options',
+            text_value: charStr,
+            label: 'Global Character List Cache',
+            category: 'system',
+            updated_at: new Date().toISOString()
+          }
+        ], { onConflict: 'key' })
       );
 
-      const { error } = await Promise.race([upsertPromise, timeoutPromise]);
+      let timeoutId;
+      const timeoutPromise = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error('Koneksi ke database timeout (Batas waktu 15 detik terlampaui).')), 15000);
+      });
+
+      const raceResult = await Promise.race([upsertTask, timeoutPromise]);
+      clearTimeout(timeoutId);
+
+      const { error } = raceResult || {};
       
       if (error) {
         throw new Error(error.message)
@@ -787,18 +813,22 @@ export default function Admin() {
   function addNewType() {
     const typed = newTypeName.trim()
     if (!typed || form.category === 'custom' || form.category === 'other') return
+    const clean = typed.replace(/^cover\s*[—\-]?\s*/i, '').trim()
+    const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+    if (!formatted) return
+
     setTypeOptions((prev) => {
       const current = prev[form.category] || []
-      if (current.includes(typed)) return prev
-      return { ...prev, [form.category]: [...current, typed] }
+      if (current.includes(formatted)) return prev
+      return { ...prev, [form.category]: [...current, formatted].sort() }
     })
     setCharactersByType((prev) => ({
       ...prev,
-      [form.category]: { ...(prev[form.category] || {}), [typed]: prev[form.category]?.[typed] || [] }
+      [form.category]: { ...(prev[form.category] || {}), [formatted]: prev[form.category]?.[formatted] || [] }
     }))
-    setForm((prev) => ({ ...prev, typeName: typed, characterName: '' }))
+    setForm((prev) => ({ ...prev, typeName: formatted, characterName: '' }))
     setNewTypeName('')
-    setStatusMessage(`"${typed}" ditambahkan. Tambahkan karakter di bawah jika belum ada.`)
+    setStatusMessage(`"${formatted}" ditambahkan. Tambahkan karakter di bawah jika belum ada.`)
   }
 
   function addNewCharacter() {
@@ -806,16 +836,18 @@ export default function Admin() {
     if (!typed || form.category === 'custom' || form.category === 'other') return
     const cat = form.category
     const typeName = form.typeName
+    const formattedChar = typed.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+
     setCharactersByType((prev) => {
       const catMap = { ...(prev[cat] || {}) }
       const current = catMap[typeName] || []
-      if (current.includes(typed)) return prev
-      catMap[typeName] = [...current, typed]
+      if (current.includes(formattedChar)) return prev
+      catMap[typeName] = [...current, formattedChar].sort()
       return { ...prev, [cat]: catMap }
     })
-    setForm((prev) => ({ ...prev, characterName: typed }))
+    setForm((prev) => ({ ...prev, characterName: formattedChar }))
     setNewCharacterName('')
-    setStatusMessage(`Karakter "${typed}" ditambahkan untuk ${form.typeName}.`)
+    setStatusMessage(`Karakter "${formattedChar}" ditambahkan untuk ${form.typeName}.`)
   }
 
   // ── Rename / Delete Type (Series / Grup) ──

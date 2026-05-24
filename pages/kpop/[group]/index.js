@@ -164,11 +164,22 @@ export default function KpopGroupPage() {
 
               if (gSlug === groupSlug) {
                 actualGroupName = gName
-                if (!memberMap.has(mName)) {
-                  memberMap.set(mName, { count: 1, image: item.image_url })
-                } else {
-                  const cur = memberMap.get(mName)
-                  memberMap.set(mName, { count: cur.count + 1, image: cur.image || item.image_url })
+                
+                // Match case-insensitively with members defined in Admin (fixes zombie members)
+                let matchedKey = null;
+                for (const definedMember of memberMap.keys()) {
+                  if (definedMember.toLowerCase() === mName.toLowerCase()) {
+                    matchedKey = definedMember;
+                    break;
+                  }
+                }
+
+                if (matchedKey) {
+                  const cur = memberMap.get(matchedKey)
+                  memberMap.set(matchedKey, { 
+                    count: cur.count + 1, 
+                    image: cur.image || item.image_url 
+                  })
                 }
               }
             }
