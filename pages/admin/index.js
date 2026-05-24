@@ -189,6 +189,9 @@ export default function Admin() {
   const [savedProducts, setSavedProducts] = useState([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSavingCategories, setIsSavingCategories] = useState(false)
+  const [isSavingLists, setIsSavingLists] = useState(false)
+  const [saveListProgress, setSaveListProgress] = useState(0)
+  const [saveListTotal, setSaveListTotal] = useState(0)
   const [isLoadingProducts, setIsLoadingProducts] = useState(true)
   const [statusMessage, setStatusMessage] = useState('')
   const [newTypeName, setNewTypeName] = useState('')
@@ -518,7 +521,27 @@ export default function Admin() {
       return
     }
     
-    setStatusMessage('Menyimpan daftar ke database...')
+    // Hitung total karakter untuk simulasi progress bar
+    let totalChars = 0;
+    Object.values(charactersByType).forEach(catObj => {
+      Object.values(catObj).forEach(charArray => {
+        totalChars += charArray.length;
+      });
+    });
+
+    if (totalChars === 0) totalChars = 1;
+
+    setIsSavingLists(true)
+    setSaveListTotal(totalChars)
+    setSaveListProgress(0)
+
+    // Simulasi loading animasi "satu per satu" yang diminta user (waktu dinamis)
+    const delayMs = Math.max(20, Math.min(200, 2000 / totalChars));
+    for (let i = 1; i <= totalChars; i++) {
+      setSaveListProgress(i)
+      await new Promise(resolve => setTimeout(resolve, delayMs))
+    }
+
     const typeStr = JSON.stringify(typeOptions)
     const charStr = JSON.stringify(charactersByType)
     
@@ -542,13 +565,15 @@ export default function Admin() {
       }
     ], { onConflict: 'key' })
     
+    setIsSavingLists(false)
+    setSaveListTotal(0)
+
     if (error) {
       console.error('Manual save error:', error)
       alert(`Gagal menyimpan daftar: ${error.message}`)
       setStatusMessage(`❌ Gagal menyimpan: ${error.message}`)
     } else {
       setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
-      alert('Berhasil disimpan ke database!')
     }
   }
 
@@ -1505,11 +1530,51 @@ export default function Admin() {
                 <button
                   type="button"
                   onClick={handleManualSaveLists}
-                  className="px-4 py-1.5 bg-green-500 hover:bg-green-600 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg shadow-green-500/30 active:scale-95 flex items-center gap-2"
+                  disabled={isSavingLists}
+                  className={`px-4 py-1.5 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg active:scale-95 flex items-center gap-2 ${
+                    isSavingLists ? 'bg-gray-500 cursor-not-allowed opacity-70' : 'bg-green-500 hover:bg-green-600 shadow-green-500/30'
+                  }`}
                 >
-                  <span>💾</span> Simpan Daftar Karakter
+                  {isSavingLists ? (
+                    <>
+                      <div className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                      Menyimpan...
+                    </>
+                  ) : (
+                    <><span>💾</span> Simpan Daftar Karakter</>
+                  )}
                 </button>
               </div>
+
+              {/* Progress Bar Sinkronisasi */}
+              {isSavingLists && saveListTotal > 0 && (
+                <div className="mb-4 p-4 rounded-2xl bg-white dark:bg-black/40 border border-green-500/30 shadow-sm dark:shadow-[0_0_20px_rgba(34,197,94,0.15)] animate-in fade-in duration-300">
+                  <div className="flex justify-between items-end mb-2">
+                    <div className="flex flex-col">
+                      <span className="text-[10px] uppercase tracking-widest text-gray-500 font-black">Status Sinkronisasi</span>
+                      <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                        {saveListProgress >= saveListTotal ? 'Menyimpan ke Database...' : `Memproses data ${saveListProgress} dari ${saveListTotal} member`}
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-xl font-black text-green-600 dark:text-green-400 italic">
+                        {Math.round((saveListProgress / saveListTotal) * 100)}%
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[2px]">
+                    <div 
+                      className="h-full bg-gradient-to-r from-green-600 via-emerald-500 to-green-400 rounded-full transition-all duration-300 ease-out shadow-[0_0_15px_rgba(34,197,94,0.5)]"
+                      style={{ width: `${(saveListProgress / saveListTotal) * 100}%` }}
+                    >
+                      <div className="w-full h-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]"></div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2 mb-3">
                 {['anime', 'kpop', 'aesthetic'].map((cat) => (
                   <button
