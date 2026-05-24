@@ -145,11 +145,18 @@ export default function AnimeSeriesPage() {
               const cName = parts[1].trim()
               
               if (matchSlug(toSlug(sName), seriesSlug)) {
-                if (!charMap.has(cName)) {
-                  charMap.set(cName, { count: 1, image: item.image_url })
-                } else {
-                  const current = charMap.get(cName)
-                  charMap.set(cName, { 
+                // HANYA proses jika karakter ada di daftar Admin
+                let matchedKey = null;
+                for (const definedChar of charMap.keys()) {
+                  if (definedChar.toLowerCase() === cName.toLowerCase()) {
+                    matchedKey = definedChar;
+                    break;
+                  }
+                }
+
+                if (matchedKey) {
+                  const current = charMap.get(matchedKey)
+                  charMap.set(matchedKey, { 
                     count: current.count + 1, 
                     image: current.image || item.image_url 
                   })
