@@ -150,7 +150,7 @@ export default function Admin() {
         { key: 'size_dimension_a3plus', text_value: dimA3Plus.toString().trim(), label: 'Dimensi A3+', category: 'pricing', updated_at: new Date().toISOString() }
       ]
 
-      const { error } = await supabase.from('site_assets').upsert(updates, { onConflict: 'key' })
+      const { error } = await supabase.from('site_assets').upsert(updates, { onConflict: 'key' }).select()
       if (error) throw error
 
       updates.forEach(up => updateText(up.key, up.text_value))
@@ -556,22 +556,13 @@ export default function Admin() {
     setSaveListProgress(0)
 
     try {
-      // Simulasi loading animasi "satu per satu" yang diminta user (waktu dinamis)
-      const delayMs = Math.max(20, Math.min(200, 2000 / totalChars));
-      for (let i = 1; i <= totalChars; i++) {
-        setSaveListProgress(i)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-
       const typeStr = JSON.stringify(typeOptions)
       const charStr = JSON.stringify(charactersByType)
-      
-      updateText('global-category-options', typeStr)
-      updateText('global-character-options', charStr)
 
-      // Gunakan helper Promise.resolve dan timer clean-up untuk menghindari postgrest-thenable bug
-      const upsertTask = Promise.resolve(
-        supabase.from('site_assets').upsert([
+      // 1. Jalankan operasi Supabase segera secara paralel
+      // Menggunakan fungsi async asli agar menghasilkan native JS Promise untuk menghindari Postgrest-thenable bug
+      const doUpsert = async () => {
+        const { error } = await supabase.from('site_assets').upsert([
           {
             key: 'global-category-options',
             text_value: typeStr,
@@ -586,9 +577,22 @@ export default function Admin() {
             category: 'system',
             updated_at: new Date().toISOString()
           }
-        ], { onConflict: 'key' })
-      );
+        ], { onConflict: 'key' }).select()
+        
+        if (error) throw error
+        return { error }
+      }
 
+      const upsertTask = doUpsert()
+
+      // 2. Jalankan simulasi loading animasi di foreground
+      const delayMs = Math.max(10, Math.min(100, 1500 / totalChars));
+      for (let i = 1; i <= totalChars; i++) {
+        setSaveListProgress(i)
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
+
+      // 3. Batasi waktu penyelesaian query dengan timeout 15 detik
       let timeoutId;
       const timeoutPromise = new Promise((_, reject) => {
         timeoutId = setTimeout(() => reject(new Error('Koneksi ke database timeout (Batas waktu 15 detik terlampaui).')), 15000);
@@ -598,12 +602,15 @@ export default function Admin() {
       clearTimeout(timeoutId);
 
       const { error } = raceResult || {};
-      
       if (error) {
         throw new Error(error.message)
-      } else {
-        setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
       }
+
+      // 4. Sinkronisasi local state
+      updateText('global-category-options', typeStr)
+      updateText('global-character-options', charStr)
+
+      setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
     } catch (err) {
       console.error('Manual save error:', err)
       alert(`Gagal menyimpan daftar: ${err.message || 'Unknown error'}`)
@@ -836,18 +843,39 @@ export default function Admin() {
     if (!typed || form.category === 'custom' || form.category === 'other') return
     const cat = form.category
     const typeName = form.typeName
-    const formattedChar = typed.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
+
+    // Deteksi pemisah koma (,) atau baris baru (\n) untuk mendukung penambahan sekali banyak (bulk)
+    const separator = typed.includes('\n') ? '\n' : (typed.includes(',') ? ',' : null);
+    let rawNames = [];
+    if (separator) {
+      rawNames = typed.split(separator).map(n => n.trim()).filter(Boolean);
+    } else {
+      rawNames = [typed];
+    }
+
+    const formattedNames = rawNames.map(name => {
+      return name.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+    });
+
+    if (formattedNames.length === 0) return;
 
     setCharactersByType((prev) => {
       const catMap = { ...(prev[cat] || {}) }
       const current = catMap[typeName] || []
-      if (current.includes(formattedChar)) return prev
-      catMap[typeName] = [...current, formattedChar].sort()
+      const merged = [...new Set([...current, ...formattedNames])].sort();
+      catMap[typeName] = merged
       return { ...prev, [cat]: catMap }
     })
-    setForm((prev) => ({ ...prev, characterName: formattedChar }))
+
+    const lastChar = formattedNames[formattedNames.length - 1];
+    setForm((prev) => ({ ...prev, characterName: lastChar }))
     setNewCharacterName('')
-    setStatusMessage(`Karakter "${formattedChar}" ditambahkan untuk ${form.typeName}.`)
+
+    if (formattedNames.length > 1) {
+      setStatusMessage(`${formattedNames.length} karakter berhasil ditambahkan untuk ${form.typeName}.`)
+    } else {
+      setStatusMessage(`Karakter "${lastChar}" ditambahkan untuk ${form.typeName}.`)
+    }
   }
 
   // ── Rename / Delete Type (Series / Grup) ──
@@ -894,7 +922,7 @@ export default function Admin() {
             
             if (updates.length > 0) {
               alert(`Mengupdate ${updates.length} produk di database...`);
-              const { error: upsertErr } = await supabase.from('products').upsert(updates)
+              const { error: upsertErr } = await supabase.from('products').upsert(updates).select()
               if (upsertErr) {
                 alert(`Supabase Upsert Error: ${upsertErr.message}`);
               }
@@ -918,7 +946,7 @@ export default function Admin() {
               ...assetData,
               key: newKey,
               label: (assetData.label || '').replace(oldName, newName)
-            })
+            }).select()
             if (insErr) {
               alert(`Supabase Insert Asset Error: ${insErr.message}`);
             }
