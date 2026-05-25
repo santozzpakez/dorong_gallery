@@ -9,6 +9,10 @@ export default function ShopGallery() {
   const [products, setProducts] = useState([])
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalCount, setTotalCount] = useState(0)
+  const [shuffledIds, setShuffledIds] = useState([])
+  const pageSize = 18
 
   const translations = {
     id: {
@@ -40,31 +44,78 @@ export default function ShopGallery() {
 
   const t = translations[lang] || translations.id
 
+  // Step 1: Ambil semua ID produk dan kocok saat mount
   useEffect(() => {
     if (!hasSupabaseConfig || !supabase) {
       setLoading(false)
       return
     }
     let cancelled = false
-    // Ambil lebih banyak produk (misal 40) untuk galeri foto kecil
+    setLoading(true)
+
     supabase
       .from('products')
-      .select('id, title, image_url')
-      .limit(40)
+      .select('id')
       .then(({ data, error: qError }) => {
         if (cancelled) return
-        if (qError) setError(qError.message)
-        else {
-          // Acak urutan produk (shuffling)
-          const shuffled = (data || []).sort(() => Math.random() - 0.5)
-          setProducts(shuffled)
+        if (qError) {
+          setError(qError.message)
+          setLoading(false)
+        } else {
+          const ids = (data || []).map(item => item.id)
+          // Fisher-Yates Shuffle
+          for (let i = ids.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [ids[i], ids[j]] = [ids[j], ids[i]];
+          }
+          setShuffledIds(ids)
+          setTotalCount(ids.length)
         }
-        setLoading(false)
       })
+
     return () => {
       cancelled = true
     }
   }, [])
+
+  // Step 2: Ambil data produk detail hanya untuk halaman aktif
+  useEffect(() => {
+    if (shuffledIds.length === 0) return
+    let cancelled = false
+    setLoading(true)
+
+    const from = (currentPage - 1) * pageSize
+    const to = from + pageSize
+    const idsToFetch = shuffledIds.slice(from, to)
+
+    if (idsToFetch.length === 0) {
+      setProducts([])
+      setLoading(false)
+      return
+    }
+
+    supabase
+      .from('products')
+      .select('id, title, image_url')
+      .in('id', idsToFetch)
+      .then(({ data, error: qError }) => {
+        if (cancelled) return
+        if (qError) {
+          setError(qError.message)
+        } else {
+          // Urutkan kembali sesuai dengan shuffledIds slice
+          const orderedData = idsToFetch
+            .map(id => (data || []).find(p => p.id === id))
+            .filter(Boolean)
+          setProducts(orderedData)
+        }
+        setLoading(false)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [currentPage, shuffledIds])
 
   if (!hasSupabaseConfig) {
     return (
@@ -75,7 +126,7 @@ export default function ShopGallery() {
     )
   }
 
-  if (loading) {
+  if (loading && products.length === 0) {
     return (
       <section className="max-w-6xl mx-auto px-6 py-12 border-t border-zinc-200 dark:border-zinc-900">
         <div className="flex justify-center py-12">
@@ -87,10 +138,12 @@ export default function ShopGallery() {
 
   if (error || products.length === 0) return null // Sembunyikan jika kosong/error agar tidak merusak layout
 
+  const totalPages = Math.ceil(totalCount / pageSize)
+
   return (
-    <section className="max-w-6xl mx-auto px-6 py-20 border-t border-zinc-200 dark:border-zinc-900">
+    <section id="gallery-section" className="max-w-6xl mx-auto px-6 py-20 border-t border-zinc-200 dark:border-zinc-900 scroll-mt-20">
       {/* Tampilan Grid Foto Kecil */}
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
+      <div className={`grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3 transition-opacity duration-300 ${loading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
         {products.map((p) => (
           <Link key={p.id} href={`/product/${p.id}`} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-200/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 hover:border-accent/50 transition-all duration-300">
             {p.image_url ? (
@@ -112,6 +165,60 @@ export default function ShopGallery() {
           </Link>
         ))}
       </div>
+
+      {/* PAGINATION UI */}
+      {totalPages > 1 && (
+        <div className="mt-16 flex justify-center items-center gap-2">
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => {
+              setCurrentPage(p => Math.max(1, p - 1))
+              document.getElementById('gallery-section')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-sm disabled:opacity-20 hover:bg-accent/10 hover:border-accent/30 transition-all font-serif text-zinc-800 dark:text-zinc-200"
+          >
+            &larr;
+          </button>
+
+          {Array.from({ length: totalPages }).map((_, i) => {
+            const pageNum = i + 1
+            if (totalPages > 7) {
+              if (pageNum !== 1 && pageNum !== totalPages && Math.abs(pageNum - currentPage) > 1) {
+                if (Math.abs(pageNum - currentPage) === 2) return <span key={pageNum} className="opacity-30 px-1 text-zinc-500">...</span>
+                return null
+              }
+            }
+
+            return (
+              <button
+                key={pageNum}
+                onClick={() => {
+                  setCurrentPage(pageNum)
+                  document.getElementById('gallery-section')?.scrollIntoView({ behavior: 'smooth' })
+                }}
+                className={`w-10 h-10 rounded-full font-bold text-xs transition-all ${
+                  currentPage === pageNum 
+                  ? 'bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black shadow-lg shadow-accent/20 font-black' 
+                  : 'border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 hover:bg-accent/10 hover:border-accent/30'
+                }`}
+              >
+                {pageNum}
+              </button>
+            )
+          })}
+
+          <button 
+            disabled={currentPage === totalPages}
+            onClick={() => {
+              setCurrentPage(p => Math.min(totalPages, p + 1))
+              document.getElementById('gallery-section')?.scrollIntoView({ behavior: 'smooth' })
+            }}
+            className="w-10 h-10 rounded-full border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-sm disabled:opacity-20 hover:bg-accent/10 hover:border-accent/30 transition-all font-serif text-zinc-800 dark:text-zinc-200"
+          >
+            &rarr;
+          </button>
+        </div>
+      )}
 
       {/* Tombol Lihat Semua di bagian bawah */}
       <div className="flex justify-center mt-12">

@@ -7,6 +7,7 @@ const AuthContext = createContext()
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [adminRole, setAdminRole] = useState(null) // 'superior', 'regular', or null
+  const [token, setToken] = useState(null) // 'access_token' or null
   const [loading, setLoading] = useState(true)
   const router = useRouter()
 
@@ -30,6 +31,7 @@ export function AuthProvider({ children }) {
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
         setUser(session.user)
+        setToken(session.access_token || null)
         const role = await fetchRole(session.user)
         setAdminRole(role)
       }
@@ -40,10 +42,12 @@ export function AuthProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setUser(session.user)
+        setToken(session.access_token || null)
         const role = await fetchRole(session.user)
         setAdminRole(role)
       } else {
         setUser(null)
+        setToken(null)
         setAdminRole(null)
       }
       setLoading(false)
@@ -145,6 +149,7 @@ export function AuthProvider({ children }) {
 
     // 3. Reset state
     setUser(null)
+    setToken(null)
     setAdminRole(null)
 
     // 4. Hard redirect — pasti jalan
@@ -152,7 +157,7 @@ export function AuthProvider({ children }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, adminRole, loginWithGoogle, loginWithApple, loginWithPhone, verifyOtp, loginWithPassword, logout }}>
+    <AuthContext.Provider value={{ user, loading, adminRole, token, loginWithGoogle, loginWithApple, loginWithPhone, verifyOtp, loginWithPassword, logout }}>
       {children}
     </AuthContext.Provider>
   )

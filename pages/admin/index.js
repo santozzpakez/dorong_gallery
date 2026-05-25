@@ -96,7 +96,7 @@ function mergeCharsByType(saved, fallback) {
 
 export default function Admin() {
   const router = useRouter()
-  const { user, loading, adminRole } = useAuth()
+  const { user, loading, adminRole, token } = useAuth()
   const { loaded, getText, updateText } = useSiteAssets()
   const [priceF4Original, setPriceF4Original] = useState('')
   const [priceF4Discount, setPriceF4Discount] = useState('')
@@ -540,77 +540,66 @@ export default function Admin() {
       alert('Gagal: Supabase tidak terhubung atau Anda bukan admin.')
       return
     }
-    
-    // Hitung total karakter untuk simulasi progress bar
-    let totalChars = 0;
-    Object.values(charactersByType).forEach(catObj => {
-      Object.values(catObj).forEach(charArray => {
-        totalChars += charArray.length;
-      });
-    });
-
-    if (totalChars === 0) totalChars = 1;
 
     setIsSavingLists(true)
-    setSaveListTotal(totalChars)
-    setSaveListProgress(0)
+    setSaveListTotal(100)
+    setSaveListProgress(10)
+    setStatusMessage('Menyimpan ke Database...')
 
     try {
       const typeStr = JSON.stringify(typeOptions)
       const charStr = JSON.stringify(charactersByType)
 
-      // 1. Jalankan operasi Supabase segera secara paralel
-      // Menggunakan fungsi async asli agar menghasilkan native JS Promise untuk menghindari Postgrest-thenable bug
-      const doUpsert = async () => {
-        const { error } = await supabase.from('site_assets').upsert([
-          {
-            key: 'global-category-options',
-            text_value: typeStr,
-            label: 'Global Category List Cache',
-            category: 'system',
-            updated_at: new Date().toISOString()
-          },
-          {
-            key: 'global-character-options',
-            text_value: charStr,
-            label: 'Global Character List Cache',
-            category: 'system',
-            updated_at: new Date().toISOString()
-          }
-        ], { onConflict: 'key' }).select()
-        
-        if (error) throw error
-        return { error }
+      setSaveListProgress(30)
+
+      // Gunakan token level komponen secara langsung demi menghindari supabase.auth.getSession() gantung
+      setSaveListProgress(50)
+
+      // 2. Kirim data ke API server-side demi keandalan 100% (bebas dari isu CORS/RLS di client)
+      const res = await fetch('/api/sync-theme-assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify({
+          dbUpdates: [
+            {
+              key: 'global-category-options',
+              text_value: typeStr,
+              label: 'Global Category List Cache',
+              category: 'system',
+              updated_at: new Date().toISOString()
+            },
+            {
+              key: 'global-character-options',
+              text_value: charStr,
+              label: 'Global Character List Cache',
+              category: 'system',
+              updated_at: new Date().toISOString()
+            }
+          ]
+        })
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Server DB sync failed')
       }
 
-      const upsertTask = doUpsert()
+      setSaveListProgress(80)
 
-      // 2. Jalankan simulasi loading animasi di foreground
-      const delayMs = Math.max(10, Math.min(100, 1500 / totalChars));
-      for (let i = 1; i <= totalChars; i++) {
-        setSaveListProgress(i)
-        await new Promise(resolve => setTimeout(resolve, delayMs))
-      }
-
-      // 3. Batasi waktu penyelesaian query dengan timeout 15 detik
-      let timeoutId;
-      const timeoutPromise = new Promise((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('Koneksi ke database timeout (Batas waktu 15 detik terlampaui).')), 15000);
-      });
-
-      const raceResult = await Promise.race([upsertTask, timeoutPromise]);
-      clearTimeout(timeoutId);
-
-      const { error } = raceResult || {};
-      if (error) {
-        throw new Error(error.message)
-      }
-
-      // 4. Sinkronisasi local state
+      // 3. Sinkronisasi local state
       updateText('global-category-options', typeStr)
       updateText('global-character-options', charStr)
 
+      setSaveListProgress(100)
       setStatusMessage('✅ Daftar tipe dan karakter berhasil disimpan ke database!')
+      
+      alert('✅ Daftar tipe dan karakter berhasil disimpan ke database! Halaman akan dimuat ulang.')
+      
+      // Auto-reload/refresh page agar data segar termuat sempurna
+      window.location.reload()
     } catch (err) {
       console.error('Manual save error:', err)
       alert(`Gagal menyimpan daftar: ${err.message || 'Unknown error'}`)
@@ -618,6 +607,7 @@ export default function Admin() {
     } finally {
       setIsSavingLists(false)
       setSaveListTotal(0)
+      setSaveListProgress(0)
     }
   }
 
@@ -642,6 +632,10 @@ export default function Admin() {
   const [newWaPhone, setNewWaPhone] = useState('')
 
   async function resetAllDecor() {
+    if (adminRole !== 'superior') {
+      alert('❌ Akses Ditolak: Hanya akun Superior Admin yang boleh melakukan reset total data Decor!')
+      return
+    }
     if (!window.confirm("PERINGATAN: Ini akan MENGHAPUS SEMUA PRODUK dan SEMUA GAMBAR di kategori DECOR secara permanen. Anda yakin ingin mulai dari nol?")) return
     
     setStatusMessage("Sedang membersihkan seluruh data Decor...")
@@ -996,6 +990,10 @@ export default function Admin() {
     
     let deleteProds = false
     if (hasProducts) {
+      if (adminRole !== 'superior') {
+        alert('❌ Akses Ditolak: Kategori ini masih memiliki produk. Hanya akun Superior Admin yang boleh menghapus kategori yang memiliki produk!')
+        return
+      }
       const confirmDelete = window.confirm(`"${name}" masih memiliki produk. Apakah Anda ingin MENGHAPUS SEMUA PRODUK di dalam kategori ini secara permanen?`)
       if (!confirmDelete) return
       deleteProds = true
@@ -1065,29 +1063,108 @@ export default function Admin() {
     setStatusMessage(`"${oldName}" diubah menjadi "${newName}".`)
   }
 
-  function deleteChar(name) {
+  async function deleteChar(name) {
     const cat = form.category
     const typeName = form.typeName
-    const hasProducts = savedProducts.some(p => {
+
+    // Cari produk yang cocok dengan karakter ini
+    const matchingProds = savedProducts.filter(p => {
       if (p.category !== cat) return false
       if (!p.subcategory) return false
       const parts = p.subcategory.split(' - ')
       return parts[0].trim() === typeName && parts[1]?.trim() === name
     })
+
+    const hasProducts = matchingProds.length > 0
+    let deleteProds = false
+
     if (hasProducts) {
-      setStatusMessage(`❌ Tidak bisa hapus "${name}": masih ada produk di dalamnya. Hapus produknya dulu.`)
-      return
+      if (adminRole !== 'superior') {
+        alert('❌ Akses Ditolak: Karakter ini masih memiliki produk. Hanya akun Superior Admin yang boleh menghapus karakter yang memiliki produk!')
+        return
+      }
+      const confirmDelete = window.confirm(
+        `"${name}" masih memiliki ${matchingProds.length} produk di database.\n\nApakah Anda ingin MENGHAPUS SEMUA PRODUK tersebut dan menghapus karakter ini secara permanen dari database & local?`
+      )
+      if (!confirmDelete) return
+      deleteProds = true
+    } else {
+      if (!window.confirm(`Hapus karakter "${name}"?`)) return
     }
 
-    triggerSecurityCheck(async () => {
+    setStatusMessage(`Sedang menghapus "${name}"...`)
+
+    try {
+      // 1. Hapus produk dari database jika disetujui
+      if (deleteProds && hasSupabaseConfig && supabase) {
+        const prodIds = matchingProds.map(p => p.id)
+        if (prodIds.length > 0) {
+          const { error: delProdErr } = await supabase.from('products').delete().in('id', prodIds)
+          if (delProdErr) throw new Error(`Gagal menghapus produk: ${delProdErr.message}`)
+        }
+      }
+
+      // 2. Update local state
+      let updatedChars = {}
       setCharactersByType(prev => {
         const catMap = { ...(prev[cat] || {}) }
         catMap[typeName] = (catMap[typeName] || []).filter(n => n !== name)
-        return { ...prev, [cat]: catMap }
+        updatedChars = { ...prev, [cat]: catMap }
+        return updatedChars
       })
-      if (form.characterName === name) setForm(prev => ({ ...prev, characterName: '' }))
-      setStatusMessage(`"${name}" berhasil dihapus.`)
-    })
+
+      if (form.characterName === name) {
+        setForm(prev => ({ ...prev, characterName: '' }))
+      }
+
+      // 3. Simpan perubahan karakter ke database secara otomatis demi keandalan 100%
+      if (hasSupabaseConfig && supabase) {
+        const typeStr = JSON.stringify(typeOptions)
+        const charStr = JSON.stringify(updatedChars)
+
+        const res = await fetch('/api/sync-theme-assets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({
+            dbUpdates: [
+              {
+                key: 'global-category-options',
+                text_value: typeStr,
+                label: 'Global Category List Cache',
+                category: 'system',
+                updated_at: new Date().toISOString()
+              },
+              {
+                key: 'global-character-options',
+                text_value: charStr,
+                label: 'Global Character List Cache',
+                category: 'system',
+                updated_at: new Date().toISOString()
+              }
+            ]
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.error || 'Server DB sync failed')
+        }
+
+        updateText('global-category-options', typeStr)
+        updateText('global-character-options', charStr)
+      }
+
+      setStatusMessage(`"${name}" berhasil dihapus secara bersih dari database & browser.`)
+      alert(`"${name}" berhasil dihapus secara bersih dari database & browser! Halaman akan dimuat ulang.`)
+      window.location.reload()
+    } catch (err) {
+      console.error('Delete character error:', err)
+      alert(`Gagal menghapus karakter: ${err.message || 'Unknown error'}`)
+      setStatusMessage(`❌ Gagal menghapus: ${err.message || 'Unknown error'}`)
+    }
   }
 
   function handleImageChange(event) {
@@ -1336,6 +1413,11 @@ export default function Admin() {
 
   async function handleDeleteSelected() {
     if (selectedProducts.length === 0) return
+    
+    if (adminRole !== 'superior') {
+      alert('❌ Akses Ditolak: Hanya akun Superior Admin yang boleh menghapus produk!')
+      return
+    }
     
     triggerSecurityCheck(async () => {
       setIsDeleting(true)

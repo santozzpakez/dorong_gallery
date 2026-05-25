@@ -22,6 +22,11 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('')
   const [allCategories, setAllCategories] = useState([])
   const [errorMsg, setErrorMsg] = useState('')
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const navLinks = [
     { name: lang === 'id' ? 'Beranda' : 'Home', href: '/' },
@@ -207,26 +212,28 @@ export default function Header() {
               </nav>
 
               <div className="p-6 border-t border-zinc-900 space-y-4">
-                {user ? (
-                  <div className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
-                    <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/35 flex items-center justify-center text-accent font-black uppercase">
-                      {user.email ? user.email.charAt(0) : (user.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0) : 'U')}
+                {mounted && (
+                  user ? (
+                    <div className="flex items-center gap-4 p-3 rounded-2xl bg-zinc-900 border border-zinc-800">
+                      <div className="w-10 h-10 rounded-full bg-accent/10 border border-accent/35 flex items-center justify-center text-accent font-black uppercase">
+                        {user.email ? user.email.charAt(0) : (user.user_metadata?.full_name ? user.user_metadata.full_name.charAt(0) : 'U')}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-black truncate text-white">
+                          {user.user_metadata?.full_name || user.email || user.phone}
+                        </p>
+                        <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }} className="text-[9px] text-red-500 font-black uppercase tracking-widest hover:text-red-400 mt-0.5 cursor-pointer">Logout</button>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-black truncate text-white">
-                        {user.user_metadata?.full_name || user.email || user.phone}
-                      </p>
-                      <button onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }} className="text-[9px] text-red-500 font-black uppercase tracking-widest hover:text-red-400 mt-0.5 cursor-pointer">Logout</button>
-                    </div>
-                  </div>
-                ) : (
-                  <Link 
-                    href="/login" 
-                    onClick={() => setIsSidebarOpen(false)}
-                    className="flex items-center justify-center w-full py-4 rounded-2xl bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black font-black uppercase tracking-widest shadow-lg shadow-accent/10"
-                  >
-                    Login
-                  </Link>
+                  ) : (
+                    <Link 
+                      href="/login" 
+                      onClick={() => setIsSidebarOpen(false)}
+                      className="flex items-center justify-center w-full py-4 rounded-2xl bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black font-black uppercase tracking-widest shadow-lg shadow-accent/10"
+                    >
+                      Login
+                    </Link>
+                  )
                 )}
               </div>
             </motion.div>
@@ -418,30 +425,32 @@ export default function Header() {
               </AnimatePresence>
             </div>
 
-            {user ? (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }}
-                  className="px-4 py-1.5 rounded-full bg-red-700/90 border border-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_10px_rgba(185,28,28,0.2)] hover:shadow-[0_0_15px_rgba(185,28,28,0.4)] cursor-pointer"
-                >
-                  {t.logout}
-                </button>
-                {adminRole && (
-                  <Link
-                    href="/admin"
-                    className="px-4 py-1.5 rounded-full bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black text-[10px] font-black uppercase tracking-widest shadow-md shadow-accent/10 hover:scale-105 transition-all"
+            {mounted && (
+              user ? (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={(e) => { e.preventDefault(); e.stopPropagation(); logout(); }}
+                    className="px-4 py-1.5 rounded-full bg-red-700/90 border border-red-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-red-600 transition-all shadow-[0_0_10px_rgba(185,28,28,0.2)] hover:shadow-[0_0_15px_rgba(185,28,28,0.4)] cursor-pointer"
                   >
-                    {t.adminPanel}
-                  </Link>
-                )}
-              </div>
-            ) : (
-              <Link
-                href="/login"
-                className="px-3 py-1 rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-white text-[10px] font-black tracking-widest border border-zinc-600 transition-all uppercase"
-              >
-                Login
-              </Link>
+                    {t.logout}
+                  </button>
+                  {adminRole && (
+                    <Link
+                      href="/admin"
+                      className="px-4 py-1.5 rounded-full bg-gradient-to-r from-accent-light via-accent to-accent-alt text-black text-[10px] font-black uppercase tracking-widest shadow-md shadow-accent/10 hover:scale-105 transition-all"
+                    >
+                      {t.adminPanel}
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="px-3 py-1 rounded bg-zinc-700 hover:bg-zinc-600 text-zinc-300 hover:text-white text-[10px] font-black tracking-widest border border-zinc-600 transition-all uppercase"
+                >
+                  Login
+                </Link>
+              )
             )}
           </div>
         </div>
