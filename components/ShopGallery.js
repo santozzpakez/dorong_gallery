@@ -1,4 +1,4 @@
-import Image from 'next/image'
+import ProductImage from './ProductImage'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { hasSupabaseConfig, supabase } from '../lib/supabaseClient'
@@ -147,12 +147,10 @@ export default function ShopGallery() {
         {products.map((p) => (
           <Link key={p.id} href={`/product/${p.id}`} className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-200/50 dark:bg-zinc-950/20 border border-zinc-200 dark:border-zinc-900 hover:border-accent/50 transition-all duration-300">
             {p.image_url ? (
-              <Image 
+              <ProductImage 
                 src={p.image_url} 
                 alt={p.title} 
-                fill
-                sizes="(max-width: 640px) 33vw, (max-width: 768px) 25vw, 16vw"
-                className="object-cover opacity-70 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500" 
+                className="absolute inset-0 w-full h-full opacity-70 group-hover:opacity-95 group-hover:scale-105 transition-all duration-500" 
               />
             ) : (
               <div className="absolute inset-0 flex items-center justify-center text-[10px] text-zinc-500 dark:text-zinc-700">NA</div>

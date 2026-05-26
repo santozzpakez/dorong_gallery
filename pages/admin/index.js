@@ -952,26 +952,68 @@ export default function Admin() {
 
       alert('Mengupdate state lokal di browser...');
       // 3. Update Local State (Deduplicate)
-      setTypeOptions(prev => {
-        const list = prev[cat] || []
-        const newList = list.map(n => n === oldName ? newName : n)
-        return { ...prev, [cat]: [...new Set(newList)] }
-      })
-      setCharactersByType(prev => {
-        const catMap = { ...(prev[cat] || {}) }
-        if (catMap[oldName]) {
-          const existingChars = catMap[newName] || []
-          const oldChars = catMap[oldName] || []
-          catMap[newName] = [...new Set([...existingChars, ...oldChars])]
-          delete catMap[oldName]
-        }
-        return { ...prev, [cat]: catMap }
-      })
+      const list = typeOptions[cat] || []
+      const newList = list.map(n => n === oldName ? newName : n)
+      const updatedTypes = { ...typeOptions, [cat]: [...new Set(newList)] }
+
+      const catMap = { ...(charactersByType[cat] || {}) }
+      if (catMap[oldName]) {
+        const existingChars = catMap[newName] || []
+        const oldChars = catMap[oldName] || []
+        catMap[newName] = [...new Set([...existingChars, ...oldChars])]
+        delete catMap[oldName]
+      }
+      const updatedChars = { ...charactersByType, [cat]: catMap }
+
+      setTypeOptions(updatedTypes)
+      setCharactersByType(updatedChars)
       
       if (form.typeName === oldName) setForm(prev => ({ ...prev, typeName: newName }))
       setRenamingType(null)
+
+      // 4. Simpan ke database secara otomatis demi keandalan 100%
+      if (hasSupabaseConfig && supabase) {
+        const typeStr = JSON.stringify(updatedTypes)
+        const charStr = JSON.stringify(updatedChars)
+
+        const res = await fetch('/api/sync-theme-assets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({
+            dbUpdates: [
+              {
+                key: 'global-category-options',
+                text_value: typeStr,
+                label: 'Global Category List Cache',
+                category: 'system',
+                updated_at: new Date().toISOString()
+              },
+              {
+                key: 'global-character-options',
+                text_value: charStr,
+                label: 'Global Character List Cache',
+                category: 'system',
+                updated_at: new Date().toISOString()
+              }
+            ]
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.error || 'Server DB sync failed')
+        }
+
+        updateText('global-category-options', typeStr)
+        updateText('global-character-options', charStr)
+      }
+
       setStatusMessage(`Berhasil! "${oldName}" telah digabungkan ke "${newName}".`)
-      alert('Berhasil menyimpan perubahan!');
+      alert(`Berhasil! "${oldName}" telah digabungkan ke "${newName}". Halaman akan dimuat ulang.`)
+      window.location.reload()
     } catch (e) {
       alert(`Terjadi error di commitRenameType: ${e.message}`);
     }
@@ -1020,47 +1062,171 @@ export default function Admin() {
         const assetKeysToDelete = cat === 'anime' ? [`anime-cover-${slug}`] : cat === 'kpop' ? [`kpop-${slug}`, `kpop-group-${slug}`] : [`aesthetic-${slug}`]
         await supabase.from('site_assets').delete().in('key', assetKeysToDelete)
 
-        // 3. Update State Lokal
-        setTypeOptions(prev => {
-          const list = (prev[cat] || []).filter(n => n !== name)
-          return { ...prev, [cat]: list }
-        })
-        setCharactersByType(prev => {
-          const catMap = { ...(prev[cat] || {}) }
-          delete catMap[name]
-          return { ...prev, [cat]: catMap }
-        })
+        // 3. Update State Lokal & DB
+        const updatedList = (typeOptions[cat] || []).filter(n => n !== name)
+        const updatedTypes = { ...typeOptions, [cat]: updatedList }
         
+        const catMap = { ...(charactersByType[cat] || {}) }
+        delete catMap[name]
+        const updatedChars = { ...charactersByType, [cat]: catMap }
+
+        setTypeOptions(updatedTypes)
+        setCharactersByType(updatedChars)
+
         if (form.typeName === name) {
-          const remaining = (typeOptions[cat] || []).filter(n => n !== name)
-          setForm(prev => ({ ...prev, typeName: remaining[0] || '', characterName: '' }))
+          setForm(prev => ({ ...prev, typeName: updatedList[0] || '', characterName: '' }))
         }
-        
+
+        // Simpan perubahan ke database secara otomatis demi keandalan 100%
+        if (hasSupabaseConfig && supabase) {
+          const typeStr = JSON.stringify(updatedTypes)
+          const charStr = JSON.stringify(updatedChars)
+
+          const res = await fetch('/api/sync-theme-assets', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': token ? `Bearer ${token}` : ''
+            },
+            body: JSON.stringify({
+              dbUpdates: [
+                {
+                  key: 'global-category-options',
+                  text_value: typeStr,
+                  label: 'Global Category List Cache',
+                  category: 'system',
+                  updated_at: new Date().toISOString()
+                },
+                {
+                  key: 'global-character-options',
+                  text_value: charStr,
+                  label: 'Global Character List Cache',
+                  category: 'system',
+                  updated_at: new Date().toISOString()
+                }
+              ]
+            })
+          })
+
+          const data = await res.json()
+          if (!res.ok) {
+            throw new Error(data.error || 'Server DB sync failed')
+          }
+
+          updateText('global-category-options', typeStr)
+          updateText('global-character-options', charStr)
+        }
+
         setStatusMessage(`"${name}" dan seluruh datanya berhasil dihapus permanen.`)
-        fetchProducts() 
+        alert(`"${name}" dan seluruh datanya berhasil dihapus permanen! Halaman akan dimuat ulang.`)
+        window.location.reload()
       } catch (err) {
         console.error('Delete failed:', err)
         setStatusMessage(`Gagal menghapus: ${err.message}`)
+        alert(`Gagal menghapus: ${err.message}`)
       }
     }
   }
 
   // ── Rename / Delete Character (Karakter / Member) ──
-  function commitRenameChar() {
+  async function commitRenameChar() {
     const oldName = renamingChar?.name
     const newName = renameCharVal.trim()
     if (!oldName || !newName || newName === oldName) { setRenamingChar(null); return }
     const cat = form.category
     const typeName = form.typeName
-    setCharactersByType(prev => {
-      const catMap = { ...(prev[cat] || {}) }
+
+    setStatusMessage(`Sedang mengubah nama karakter dari "${oldName}" menjadi "${newName}"...`)
+
+    try {
+      // 1. Update Database (Products) - Agar produk menggunakan nama karakter baru
+      if (hasSupabaseConfig && supabase) {
+        // Cari semua produk dengan subcategory "TypeName - OldCharName"
+        const targetSubcat = `${typeName} - ${oldName}`
+        const newSubcat = `${typeName} - ${newName}`
+
+        const { data: prods, error: selectErr } = await supabase.from('products')
+          .select('id, subcategory')
+          .eq('category', cat)
+          .eq('subcategory', targetSubcat)
+        
+        if (selectErr) {
+          console.error(`Supabase Select Error: ${selectErr.message}`);
+        }
+        
+        if (prods && prods.length > 0) {
+          const updates = prods.map(p => ({
+            id: p.id,
+            subcategory: newSubcat
+          }))
+          
+          alert(`Mengupdate ${updates.length} produk ke nama karakter baru...`);
+          const { error: upsertErr } = await supabase.from('products').upsert(updates).select()
+          if (upsertErr) {
+            alert(`Supabase Upsert Error: ${upsertErr.message}`);
+          }
+        }
+      }
+
+      // 2. Update Local State (Deduplicate & Sort)
+      const catMap = { ...(charactersByType[cat] || {}) }
       const list = catMap[typeName] || []
-      catMap[typeName] = list.map(n => n === oldName ? newName : n)
-      return { ...prev, [cat]: catMap }
-    })
-    if (form.characterName === oldName) setForm(prev => ({ ...prev, characterName: newName }))
-    setRenamingChar(null)
-    setStatusMessage(`"${oldName}" diubah menjadi "${newName}".`)
+      catMap[typeName] = [...new Set(list.map(n => n === oldName ? newName : n))].sort()
+      const updatedChars = { ...charactersByType, [cat]: catMap }
+
+      setCharactersByType(updatedChars)
+
+      if (form.characterName === oldName) setForm(prev => ({ ...prev, characterName: newName }))
+      setRenamingChar(null)
+
+      // 3. Simpan perubahan ke database secara otomatis demi keandalan 100%
+      if (hasSupabaseConfig && supabase) {
+        const typeStr = JSON.stringify(typeOptions)
+        const charStr = JSON.stringify(updatedChars)
+
+        const res = await fetch('/api/sync-theme-assets', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': token ? `Bearer ${token}` : ''
+          },
+          body: JSON.stringify({
+            dbUpdates: [
+              {
+                key: 'global-category-options',
+                text_value: typeStr,
+                label: 'Global Category List Cache',
+                category: 'system',
+                updated_at: new Date().toISOString()
+              },
+              {
+                key: 'global-character-options',
+                text_value: charStr,
+                label: 'Global Character List Cache',
+                category: 'system',
+                updated_at: new Date().toISOString()
+              }
+            ]
+          })
+        })
+
+        const data = await res.json()
+        if (!res.ok) {
+          throw new Error(data.error || 'Server DB sync failed')
+        }
+
+        updateText('global-category-options', typeStr)
+        updateText('global-character-options', charStr)
+      }
+
+      setStatusMessage(`"${oldName}" diubah menjadi "${newName}".`)
+      alert(`Berhasil mengubah nama karakter menjadi "${newName}"! Halaman akan dimuat ulang.`)
+      window.location.reload()
+    } catch (e) {
+      console.error('Rename character error:', e)
+      alert(`Terjadi error di commitRenameChar: ${e.message}`);
+      setStatusMessage(`❌ Gagal mengubah nama: ${e.message}`);
+    }
   }
 
   async function deleteChar(name) {
@@ -1105,13 +1271,11 @@ export default function Admin() {
       }
 
       // 2. Update local state
-      let updatedChars = {}
-      setCharactersByType(prev => {
-        const catMap = { ...(prev[cat] || {}) }
-        catMap[typeName] = (catMap[typeName] || []).filter(n => n !== name)
-        updatedChars = { ...prev, [cat]: catMap }
-        return updatedChars
-      })
+      const catMap = { ...(charactersByType[cat] || {}) }
+      catMap[typeName] = (catMap[typeName] || []).filter(n => n !== name)
+      const updatedChars = { ...charactersByType, [cat]: catMap }
+
+      setCharactersByType(updatedChars)
 
       if (form.characterName === name) {
         setForm(prev => ({ ...prev, characterName: '' }))

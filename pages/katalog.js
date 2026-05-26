@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { hasSupabaseConfig, supabase } from '../lib/supabaseClient'
 import Link from 'next/link'
 import ImageModal from '../components/ImageModal'
+import ProductImage from '../components/ProductImage'
 import { useLanguage } from '../context/LanguageContext'
 import { useSiteAssets } from '../lib/siteAssets'
 import { getPriceInfo } from '../lib/priceHelper'
@@ -166,7 +167,11 @@ export default function KatalogPage() {
                       <div className="aspect-[3/4] bg-black/40 relative overflow-hidden">
                         {p.image_url ? (
                           <>
-                            <img src={p.image_url} alt={p.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="lazy" />
+                            <ProductImage 
+                              src={p.image_url} 
+                              alt={p.title} 
+                              className="absolute inset-0 w-full h-full group-hover:scale-110 transition-transform duration-500" 
+                            />
                             {/* Preview Trigger Overlay */}
                             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                               <button

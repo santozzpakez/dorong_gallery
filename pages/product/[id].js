@@ -7,6 +7,7 @@ import { hasSupabaseConfig, supabase } from '../../lib/supabaseClient'
 import { useCart } from '../../context/CartContext'
 import { useAuth } from '../../context/AuthContext'
 import ImageModal from '../../components/ImageModal'
+import ProductImage from '../../components/ProductImage'
 import { useLanguage } from '../../context/LanguageContext'
 import ProductReviews from '../../components/ProductReviews'
 import { useSiteAssets } from '../../lib/siteAssets'
@@ -477,11 +478,12 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img 
+                            <ProductImage 
                               src={product.image_url} 
                               alt={product.title} 
-                              className="transition-all duration-500" 
-                              style={getImageStyle('flat', posterRotation)}
+                              className="w-full h-full"
+                              imgClassName="transition-all duration-500" 
+                              imgStyle={getImageStyle('flat', posterRotation)}
                             />
                             {/* Premium gloss & glint effect */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/8 to-white/0 pointer-events-none mix-blend-overlay" />
@@ -547,11 +549,12 @@ export default function ProductDetail() {
                           {product.image_url ? (
                             <>
                               {/* Product Artwork */}
-                              <img 
+                              <ProductImage 
                                 src={product.image_url} 
                                 alt={product.title} 
-                                className="transition-all duration-500" 
-                                style={getImageStyle('metal', posterRotation)}
+                                className="w-full h-full"
+                                imgClassName="transition-all duration-500" 
+                                imgStyle={getImageStyle('metal', posterRotation)}
                               />
 
                               {/* High-Glossy Glass Reflection Sheen Streak (Diagonal light sheen) */}
@@ -656,7 +659,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster F4" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Poster F4" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             {selectedSize === 'F4' ? (
                               <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-accent/20">
@@ -730,7 +733,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster A3" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Poster A3" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             {selectedSize === 'A3' ? (
                               <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-accent/20">
@@ -804,7 +807,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Poster A3+" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Poster A3+" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent pointer-events-none" />
                             {selectedSize === 'A3+' ? (
                               <div className="absolute inset-x-0 bottom-0 bg-black/90 py-1 text-center border-t border-accent/20">
@@ -881,7 +884,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Active Product Poster" />
                             {/* High-end glossy glass reflection effect */}
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none mix-blend-overlay" />
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.18)_0%,rgba(255,255,255,0.05)_50%,rgba(0,0,0,0.12)_100%)] pointer-events-none" />
@@ -936,11 +939,12 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img 
+                            <ProductImage 
                               src={product.image_url} 
-                              className="transition-all duration-500" 
-                              style={getImageStyle('livingroom', posterRotation)}
                               alt="Poster in Living Room" 
+                              className="w-full h-full"
+                              imgClassName="transition-all duration-500" 
+                              imgStyle={getImageStyle('livingroom', posterRotation)}
                             />
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/8 to-white/0 pointer-events-none" />
                           </>
@@ -972,11 +976,12 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img 
+                            <ProductImage 
                               src={product.image_url} 
-                              className="transition-all duration-500" 
-                              style={getImageStyle('living_landscape', (posterRotation + 90) % 360)}
                               alt="Poster in Living Room Landscape" 
+                              className="w-full h-full"
+                              imgClassName="transition-all duration-500" 
+                              imgStyle={getImageStyle('living_landscape', (posterRotation + 90) % 360)}
                             />
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/8 to-white/0 pointer-events-none" />
                           </>
@@ -1008,11 +1013,12 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img 
+                            <ProductImage 
                               src={product.image_url} 
-                              className="transition-all duration-500" 
-                              style={getImageStyle('display', posterRotation)}
                               alt="Product Display Portrait" 
+                              className="w-full h-full"
+                              imgClassName="transition-all duration-500" 
+                              imgStyle={getImageStyle('display', posterRotation)}
                             />
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.15)_0%,rgba(255,255,255,0)_60%)] pointer-events-none" />
@@ -1036,11 +1042,12 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img 
+                            <ProductImage 
                               src={product.image_url} 
-                              className="transition-all duration-500" 
-                              style={getImageStyle('display_landscape', displayLandscapeRotation)}
                               alt="Product Display Landscape" 
+                              className="w-full h-full"
+                              imgClassName="transition-all duration-500" 
+                              imgStyle={getImageStyle('display_landscape', displayLandscapeRotation)}
                             />
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/10 pointer-events-none" />
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.15)_0%,rgba(255,255,255,0)_60%)] pointer-events-none" />
@@ -1099,7 +1106,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Active Product Poster" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
                             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
@@ -1180,7 +1187,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Active Product Poster" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
                             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />
@@ -1239,7 +1246,7 @@ export default function ProductDetail() {
                       >
                         {product.image_url ? (
                           <>
-                            <img src={product.image_url} className="w-full h-full object-cover" alt="Active Product Poster" />
+                            <ProductImage src={product.image_url} className="w-full h-full" alt="Active Product Poster" />
                             <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 pointer-events-none mix-blend-overlay" />
                             <div className="absolute inset-0 bg-[linear-gradient(135deg,rgba(255,255,255,0.12)_0%,rgba(255,255,255,0.03)_50%,rgba(0,0,0,0.08)_100%)] pointer-events-none" />
                             <div className="absolute inset-0 ring-1 ring-inset ring-white/10 pointer-events-none" />

@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
+import ProductImage from './ProductImage'
 
 export default function ImageModal({ isOpen, onClose, imageUrl, title }) {
   return (
@@ -18,10 +19,10 @@ export default function ImageModal({ isOpen, onClose, imageUrl, title }) {
             className="relative max-w-full max-h-full flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
-            <img
+            <ProductImage
               src={imageUrl}
               alt={title}
-              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl select-none border border-white/10"
+              className="w-[85vw] sm:w-[70vw] md:w-[50vw] max-w-[480px] aspect-[3/4] rounded-lg shadow-2xl border border-white/10"
             />
             
             {/* Close Button */}
