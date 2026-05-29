@@ -5,7 +5,6 @@ import Link from 'next/link'
 export default function Footer() {
   const { getUrl } = useSiteAssets()
   const { lang } = useLanguage()
-  const footerBg = getUrl('cover-bg')
 
   const translations = {
     id: {
@@ -74,13 +73,6 @@ export default function Footer() {
 
   return (
     <footer className="relative mt-20 overflow-hidden">
-      {/* Background image layer */}
-      {footerBg && (
-        <div
-          className="absolute inset-0 bg-cover bg-center z-0 opacity-15"
-          style={{ backgroundImage: `url(${footerBg})` }}
-        />
-      )}
 
       {/* Row 1: Top accent bar — thin golden divider */}
       <div className="relative z-10 h-[1px] bg-gradient-to-r from-transparent via-accent/35 to-transparent" />

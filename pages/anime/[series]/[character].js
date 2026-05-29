@@ -190,7 +190,7 @@ export default function CharacterCollectionPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
-      <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 pb-16 w-full">
+      <main className="flex-grow pt-36 max-w-6xl mx-auto px-4 pb-16 w-full">
         <Link href={`/anime/${seriesSlug}`} className="text-xs text-accent/80 hover:text-accent transition-colors flex items-center gap-2 font-sans font-black uppercase tracking-widest">
           &larr; {t.backTo} {seriesName || 'Series'}
         </Link>

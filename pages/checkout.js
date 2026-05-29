@@ -36,6 +36,8 @@ export default function Checkout(){
   const { items, subtotal, clearCart } = useCart()
   const { user } = useAuth()
   
+  const customItem = items.find(item => item.isCustom)
+  
   // Basic Info
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
@@ -60,6 +62,24 @@ export default function Checkout(){
   // Order Info
   const [selectedSize, setSelectedSize] = useState('')
   const [isLoadingProfile, setIsLoadingProfile] = useState(false)
+
+  // Active Preview State
+  const [activePreviewItem, setActivePreviewItem] = useState(null)
+
+  // Set default active preview item
+  useEffect(() => {
+    if (items.length > 0 && !activePreviewItem) {
+      const firstCustom = items.find(item => item.isCustom)
+      setActivePreviewItem(firstCustom || items[0])
+    }
+  }, [items, activePreviewItem])
+
+  // Pre-populate size if custom item exists
+  useEffect(() => {
+    if (customItem && customItem.size) {
+      setSelectedSize(customItem.size)
+    }
+  }, [customItem])
 
   // Shipping Info (Rajaongkir)
   const [selectedCourier, setSelectedCourier] = useState('')
@@ -743,19 +763,81 @@ export default function Checkout(){
                <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-accent/5 blur-[60px] rounded-full"></div>
               <h2 className="font-black text-2xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-accent-light via-accent to-accent-dark uppercase tracking-widest font-serif">Detail Pesanan</h2>
               
-              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                {items.map((item) => (
-                  <div key={item.id} className="flex gap-4 bg-zinc-100/50 dark:bg-white/5 p-4 rounded-2xl border border-zinc-250/30 dark:border-white/5 group hover:border-accent/35 transition-all">
-                    <div className="w-14 h-18 rounded-xl overflow-hidden shadow-lg flex-shrink-0">
-                      <img src={item.image_url} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <div className="text-xs font-black uppercase tracking-tight truncate mb-1">{item.title}</div>
-                      <div className="text-[10px] text-zinc-500 font-bold uppercase">Jumlah: {item.quantity}</div>
-                      <div className="text-sm font-black text-accent mt-2 font-sans">{priceFormatter.format(item.price * item.quantity)}</div>
+              {activePreviewItem && (
+                <div className="mb-6 p-5 rounded-3xl bg-zinc-50 dark:bg-black/30 border border-zinc-200 dark:border-white/5 flex flex-col items-center select-none relative overflow-hidden">
+                  {/* Spotlight lamp glow inside card */}
+                  <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-24 bg-accent/10 blur-[40px] rounded-full pointer-events-none" />
+                  
+                  <span className="text-[9px] font-black uppercase tracking-widest text-accent mb-3 relative z-10">
+                    🎨 PRATINJAU CETAK LOGAM {activePreviewItem.isCustom ? 'CUSTOM' : 'KOLEKSI'}
+                  </span>
+
+                  {/* Skewed frameless metal print mockup */}
+                  <div className="relative group transition-all duration-500 hover:scale-[1.02] flex items-center justify-center py-2 w-full z-10">
+                    <div className="absolute inset-[10px] bg-black/60 blur-[12px] rounded-md scale-95 translate-y-3 pointer-events-none" />
+                    
+                    <div className="relative mx-auto rounded-[3px] overflow-hidden border border-white/10 dark:border-white/5 shadow-[0_15px_30px_rgba(0,0,0,0.5)]">
+                      <div className="relative aspect-[3/4] w-[120px] bg-zinc-900 overflow-hidden">
+                        <img src={activePreviewItem.image_url} className="w-full h-full object-cover" />
+                        
+                        {/* High-gloss surface shine layer */}
+                        <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-tr from-transparent via-white/20 to-transparent" />
+                        
+                        {/* Specular sheen metallic overlay */}
+                        <div className="absolute inset-0 z-20 pointer-events-none bg-[linear-gradient(135deg,rgba(255,255,255,0.1)_0%,rgba(255,255,255,0)_50%,rgba(0,0,0,0.15)_100%)] opacity-30" />
+                      </div>
                     </div>
                   </div>
-                ))}
+
+                  {/* Spec labels */}
+                  <div className="w-full mt-3 pt-3 border-t border-zinc-200 dark:border-white/5 grid grid-cols-2 gap-2 text-[8px] uppercase tracking-wider text-center text-zinc-500 font-black font-sans relative z-10">
+                    <div>
+                      <span className="block text-[7px] text-zinc-400 mb-0.5">UKURAN CETAK</span>
+                      <span className="text-zinc-800 dark:text-zinc-300 font-bold">
+                        {activePreviewItem.size || selectedSize || 'A4'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="block text-[7px] text-zinc-400 mb-0.5">SPESIFIKASI</span>
+                      <span className="text-accent font-black">
+                        {activePreviewItem.variant ? activePreviewItem.variant.toUpperCase() : 'GLOSSY FRAMELESS'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-4 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                {items.map((item) => {
+                  const isActive = activePreviewItem?.id === item.id && activePreviewItem?.size === item.size && activePreviewItem?.variant === item.variant
+                  return (
+                    <div 
+                      key={`${item.id}-${item.size}-${item.variant}`}
+                      onClick={() => setActivePreviewItem(item)}
+                      className={`flex gap-4 p-4 rounded-2xl border transition-all cursor-pointer group ${
+                        isActive 
+                          ? 'bg-accent/5 border-accent shadow-[0_4px_15px_rgba(212,175,55,0.1)]' 
+                          : 'bg-zinc-100/50 dark:bg-white/5 border-zinc-250/30 dark:border-white/5 hover:border-accent/35'
+                      }`}
+                    >
+                      <div className="w-14 h-18 rounded-xl overflow-hidden shadow-lg flex-shrink-0 relative">
+                        <img src={item.image_url} className="w-full h-full object-cover" />
+                        {isActive && (
+                          <div className="absolute inset-0 bg-accent/10 flex items-center justify-center">
+                            <span className="text-accent text-xs">👁️</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 flex flex-col justify-center text-left">
+                        <div className={`text-xs font-black uppercase tracking-tight truncate mb-1 ${isActive ? 'text-accent' : ''}`}>
+                          {item.title}
+                        </div>
+                        <div className="text-[10px] text-zinc-500 font-bold uppercase">Jumlah: {item.quantity}</div>
+                        <div className="text-sm font-black text-accent mt-2 font-sans">{priceFormatter.format(item.price * item.quantity)}</div>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
               
               <div className="mt-8 pt-8 border-t border-zinc-200/80 dark:border-zinc-850/40 space-y-4">

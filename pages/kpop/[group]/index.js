@@ -129,7 +129,7 @@ export default function KpopGroupPage() {
       const memberMap = new Map()
       adminMembers.forEach(name => {
         if (name && !memberMap.has(name)) {
-          memberMap.set(name, { count: 0, image: null })
+          memberMap.set(name, { count: 0, images: [] })
         }
       })
 
@@ -178,7 +178,7 @@ export default function KpopGroupPage() {
                   const cur = memberMap.get(matchedKey)
                   memberMap.set(matchedKey, { 
                     count: cur.count + 1, 
-                    image: cur.image || item.image_url 
+                    images: [...(cur.images || []), item.image_url] 
                   })
                 }
               }
@@ -191,7 +191,10 @@ export default function KpopGroupPage() {
       // ── 4. Format & sort A–Z ──
       const formattedMembers = Array.from(memberMap.entries()).map(([name, data]) => {
         const slug = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
-        return { name, slug, ...data }
+        const randomImage = data.images && data.images.length > 0 
+          ? data.images[Math.floor(Math.random() * data.images.length)]
+          : null
+        return { name, slug, count: data.count, image: randomImage }
       })
       formattedMembers.sort((a, b) => a.name.localeCompare(b.name))
       setMemberList(formattedMembers)
@@ -204,7 +207,7 @@ export default function KpopGroupPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
-      <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 w-full pb-16">
+      <main className="flex-grow pt-36 max-w-6xl mx-auto px-4 w-full pb-16">
         <Link href="/kpop" className="text-xs text-accent/80 hover:text-accent transition-colors flex items-center gap-2 font-sans font-black uppercase tracking-widest">
           &larr; {t.back}
         </Link>
@@ -234,7 +237,7 @@ export default function KpopGroupPage() {
                 <Link
                   key={member.slug}
                   href={`/kpop/${groupSlug}/${member.slug}`}
-                  className="group rounded-[24px] overflow-hidden border border-zinc-200/60 dark:border-zinc-800/30 bg-gradient-to-b from-zinc-900 to-black hover:shadow-[0_20px_45px_rgb(var(--accent-main)/0.15)] hover:border-accent/50 transition-all duration-500 relative block h-80 flex flex-col justify-end p-6"
+                  className="group rounded-[24px] overflow-hidden border border-zinc-200/60 dark:border-zinc-800/30 bg-gradient-to-b from-zinc-900 to-black hover:shadow-[0_20px_45px_rgb(var(--accent-main)/0.15)] hover:border-accent/50 transition-all duration-500 relative block aspect-[3/4] flex flex-col justify-end p-6"
                 >
                   {displayImage ? (
                     <div className="absolute inset-0 z-0">

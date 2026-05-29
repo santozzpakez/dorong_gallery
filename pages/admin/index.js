@@ -27,26 +27,8 @@ const defaultCharactersByType = {
   aesthetic: {}
 }
 
-// Palette warna untuk button tidak aktif — bergantian agar bervariasi
-const TAG_COLORS = [
-  'bg-violet-100 text-violet-800 border border-violet-300 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-700/50 dark:hover:bg-violet-800/60',
-  'bg-sky-100 text-sky-800 border border-sky-300 hover:bg-sky-200 dark:bg-sky-900/40 dark:text-sky-300 dark:border-sky-700/50 dark:hover:bg-sky-800/60',
-  'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200 dark:bg-emerald-900/40 dark:text-emerald-300 dark:border-emerald-700/50 dark:hover:bg-emerald-800/60',
-  'bg-rose-100 text-rose-800 border border-rose-300 hover:bg-rose-200 dark:bg-rose-900/40 dark:text-rose-300 dark:border-rose-700/50 dark:hover:bg-rose-800/60',
-  'bg-amber-100 text-amber-800 border border-amber-300 hover:bg-amber-200 dark:bg-amber-900/40 dark:text-amber-300 dark:border-amber-700/50 dark:hover:bg-amber-800/60',
-  'bg-fuchsia-100 text-fuchsia-800 border border-fuchsia-300 hover:bg-fuchsia-200 dark:bg-fuchsia-900/40 dark:text-fuchsia-300 dark:border-fuchsia-700/50 dark:hover:bg-fuchsia-800/60',
-  'bg-cyan-100 text-cyan-800 border border-cyan-300 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-700/50 dark:hover:bg-cyan-800/60',
-  'bg-orange-100 text-orange-800 border border-orange-300 hover:bg-orange-200 dark:bg-orange-900/40 dark:text-orange-300 dark:border-orange-700/50 dark:hover:bg-orange-800/60',
-  'bg-teal-100 text-teal-800 border border-teal-300 hover:bg-teal-200 dark:bg-teal-900/40 dark:text-teal-300 dark:border-teal-700/50 dark:hover:bg-teal-800/60',
-  'bg-pink-100 text-pink-800 border border-pink-300 hover:bg-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-700/50 dark:hover:bg-pink-800/60',
-]
+// Palette warna dan kategori telah disederhanakan ke Gold Premium & Silver Premium
 
-// Warna kategori tetap (tiap kategori warna spesifik)
-const CAT_COLORS = {
-  anime: { inactive: 'bg-violet-100 text-violet-800 border border-violet-300 hover:bg-violet-200 dark:bg-violet-900/40 dark:text-violet-300 dark:border-violet-600/50 dark:hover:bg-violet-800/60' },
-  kpop: { inactive: 'bg-pink-100 text-pink-800 border border-pink-300 hover:bg-pink-200 dark:bg-pink-900/40 dark:text-pink-300 dark:border-pink-600/50 dark:hover:bg-pink-800/60' },
-  aesthetic: { inactive: 'bg-cyan-100 text-cyan-800 border border-cyan-300 hover:bg-cyan-200 dark:bg-cyan-900/40 dark:text-cyan-300 dark:border-cyan-600/50 dark:hover:bg-cyan-800/60' },
-}
 
 function slugify(value) {
   return value.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-')
@@ -124,6 +106,53 @@ export default function Admin() {
       setDimA3Plus(getText('size_dimension_a3plus', '32 x 48 cm'))
     }
   }, [loaded])
+
+  // Auto-cleanup custom images older than 3 days
+  useEffect(() => {
+    async function cleanupOldCustomImages() {
+      if (!hasSupabaseConfig || !supabase) return
+      try {
+        const { data, error } = await supabase.storage
+          .from('product-images')
+          .list('products', {
+            limit: 100,
+            sortBy: { column: 'created_at', order: 'asc' }
+          })
+          
+        if (error) throw error
+        if (!data || data.length === 0) return
+
+        const now = Date.now()
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000 // 3 days
+        
+        const filesToDelete = data
+          .filter(file => {
+            if (!file.name.startsWith('custom-')) return false
+            const createdAt = file.created_at ? new Date(file.created_at).getTime() : now
+            return (now - createdAt) > THREE_DAYS_MS
+          })
+          .map(file => `products/${file.name}`)
+          
+        if (filesToDelete.length > 0) {
+          console.log("Cleaning up old custom images:", filesToDelete)
+          const { error: removeError } = await supabase.storage
+            .from('product-images')
+            .remove(filesToDelete)
+            
+          if (removeError) {
+            console.error("Error removing old custom files:", removeError)
+          } else {
+            console.log("Successfully removed old custom files:", filesToDelete.length)
+          }
+        }
+      } catch (err) {
+        console.error("Failed to clean up old custom images:", err)
+      }
+    }
+    
+    const timer = setTimeout(cleanupOldCustomImages, 3000)
+    return () => clearTimeout(timer)
+  }, [])
 
   const handleSavePricing = async (e) => {
     e?.preventDefault()
@@ -212,6 +241,17 @@ export default function Admin() {
   const [securityCallback, setSecurityCallback] = useState(null)
   const [isVerifyingSuperior, setIsVerifyingSuperior] = useState(false)
 
+  // Promo Popup State
+  const [promoActive, setPromoActive] = useState(false)
+  const [promoImageUrl, setPromoImageUrl] = useState('')
+  const [promoRedirectUrl, setPromoRedirectUrl] = useState('')
+  const [promoImageFile, setPromoImageFile] = useState(null)
+  const [promoImagePreview, setPromoImagePreview] = useState('')
+  const [isSavingPromo, setIsSavingPromo] = useState(false)
+  const [promoMode, setPromoMode] = useState('always') // 'always' | 'scheduled'
+  const [promoStartDate, setPromoStartDate] = useState('')
+  const [promoEndDate, setPromoEndDate] = useState('')
+
   const verifySuperior = async (e) => {
     e?.preventDefault()
     if (isVerifyingSuperior) return
@@ -270,13 +310,7 @@ export default function Admin() {
     }
   }
 
-  const handleResetLocalStorage = () => {
-    if (confirm('Sapu bersih semua memori browser (pilihan anime/kpop/aesthetic)? Ini akan menghapus data contoh yang masih tersangkut.')) {
-      window.localStorage.removeItem(STORAGE_TYPES)
-      window.localStorage.removeItem(STORAGE_CHARS)
-      window.location.reload()
-    }
-  }
+
 
   const [showSuccessModal, setShowSuccessModal] = useState(false)
   
@@ -627,41 +661,87 @@ export default function Admin() {
     }
   }, [user, adminRole, loading])
 
+  // Load Promo Popup Settings
+  useEffect(() => {
+    async function loadPromoSettings() {
+      if (!hasSupabaseConfig || !supabase) return
+      const { data } = await supabase.from('site_assets').select('text_value').eq('key', 'promo-popup-settings').single()
+      if (data?.text_value) {
+        try {
+          const settings = JSON.parse(data.text_value)
+          setPromoActive(!!settings.isActive)
+          setPromoImageUrl(settings.imageUrl || '')
+          setPromoRedirectUrl(settings.redirectUrl || '')
+          setPromoImagePreview(settings.imageUrl || '')
+          setPromoMode(settings.mode || 'always')
+          setPromoStartDate(settings.startDate || '')
+          setPromoEndDate(settings.endDate || '')
+        } catch {}
+      }
+    }
+    loadPromoSettings()
+  }, [])
+
+  async function handleSavePromo(e) {
+    e?.preventDefault()
+    if (isSavingPromo) return
+    setIsSavingPromo(true)
+    try {
+      let finalImageUrl = promoImageUrl
+      
+      // If there's a new file to upload
+      if (promoImageFile) {
+        const safeName = sanitizeFileName(promoImageFile.name)
+        const ext = promoImageFile.name.split('.').pop() || 'jpg'
+        const filePath = `promos/${Date.now()}-${safeName}.${ext}`
+        
+        const { error: uploadErr } = await supabase.storage
+          .from('product-images')
+          .upload(filePath, promoImageFile, {
+            upsert: true,
+            contentType: promoImageFile.type || 'image/jpeg',
+            cacheControl: '31536000'
+          })
+        
+        if (uploadErr) throw new Error(uploadErr.message)
+        finalImageUrl = supabase.storage.from('product-images').getPublicUrl(filePath).data.publicUrl
+      }
+      
+      const settings = JSON.stringify({
+        isActive: promoActive,
+        imageUrl: finalImageUrl,
+        redirectUrl: promoRedirectUrl,
+        mode: promoMode,
+        startDate: promoMode === 'scheduled' ? promoStartDate : '',
+        endDate: promoMode === 'scheduled' ? promoEndDate : ''
+      })
+      
+      const { error } = await supabase.from('site_assets').upsert({
+        key: 'promo-popup-settings',
+        label: 'Promo Popup Settings',
+        category: 'settings',
+        image_url: finalImageUrl || '',
+        text_value: settings
+      }, { onConflict: 'key' })
+      
+      if (error) throw error
+      
+      setPromoImageUrl(finalImageUrl)
+      setPromoImagePreview(finalImageUrl)
+      setPromoImageFile(null)
+      alert('✅ Pengaturan Promo Popup berhasil disimpan!')
+    } catch (err) {
+      alert(`❌ Gagal menyimpan: ${err.message}`)
+    } finally {
+      setIsSavingPromo(false)
+    }
+  }
+
   const [whatsappContacts, setWhatsappContacts] = useState([])
   const [newWaName, setNewWaName] = useState('')
   const [newWaPhone, setNewWaPhone] = useState('')
 
-  async function resetAllDecor() {
-    if (adminRole !== 'superior') {
-      alert('❌ Akses Ditolak: Hanya akun Superior Admin yang boleh melakukan reset total data Decor!')
-      return
-    }
-    if (!window.confirm("PERINGATAN: Ini akan MENGHAPUS SEMUA PRODUK dan SEMUA GAMBAR di kategori DECOR secara permanen. Anda yakin ingin mulai dari nol?")) return
-    
-    setStatusMessage("Sedang membersihkan seluruh data Decor...")
-    try {
-      if (hasSupabaseConfig && supabase) {
-        // 1. Hapus Produk
-        await supabase.from('products').delete().eq('category', 'decor')
-        // 2. Hapus Aset
-        const { data: assets } = await supabase.from('site_assets').select('key')
-        const decorKeys = assets?.filter(a => a.key.startsWith('decor-')).map(a => a.key) || []
-        if (decorKeys.length > 0) {
-          await supabase.from('site_assets').delete().in('key', decorKeys)
-        }
-        
-        // 3. Update State & LocalStorage
-        window.localStorage.removeItem('dorong_admin_type_options')
-        setTypeOptions(prev => ({ ...prev, decor: [] }))
-        setCharactersByType(prev => ({ ...prev, decor: {} }))
-        
-        setStatusMessage("BERHASIL! Seluruh data Decor telah dihapus secara total (Database & Browser).")
-        fetchProducts()
-      }
-    } catch (err) {
-      setStatusMessage("Gagal reset: " + err.message)
-    }
-  }
+
 
   const fetchAdmins = async () => {
     const { data } = await supabase.from('site_admins').select('*').order('created_at', { ascending: false })
@@ -1609,11 +1689,8 @@ export default function Admin() {
 
   function toggleSelectAll() {
     // Only select all currently visible products
-    if (currentFolder.length !== 2) return
-    const cat = currentFolder[0]
-    const subcat = currentFolder[1]
-    const visibleProducts = savedProducts.filter(p => p.category === cat && (p.subcategory === subcat || (!p.subcategory && subcat === 'Uncategorized')))
-    const ids = visibleProducts.filter(p => p.id).map(p => p.id)
+    if (viewType !== 'products') return
+    const ids = currentView.filter(p => p.id).map(p => p.id)
 
     const allSelected = ids.length > 0 && ids.every(id => selectedProducts.includes(id))
     if (allSelected) {
@@ -1634,14 +1711,60 @@ export default function Admin() {
     viewType = 'categories'
     currentView = categories
   } else if (currentFolder.length === 1) {
-    viewType = 'subcategories'
+    viewType = 'groups'
     const cat = currentFolder[0]
-    currentView = [...new Set(savedProducts.filter(p => p.category === cat).map(p => p.subcategory || 'Uncategorized'))]
+    
+    // Ambil subcategory unik, dan jika ada tanda " - ", kita ambil bagian kirinya (Group/Anime)
+    const rawSubcats = savedProducts
+      .filter(p => p.category === cat)
+      .map(p => p.subcategory || 'Uncategorized')
+    
+    const groups = rawSubcats.map(sub => {
+      if (sub.includes(' - ')) {
+        return sub.split(' - ')[0].trim()
+      }
+      return sub
+    })
+    
+    currentView = [...new Set(groups)]
   } else if (currentFolder.length === 2) {
+    const cat = currentFolder[0]
+    const group = currentFolder[1]
+    
+    // Apakah ada produk di kategori 'cat' yang subcategory-nya diawali dengan "group - "?
+    const hasMembers = savedProducts.some(p => 
+      p.category === cat && 
+      p.subcategory && 
+      p.subcategory.includes(' - ') && 
+      p.subcategory.split(' - ')[0].trim() === group
+    )
+    
+    if (hasMembers) {
+      viewType = 'members'
+      const members = savedProducts
+        .filter(p => 
+          p.category === cat && 
+          p.subcategory && 
+          p.subcategory.includes(' - ') && 
+          p.subcategory.split(' - ')[0].trim() === group
+        )
+        .map(p => p.subcategory.split(' - ')[1].trim())
+      
+      currentView = [...new Set(members)]
+    } else {
+      viewType = 'products'
+      currentView = savedProducts.filter(p => 
+        p.category === cat && 
+        (p.subcategory === group || (!p.subcategory && group === 'Uncategorized'))
+      )
+    }
+  } else if (currentFolder.length === 3) {
     viewType = 'products'
     const cat = currentFolder[0]
-    const subcat = currentFolder[1]
-    currentView = savedProducts.filter(p => p.category === cat && (p.subcategory === subcat || (!p.subcategory && subcat === 'Uncategorized')))
+    const group = currentFolder[1]
+    const member = currentFolder[2]
+    const expectedSubcat = `${group} - ${member}`
+    currentView = savedProducts.filter(p => p.category === cat && p.subcategory === expectedSubcat)
   }
 
   if (loading || !adminRole) {
@@ -1663,38 +1786,39 @@ export default function Admin() {
         <div className="flex gap-4 mb-8 border-b border-gray-200 dark:border-white/10 pb-4 overflow-x-auto custom-scrollbar">
           <button 
             onClick={() => setActiveTab('products')}
-            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'products' ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/20' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'}`}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${activeTab === 'products' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 border-transparent' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white border-zinc-200 dark:border-white/5'}`}
           >
             📦 Products & Gallery
           </button>
           
           <button 
             onClick={() => setActiveTab('pricing')}
-            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'pricing' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white'}`}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${activeTab === 'pricing' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 border-transparent' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white border-zinc-200 dark:border-white/5'}`}
           >
             💰 Pricing Control
           </button>
 
-          <Link href="/admin/tema" className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all text-gray-500 hover:text-gray-800 dark:hover:text-white flex items-center gap-2`}>
+          <Link href="/admin/tema" className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border text-gray-500 hover:text-gray-800 dark:hover:text-white flex items-center gap-2 border-zinc-200 dark:border-white/5`}>
             🎨 Site Assets
           </Link>
+
+          <button 
+            onClick={() => setActiveTab('promo')}
+            className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${activeTab === 'promo' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 border-transparent' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white border-zinc-200 dark:border-white/5'}`}
+          >
+            📢 Promo Popup
+          </button>
 
           {adminRole === 'superior' && (
             <button 
               onClick={() => setActiveTab('admins')}
-              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'admins' ? 'bg-blue-600 text-white shadow-xl shadow-blue-500/40 scale-105' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white border border-transparent dark:border-white/5'}`}
+              className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${activeTab === 'admins' ? 'bg-amber-500 text-white shadow-lg shadow-amber-500/20 scale-105 border-transparent' : 'text-gray-500 hover:text-gray-800 dark:hover:text-white border-zinc-200 dark:border-white/5'}`}
             >
               👥 Admin Management
             </button>
           )}
 
-          <button 
-            onClick={handleResetLocalStorage}
-            className="px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest text-red-400 border border-red-500/20 hover:bg-red-500/10 transition-all ml-auto"
-            title="Hapus sisa data hantu dari memori browser"
-          >
-            🧹 Reset Memori
-          </button>
+
         </div>
 
         {activeTab === 'products' && (
@@ -1708,14 +1832,22 @@ export default function Admin() {
               <button
                 type="button"
                 onClick={() => setUploadMode('single')}
-                className={`flex-1 py-2 rounded font-medium text-sm transition-colors ${uploadMode === 'single' ? 'bg-purple-500 text-white shadow-lg' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all border ${
+                  uploadMode === 'single' 
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent' 
+                    : 'bg-zinc-100 dark:bg-white/5 border-zinc-200 dark:border-white/5 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-white/10'
+                }`}
               >
                 Upload 1 Gambar
               </button>
               <button
                 type="button"
                 onClick={() => setUploadMode('batch')}
-                className={`flex-1 py-2 rounded font-medium text-sm transition-colors ${uploadMode === 'batch' ? 'bg-purple-500 text-white shadow-lg' : 'bg-white/10 text-gray-400 hover:bg-white/20'}`}
+                className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all border ${
+                  uploadMode === 'batch' 
+                    ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent' 
+                    : 'bg-zinc-100 dark:bg-white/5 border-zinc-200 dark:border-white/5 text-zinc-650 dark:text-zinc-400 hover:bg-zinc-200/70 dark:hover:bg-white/10'
+                }`}
               >
                 Pilih Banyak Gambar (Batch)
               </button>
@@ -1738,7 +1870,7 @@ export default function Admin() {
                         value={form.title}
                         onChange={(e) => setForm(prev => ({ ...prev, title: e.target.value }))}
                         placeholder="Masukkan judul produk..."
-                        className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-purple-500/50 outline-none transition-all"
+                        className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-2 text-sm text-gray-900 dark:text-white focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all"
                       />
                     </div>
                   )}
@@ -1757,14 +1889,14 @@ export default function Admin() {
                   {batchFiles.length > 0 && (
                     <div className="mt-4 space-y-4">
                       {/* Bulk Paste Area */}
-                      <div className="p-4 rounded-xl bg-purple-500/5 border border-purple-500/20">
+                      <div className="p-4 rounded-xl bg-amber-500/5 dark:bg-zinc-800/10 border border-amber-500/20 dark:border-zinc-700/30">
                         <div className="flex justify-between items-center mb-2">
-                          <p className="text-[10px] uppercase tracking-widest text-purple-400 font-black">⚡ Quick Paste Titles</p>
+                          <p className="text-[10px] uppercase tracking-widest text-amber-600 dark:text-zinc-400 font-black">⚡ Quick Paste Titles</p>
                           <span className="text-[9px] text-gray-500 italic">Paste list from Notepad/Excel (one per line)</span>
                         </div>
                         <textarea
                           placeholder="Paste daftar nama di sini..."
-                          className="w-full h-20 p-3 rounded-lg bg-white dark:bg-black/40 border border-gray-200 dark:border-white/5 text-xs focus:border-purple-500/50 outline-none transition-all placeholder:text-gray-400 text-gray-900 dark:text-white"
+                          className="w-full h-20 p-3 rounded-lg bg-white dark:bg-black/40 border border-gray-200 dark:border-white/5 text-xs focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all placeholder:text-gray-400 text-gray-900 dark:text-white"
                           onChange={handleBulkPaste}
                         ></textarea>
                       </div>
@@ -1772,7 +1904,7 @@ export default function Admin() {
                       {/* Individual File List */}
                       <div className="p-3 bg-gray-50 dark:bg-black/40 rounded-xl border border-gray-200 dark:border-white/5 space-y-3">
                         <p className="text-[10px] uppercase tracking-widest text-gray-500 font-black mb-2 flex items-center gap-2">
-                          <span className="w-2 h-2 bg-purple-500 rounded-full"></span>
+                          <span className="w-2 h-2 bg-amber-500 dark:bg-zinc-400 rounded-full"></span>
                           Review {batchFiles.length} File & Judul:
                         </p>
                         <div className="max-h-[400px] overflow-y-auto custom-scrollbar space-y-2 pr-2">
@@ -1787,53 +1919,20 @@ export default function Admin() {
                               <div className="flex-1 min-w-0">
                                 <div className="flex justify-between mb-1">
                                   <span className="text-[9px] text-gray-600 font-mono truncate">{f.name}</span>
-                                  <span className="text-[9px] text-purple-400 font-bold">Prod #{i+1}</span>
+                                  <span className="text-[9px] text-amber-600 dark:text-zinc-400 font-bold">Prod #{i+1}</span>
                                 </div>
                                 <input 
                                   type="text" 
                                   value={batchTitles[i] || ''} 
                                   onChange={(e) => updateBatchTitle(i, e.target.value)}
                                   placeholder="Masukkan judul produk..."
-                                  className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-900 dark:text-white focus:border-purple-500/50 outline-none transition-all"
+                                  className="w-full bg-white dark:bg-black/40 border border-gray-200 dark:border-white/10 rounded-lg px-3 py-1.5 text-xs text-gray-900 dark:text-white focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all"
                                 />
                               </div>
                             </div>
                           ))}
                         </div>
                       </div>
-                    </div>
-                  )}
-
-                  {isSubmitting && totalBatchImages > 0 && (
-                    <div className="mt-4 p-4 rounded-2xl bg-white dark:bg-black/40 border border-purple-500/30 shadow-sm dark:shadow-[0_0_20px_rgba(168,85,247,0.15)] animate-in fade-in zoom-in duration-300">
-                      <div className="flex justify-between items-end mb-2">
-                        <div className="flex flex-col">
-                          <span className="text-[10px] uppercase tracking-widest text-gray-500 font-black">Status Upload</span>
-                          <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                            {uploadProgress >= totalBatchImages ? 'Hampir Selesai...' : `Mengunggah file ${uploadProgress + 1} dari ${totalBatchImages}`}
-                          </span>
-                        </div>
-                        <div className="text-right">
-                          <span className="text-2xl font-black text-purple-600 dark:text-purple-400 italic">
-                            {Math.round((uploadProgress / totalBatchImages) * 100)}%
-                          </span>
-                        </div>
-                      </div>
-                      
-                      {/* Visual Progress Bar */}
-                      <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[2px]">
-                        <div 
-                          className="h-full bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-400 rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(168,85,247,0.5)]"
-                          style={{ width: `${(uploadProgress / totalBatchImages) * 100}%` }}
-                        >
-                          <div className="w-full h-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]"></div>
-                        </div>
-                      </div>
-                      
-                      <p className="text-[9px] text-gray-500 mt-3 text-center font-mono uppercase tracking-widest animate-pulse">
-                        Mohon jangan tutup halaman ini sampai proses selesai
-                      </p>
                     </div>
                   )}
                 </>
@@ -1848,8 +1947,8 @@ export default function Admin() {
                   type="button"
                   onClick={handleManualSaveLists}
                   disabled={isSavingLists}
-                  className={`px-4 py-1.5 text-white text-xs font-black uppercase tracking-widest rounded-lg transition-colors shadow-lg active:scale-95 flex items-center gap-2 ${
-                    isSavingLists ? 'bg-gray-500 cursor-not-allowed opacity-70' : 'bg-green-500 hover:bg-green-600 shadow-green-500/30'
+                  className={`px-4 py-1.5 text-white text-xs font-black uppercase tracking-widest rounded-lg border transition-all shadow-md active:scale-95 flex items-center gap-2 ${
+                    isSavingLists ? 'bg-zinc-700 cursor-not-allowed opacity-70 border-transparent' : 'bg-zinc-800 hover:bg-zinc-950 dark:bg-white/10 dark:hover:bg-white/20 border-zinc-700 dark:border-white/10 text-white dark:text-zinc-200'
                   }`}
                 >
                   {isSavingLists ? (
@@ -1891,7 +1990,6 @@ export default function Admin() {
                   </div>
                 </div>
               )}
-
               <div className="flex flex-wrap gap-2 mb-3">
                 {['anime', 'kpop', 'aesthetic'].map((cat) => (
                   <button
@@ -1899,8 +1997,8 @@ export default function Admin() {
                     type="button"
                     onClick={() => handleCategoryChange(cat)}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${form.category === cat
-                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg shadow-purple-500/30 border border-transparent'
-                        : CAT_COLORS[cat]?.inactive || 'bg-white/10 text-gray-300'
+                        ? 'bg-amber-500 text-white shadow-md shadow-amber-500/20 border-transparent'
+                        : 'bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 border border-zinc-200 dark:border-white/5 hover:bg-zinc-200/70 dark:hover:bg-white/10'
                       }`}
                   >
                     {cat === 'anime' ? '🎌 Anime' : cat === 'kpop' ? '🎵 K-pop' : '✨ Aesthetic'}
@@ -1920,7 +2018,11 @@ export default function Admin() {
                       <button 
                         type="button" 
                         onClick={() => setShowSearchType(!showSearchType)} 
-                        className={`p-1.5 rounded-lg transition-colors ${showSearchType ? 'bg-blue-500/20 text-blue-400' : 'bg-zinc-200 dark:bg-white/10 text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'}`}
+                        className={`p-1.5 rounded-lg transition-all border ${
+                          showSearchType 
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-amber-500/20 dark:border-amber-500/30 dark:text-amber-400' 
+                            : 'bg-zinc-200 dark:bg-white/10 border-transparent text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'
+                        }`}
                         title="Cari"
                       >
                         🔍
@@ -1928,7 +2030,11 @@ export default function Admin() {
                       <button 
                         type="button" 
                         onClick={() => setShowAddType(!showAddType)} 
-                        className={`p-1.5 rounded-lg transition-colors ${showAddType ? 'bg-green-500/30 text-green-300' : 'bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20'}`}
+                        className={`p-1.5 rounded-lg transition-all border ${
+                          showAddType 
+                            ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-amber-500/20 dark:border-amber-500/30 dark:text-amber-400' 
+                            : 'bg-zinc-200 dark:bg-white/10 border-transparent text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'
+                        }`}
                         title="Tambah Baru"
                       >
                         ➕
@@ -1946,7 +2052,7 @@ export default function Admin() {
                         value={searchType}
                         onChange={(e) => setSearchType(e.target.value)}
                         placeholder={`Cari ${labels.step1}...`}
-                        className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-blue-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
+                        className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
                       />
                     </div>
                   )}
@@ -1965,9 +2071,9 @@ export default function Admin() {
                           }
                         }}
                         placeholder={labels.addType}
-                        className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-white text-sm border border-gray-200 dark:border-transparent placeholder:text-gray-400 focus:border-green-500/50 outline-none transition-all"
+                        className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-white text-sm border border-gray-200 dark:border-transparent placeholder:text-gray-400 focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all"
                       />
-                      <button type="button" onClick={() => { addNewType(); }} className="px-3 py-2 rounded-xl bg-green-500/20 text-green-600 dark:text-green-300 text-sm font-medium hover:bg-green-500/30 transition-colors">
+                      <button type="button" onClick={() => { addNewType(); }} className="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-medium hover:bg-amber-500/30 transition-colors">
                         Simpan
                       </button>
                     </div>
@@ -1976,32 +2082,32 @@ export default function Admin() {
                   <div className="flex flex-col gap-2 mb-3 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                     {activeTypeOptions.filter(name => name.toLowerCase().includes(searchType.toLowerCase())).map((name) => (
                       renamingType?.name === name ? (
-                        <div key={name} className="flex items-center gap-2 bg-blue-500/10 p-2 rounded-xl border border-blue-500/30">
+                        <div key={name} className="flex items-center gap-2 bg-amber-500/10 dark:bg-amber-500/10 p-2 rounded-xl border border-amber-500/30 dark:border-amber-500/30">
                           <input
                             autoFocus
                             value={renameTypeVal}
                             onChange={e => setRenameTypeVal(e.target.value)}
                             onKeyDown={e => { if (e.key === 'Enter') commitRenameType(); if (e.key === 'Escape') setRenamingType(null) }}
-                            className="flex-1 px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-black/40 border border-blue-400/50 text-gray-900 dark:text-white outline-none"
+                            className="flex-1 px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-black/40 border border-amber-500/30 text-gray-900 dark:text-white outline-none"
                           />
-                          <button type="button" onClick={commitRenameType} className="px-4 py-2 rounded-lg bg-green-500/30 text-green-300 text-xs font-bold hover:bg-green-500/50 transition-colors">SIMPAN</button>
+                          <button type="button" onClick={commitRenameType} className="px-4 py-2 rounded-lg bg-amber-500/20 text-amber-600 text-xs font-bold hover:bg-amber-500/30 transition-colors">SIMPAN</button>
                           <button type="button" onClick={() => setRenamingType(null)} className="px-3 py-2 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20 transition-colors">BATAL</button>
                         </div>
                       ) : (
-                        <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.typeName === name ? 'bg-blue-500/20 border-blue-500/50 shadow-lg shadow-blue-500/10 text-blue-800 dark:text-blue-200' : 'bg-white dark:bg-white/5 border-zinc-300 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/10'}`}>
+                        <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.typeName === name ? 'bg-amber-500 border-transparent shadow-md shadow-amber-500/20 text-white font-bold' : 'bg-white dark:bg-white/5 border-zinc-300 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/10'}`}>
                           <button
                             type="button"
                             onClick={() => handleTypeNameChange(name)}
-                            className="flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide text-zinc-800 dark:text-zinc-200"
+                            className={`flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide transition-colors ${form.typeName === name ? 'text-white' : 'text-zinc-800 dark:text-zinc-200'}`}
                           >
-                            {form.typeName === name && <span className="mr-2">🔷</span>}
+                            {form.typeName === name && <span className="mr-2">✨</span>}
                             {name}
                           </button>
                           <div className="flex items-center gap-1 pr-2 opacity-0 group-hover/tag:opacity-100 transition-opacity">
                             <button
                               type="button"
                               onClick={() => { setRenamingType({ name }); setRenameTypeVal(name) }}
-                              className="p-2 hover:bg-blue-500/30 text-blue-300 rounded-lg transition-colors"
+                              className={`p-2 rounded-lg transition-colors ${form.typeName === name ? 'hover:bg-white/20 text-white/80 hover:text-white' : 'hover:bg-amber-500/10 dark:hover:bg-white/10 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-white'}`}
                               title="Ubah Nama"
                             >✏️</button>
                             <button
@@ -2029,7 +2135,11 @@ export default function Admin() {
                         <button 
                           type="button" 
                           onClick={() => setShowSearchChar(!showSearchChar)} 
-                          className={`p-1.5 rounded-lg transition-colors ${showSearchChar ? 'bg-orange-500/20 text-orange-400' : 'bg-zinc-200 dark:bg-white/10 text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'}`}
+                          className={`p-1.5 rounded-lg transition-all border ${
+                            showSearchChar 
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-amber-500/20 dark:border-amber-500/30 dark:text-amber-400' 
+                              : 'bg-zinc-200 dark:bg-white/10 border-transparent text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'
+                          }`}
                           title="Cari"
                         >
                           🔍
@@ -2037,7 +2147,11 @@ export default function Admin() {
                         <button 
                           type="button" 
                           onClick={() => setShowAddChar(!showAddChar)} 
-                          className={`p-1.5 rounded-lg transition-colors ${showAddChar ? 'bg-green-500/30 text-green-300' : 'bg-green-500/10 text-green-600 dark:text-green-400 hover:bg-green-500/20'}`}
+                          className={`p-1.5 rounded-lg transition-all border ${
+                            showAddChar 
+                              ? 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:bg-amber-500/20 dark:border-amber-500/30 dark:text-amber-400' 
+                              : 'bg-zinc-200 dark:bg-white/10 border-transparent text-gray-500 hover:bg-zinc-300 dark:hover:bg-white/20'
+                          }`}
                           title="Tambah Baru"
                         >
                           ➕
@@ -2055,7 +2169,7 @@ export default function Admin() {
                           value={searchChar}
                           onChange={(e) => setSearchChar(e.target.value)}
                           placeholder={`Cari ${labels.step2}...`}
-                          className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-orange-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
+                          className="w-full bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-white/5 rounded-xl pl-9 pr-4 py-2 text-xs focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all text-gray-900 dark:text-white placeholder:text-gray-400"
                         />
                       </div>
                     )}
@@ -2074,9 +2188,9 @@ export default function Admin() {
                             }
                           }}
                           placeholder={labels.addChar}
-                          className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-white text-sm border border-gray-200 dark:border-transparent placeholder:text-gray-400 focus:border-green-500/50 outline-none transition-all"
+                          className="flex-1 p-2 rounded-xl bg-gray-50 dark:bg-black/30 text-gray-900 dark:text-white text-sm border border-gray-200 dark:border-transparent placeholder:text-gray-400 focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all"
                         />
-                        <button type="button" onClick={() => { addNewCharacter(); }} className="px-3 py-2 rounded-xl bg-green-500/20 text-green-600 dark:text-green-300 text-sm font-medium hover:bg-green-500/30 transition-colors">
+                        <button type="button" onClick={() => { addNewCharacter(); }} className="px-3 py-2 rounded-xl bg-amber-500/20 text-amber-600 dark:text-amber-400 text-sm font-medium hover:bg-amber-500/30 transition-colors">
                           Simpan
                         </button>
                       </div>
@@ -2090,32 +2204,32 @@ export default function Admin() {
                         .filter(name => name.toLowerCase().includes(searchChar.toLowerCase()))
                         .map((name) => (
                           renamingChar?.name === name ? (
-                            <div key={name} className="flex items-center gap-2 bg-orange-500/10 p-2 rounded-xl border border-orange-500/30">
+                            <div key={name} className="flex items-center gap-2 bg-amber-500/10 dark:bg-amber-500/10 p-2 rounded-xl border border-amber-500/30 dark:border-amber-500/30">
                               <input
                                 autoFocus
                                 value={renameCharVal}
                                 onChange={e => setRenameCharVal(e.target.value)}
                                 onKeyDown={e => { if (e.key === 'Enter') commitRenameChar(); if (e.key === 'Escape') setRenamingChar(null) }}
-                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-black/40 border border-orange-400/50 text-gray-900 dark:text-white outline-none"
+                                className="flex-1 px-3 py-2 rounded-lg text-sm bg-gray-50 dark:bg-black/40 border border-amber-500/30 text-gray-900 dark:text-white outline-none"
                               />
-                              <button type="button" onClick={commitRenameChar} className="px-4 py-2 rounded-lg bg-green-500/30 text-green-300 text-xs font-bold hover:bg-green-500/50 transition-colors">SIMPAN</button>
+                              <button type="button" onClick={commitRenameChar} className="px-4 py-2 rounded-lg bg-amber-500/20 text-amber-600 text-xs font-bold hover:bg-amber-500/30 transition-colors">SIMPAN</button>
                               <button type="button" onClick={() => setRenamingChar(null)} className="px-3 py-2 rounded-lg bg-white/10 text-gray-400 text-xs hover:bg-white/20 transition-colors">BATAL</button>
                             </div>
                           ) : (
-                            <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.characterName === name ? 'bg-orange-500/20 border-orange-500/50 shadow-lg shadow-orange-500/10 text-orange-800 dark:text-orange-200' : 'bg-white dark:bg-white/5 border-zinc-300 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/10'}`}>
+                            <div key={name} className={`flex items-center justify-between group/tag p-1 rounded-xl transition-all border ${form.characterName === name ? 'bg-amber-500 border-transparent shadow-md shadow-amber-500/20 text-white font-bold' : 'bg-white dark:bg-white/5 border-zinc-300 dark:border-white/5 hover:bg-zinc-200 dark:hover:bg-white/10'}`}>
                               <button
                                 type="button"
                                 onClick={() => updateField('characterName', name)}
-                                className="flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide text-zinc-800 dark:text-zinc-200"
+                                className={`flex-1 text-left px-4 py-2.5 text-sm font-bold tracking-wide transition-colors ${form.characterName === name ? 'text-white' : 'text-zinc-800 dark:text-zinc-200'}`}
                               >
-                                {form.characterName === name && <span className="mr-2">🔶</span>}
+                                {form.characterName === name && <span className="mr-2">✨</span>}
                                 {name}
                               </button>
                               <div className="flex items-center gap-1 pr-2 opacity-0 group-hover/tag:opacity-100 transition-opacity">
                                 <button
                                   type="button"
                                   onClick={() => { setRenamingChar({ name }); setRenameCharVal(name) }}
-                                  className="p-2 hover:bg-orange-500/30 text-orange-300 rounded-lg transition-colors"
+                                  className={`p-2 rounded-lg transition-colors ${form.characterName === name ? 'hover:bg-white/20 text-white/80 hover:text-white' : 'hover:bg-amber-500/10 dark:hover:bg-white/10 text-gray-500 hover:text-amber-600 dark:text-gray-400 dark:hover:text-white'}`}
                                   title="Ubah Nama"
                                 >✏️</button>
                                 <button
@@ -2135,9 +2249,6 @@ export default function Admin() {
               </div>
             )}
 
-            
-            <textarea value={form.notes} onChange={(e) => updateField('notes', e.target.value)} placeholder="Catatan tambahan" className="w-full min-h-[90px] p-3 rounded-xl bg-gray-50 dark:bg-black/40 text-gray-900 dark:text-white border border-gray-200 dark:border-white/5 placeholder:text-gray-400 focus:border-purple-500/50 outline-none transition-all" />
-
             {/* Tombol Simpan Produk */}
             <button
               type="button"
@@ -2145,7 +2256,7 @@ export default function Admin() {
               disabled={isSubmitting}
               className={`w-full py-4 rounded-2xl font-black text-lg tracking-widest uppercase transition-all shadow-xl flex items-center justify-center gap-3 ${isSubmitting
                   ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                  : 'bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-500 hover:to-blue-500 text-white shadow-purple-500/20 active:scale-[0.98]'
+                  : 'bg-gradient-to-r from-amber-500 to-yellow-600 dark:from-zinc-700 dark:to-zinc-800 hover:from-amber-400 hover:to-yellow-500 dark:hover:from-zinc-600 dark:hover:to-zinc-700 text-white dark:text-zinc-100 shadow-xl shadow-amber-500/10 dark:shadow-zinc-900/30 active:scale-[0.98]'
                 }`}
             >
               {isSubmitting ? (
@@ -2156,29 +2267,62 @@ export default function Admin() {
               ) : '✨ Save Product'}
             </button>
 
-            {/* DANGER ZONE (Hanya untuk Reset Decor) */}
-            <div className="mt-12 p-6 rounded-2xl border border-red-500/20 bg-red-500/5">
-              <p className="text-[10px] uppercase tracking-[0.3em] text-red-500 font-black mb-4">Danger Zone / Area Bahaya</p>
-              <button
-                type="button"
-                onClick={resetAllDecor}
-                className="w-full py-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500 hover:text-white transition-all text-xs font-bold tracking-widest"
-              >
-                🔥 RESET TOTAL SEMUA DATA DECOR
-              </button>
-              <p className="text-[9px] text-gray-500 mt-2 text-center italic">Gunakan ini untuk menghapus semua produk & gambar Decor agar bisa mulai dari nol.</p>
-            </div>
-          </form>
-
-          <aside className="glass p-5 rounded">
-            <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Image Preview</h3>
-            {imagePreview ? (
-              <img src={imagePreview} alt="Product preview" className="w-full h-64 object-cover rounded-md" />
-            ) : (
-              <div className="w-full h-64 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-400 text-sm">
-                Belum ada gambar dipilih
+            {isSubmitting && totalBatchImages > 0 && (
+              <div className="mt-4 p-4 rounded-2xl bg-white dark:bg-black/40 border border-amber-500/30 dark:border-zinc-700/30 shadow-sm dark:shadow-[0_0_20px_rgba(245,158,11,0.08)] animate-in fade-in zoom-in duration-300">
+                <div className="flex justify-between items-end mb-2">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase tracking-widest text-gray-500 font-black">Status Upload</span>
+                    <span className="text-xs font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                      <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                      {uploadProgress >= totalBatchImages ? 'Hampir Selesai...' : `Mengunggah file ${uploadProgress + 1} dari ${totalBatchImages}`}
+                    </span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-2xl font-black text-amber-600 dark:text-zinc-400 italic">
+                      {Math.round((uploadProgress / totalBatchImages) * 100)}%
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Visual Progress Bar */}
+                <div className="w-full h-3 bg-white/5 rounded-full overflow-hidden border border-white/10 p-[2px]">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 dark:from-zinc-700 dark:via-zinc-500 dark:to-zinc-600 rounded-full transition-all duration-500 ease-out shadow-[0_0_15px_rgba(245,158,11,0.3)]"
+                    style={{ width: `${(uploadProgress / totalBatchImages) * 100}%` }}
+                  >
+                    <div className="w-full h-full animate-shimmer bg-gradient-to-r from-transparent via-white/20 to-transparent bg-[length:200%_100%]"></div>
+                  </div>
+                </div>
+                
+                <p className="text-[9px] text-gray-500 mt-3 text-center font-mono uppercase tracking-widest animate-pulse">
+                  Mohon jangan tutup halaman ini sampai proses selesai
+                </p>
               </div>
             )}
+
+          </form>
+
+          <aside className="glass p-5 rounded space-y-5">
+            <div>
+              <h3 className="font-semibold mb-3 text-gray-900 dark:text-white">Image Preview</h3>
+              {imagePreview ? (
+                <img src={imagePreview} alt="Product preview" className="w-full h-64 object-cover rounded-md" />
+              ) : (
+                <div className="w-full h-64 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-400 text-sm">
+                  Belum ada gambar dipilih
+                </div>
+              )}
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-wide text-gray-500 mb-2 font-bold">Deskripsi Produk (Notes)</p>
+              <textarea 
+                value={form.notes} 
+                onChange={(e) => updateField('notes', e.target.value)} 
+                placeholder="Catatan tambahan / Deskripsi" 
+                className="w-full min-h-[150px] p-3 rounded-xl bg-gray-50 dark:bg-black/40 text-gray-900 dark:text-white border border-gray-200 dark:border-white/5 placeholder:text-gray-400 focus:border-amber-500/50 dark:focus:border-zinc-500/50 outline-none transition-all text-xs" 
+              />
+            </div>
           </aside>
         </div>
 
@@ -2219,13 +2363,13 @@ export default function Admin() {
             <p className="text-gray-400">Loading products...</p>
           ) : savedProducts.length === 0 ? (
             <p className="text-gray-400">Belum ada product tersimpan.</p>
-          ) : viewType === 'categories' || viewType === 'subcategories' ? (
+          ) : viewType !== 'products' ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
               {currentView.map((folderName) => (
                 <button
                   key={folderName}
                   onClick={() => setCurrentFolder([...currentFolder, folderName])}
-                  className="flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 hover:border-purple-500/30 transition-all group"
+                  className="flex flex-col items-center justify-center p-6 bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-xl hover:bg-gray-100 dark:hover:bg-white/10 hover:border-amber-500/30 dark:hover:border-zinc-700/30 transition-all group"
                 >
                   <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">📁</div>
                   <span className="text-sm font-medium capitalize text-center truncate w-full text-gray-700 dark:text-gray-200">{folderName}</span>
@@ -2238,7 +2382,7 @@ export default function Admin() {
                 <label className="flex items-center gap-2 text-sm cursor-pointer hover:text-gray-900 dark:hover:text-white text-gray-700 dark:text-gray-300">
                   <input
                     type="checkbox"
-                    className="w-4 h-4 rounded border-white/20 bg-black/30 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900 cursor-pointer"
+                    className="w-4 h-4 rounded border-white/20 bg-black/30 text-amber-500 focus:ring-amber-500 dark:text-zinc-400 dark:focus:ring-zinc-400 focus:ring-offset-gray-900 cursor-pointer"
                     checked={currentView.length > 0 && currentView.every(p => selectedProducts.includes(p.id))}
                     onChange={toggleSelectAll}
                   />
@@ -2252,12 +2396,12 @@ export default function Admin() {
               {currentView.map((p) => (
                 <div
                   key={p.id || `${p.title}-${p.image_url}`}
-                  className={`p-3 rounded border flex gap-3 transition-colors ${selectedProducts.includes(p.id) ? 'bg-purple-500/10 border-purple-500/30' : 'bg-white/5 border-white/10'}`}
+                  className={`p-3 rounded border flex gap-3 transition-colors ${selectedProducts.includes(p.id) ? 'bg-amber-500/10 border-amber-500/30 dark:bg-amber-500/10 dark:border-amber-500/30' : 'bg-white/5 border-white/10'}`}
                 >
                   <div className="flex items-center justify-center pl-2 pr-1">
                     <input
                       type="checkbox"
-                      className="w-4 h-4 rounded border-white/20 bg-black/30 text-purple-500 focus:ring-purple-500 focus:ring-offset-gray-900 cursor-pointer disabled:opacity-50"
+                      className="w-4 h-4 rounded border-white/20 bg-black/30 text-amber-500 focus:ring-amber-500 focus:ring-offset-gray-900 cursor-pointer disabled:opacity-50"
                       checked={selectedProducts.includes(p.id)}
                       onChange={() => toggleSelectProduct(p.id)}
                       disabled={!p.id}
@@ -2509,7 +2653,7 @@ export default function Admin() {
                       <tr key={adm.email} className="border-b border-white/5 group hover:bg-white/5 transition-colors">
                         <td className="py-4 font-bold flex items-center gap-3">{adm.email}</td>
                         <td className="py-4">
-                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${adm.role === 'superior' ? 'bg-purple-500/20 text-purple-400 border border-purple-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                          <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${adm.role === 'superior' ? 'bg-amber-500/20 text-amber-600 border border-amber-500/30 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                             {adm.role}
                           </span>
                         </td>
@@ -2588,6 +2732,214 @@ export default function Admin() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {activeTab === 'promo' && (
+          <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl mx-auto pb-12">
+            <form onSubmit={handleSavePromo} className="glass p-8 rounded-3xl border border-white/10 space-y-8">
+              <div className="flex items-center gap-3 border-b border-white/5 pb-4">
+                <span className="w-2.5 h-8 rounded-full bg-gradient-to-b from-amber-400 to-amber-600"></span>
+                <div>
+                  <h2 className="text-xl font-black uppercase tracking-widest text-white">Pengaturan Promo Popup</h2>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-widest font-semibold mt-0.5">
+                    Atur iklan popup promosi yang akan tampil di halaman beranda saat pembeli pertama kali berkunjung
+                  </p>
+                </div>
+              </div>
+
+              {/* Toggle Aktif */}
+              <div className="flex items-center justify-between bg-black/20 border border-white/5 p-5 rounded-2xl">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Status Popup</h3>
+                  <p className="text-[10px] text-gray-500 mt-1">Aktifkan atau nonaktifkan popup iklan promosi di beranda</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPromoActive(!promoActive)}
+                  className={`relative w-14 h-7 rounded-full transition-all duration-300 ${promoActive ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg shadow-green-500/20' : 'bg-zinc-700'}`}
+                >
+                  <span className={`absolute top-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-all duration-300 ${promoActive ? 'left-[calc(100%-1.625rem)]' : 'left-0.5'}`} />
+                </button>
+              </div>
+
+              {/* Mode Durasi / Jadwal */}
+              <div className="bg-black/20 border border-white/5 p-5 rounded-2xl space-y-5">
+                <div>
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Mode Durasi</h3>
+                  <p className="text-[10px] text-gray-500 mt-1">Pilih apakah promo ditampilkan terus-menerus atau dijadwalkan otomatis</p>
+                </div>
+
+                {/* Mode selector pills */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPromoMode('always')}
+                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
+                      promoMode === 'always'
+                        ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-amber-500/50 text-amber-400 shadow-lg shadow-amber-500/10'
+                        : 'bg-black/30 border-white/5 text-gray-500 hover:text-gray-300 hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span>♾️</span>
+                      <span>Selalu Aktif</span>
+                    </div>
+                    <p className="text-[9px] font-medium normal-case tracking-normal mt-1.5 opacity-60">Tampil terus sampai dimatikan manual</p>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPromoMode('scheduled')}
+                    className={`flex-1 py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all border ${
+                      promoMode === 'scheduled'
+                        ? 'bg-gradient-to-r from-blue-500/20 to-cyan-500/20 border-blue-500/50 text-blue-400 shadow-lg shadow-blue-500/10'
+                        : 'bg-black/30 border-white/5 text-gray-500 hover:text-gray-300 hover:border-white/10'
+                    }`}
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span>📅</span>
+                      <span>Terjadwal</span>
+                    </div>
+                    <p className="text-[9px] font-medium normal-case tracking-normal mt-1.5 opacity-60">Otomatis aktif/nonaktif sesuai jadwal</p>
+                  </button>
+                </div>
+
+                {/* Date pickers - only shown in scheduled mode */}
+                {promoMode === 'scheduled' && (
+                  <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-green-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span>
+                          Tanggal Mulai
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={promoStartDate}
+                          onChange={(e) => setPromoStartDate(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-green-500 transition-all [color-scheme:dark]"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black uppercase tracking-widest text-red-400 flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                          Tanggal Selesai
+                        </label>
+                        <input
+                          type="datetime-local"
+                          value={promoEndDate}
+                          onChange={(e) => setPromoEndDate(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition-all [color-scheme:dark]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Schedule Status Indicator */}
+                    {promoStartDate && promoEndDate && (() => {
+                      const now = new Date()
+                      const start = new Date(promoStartDate)
+                      const end = new Date(promoEndDate)
+                      const isNowActive = now >= start && now <= end
+                      const isFuture = now < start
+                      const isPast = now > end
+                      const formatDate = (d) => d.toLocaleString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })
+
+                      return (
+                        <div className={`flex items-center gap-3 p-3 rounded-xl border ${
+                          isNowActive ? 'bg-green-500/10 border-green-500/20' :
+                          isFuture ? 'bg-blue-500/10 border-blue-500/20' :
+                          'bg-red-500/10 border-red-500/20'
+                        }`}>
+                          <span className={`w-2.5 h-2.5 rounded-full ${
+                            isNowActive ? 'bg-green-400 animate-pulse' :
+                            isFuture ? 'bg-blue-400' :
+                            'bg-red-400'
+                          }`} />
+                          <div>
+                            <p className={`text-[10px] font-black uppercase tracking-widest ${
+                              isNowActive ? 'text-green-400' :
+                              isFuture ? 'text-blue-400' :
+                              'text-red-400'
+                            }`}>
+                              {isNowActive ? '🟢 SEDANG AKTIF' : isFuture ? '🔵 TERJADWAL' : '🔴 SUDAH BERAKHIR'}
+                            </p>
+                            <p className="text-[9px] text-gray-500 mt-0.5">
+                              {isNowActive ? `Aktif sampai ${formatDate(end)}` :
+                               isFuture ? `Mulai ${formatDate(start)} — Selesai ${formatDate(end)}` :
+                               `Promo berakhir pada ${formatDate(end)}`}
+                            </p>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
+
+              {/* Upload Gambar Banner */}
+              <div className="bg-black/20 border border-white/5 p-5 rounded-2xl space-y-4">
+                <h3 className="text-sm font-black uppercase tracking-widest text-white">Banner Promosi</h3>
+                <p className="text-[10px] text-gray-500">Unggah gambar desain banner promo yang sudah kamu buat (format: JPG, PNG, WebP)</p>
+                
+                {/* Preview */}
+                {(promoImagePreview || promoImageUrl) && (
+                  <div className="relative rounded-2xl overflow-hidden border border-white/10 max-w-lg">
+                    <img src={promoImagePreview || promoImageUrl} alt="Promo Preview" className="w-full h-auto object-contain" />
+                  </div>
+                )}
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      setPromoImageFile(file)
+                      setPromoImagePreview(URL.createObjectURL(file))
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-black file:uppercase file:tracking-widest file:bg-amber-500/10 file:text-amber-400 hover:file:bg-amber-500/20 file:cursor-pointer file:transition-all cursor-pointer"
+                />
+                
+                <p className="text-[9px] text-gray-600">Atau masukkan URL gambar secara langsung:</p>
+                <input
+                  type="url"
+                  value={promoImageUrl}
+                  onChange={(e) => { setPromoImageUrl(e.target.value); setPromoImagePreview(e.target.value); }}
+                  placeholder="https://example.com/banner-promo.jpg"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all"
+                />
+              </div>
+
+              {/* Target Redirect URL */}
+              <div className="bg-black/20 border border-white/5 p-5 rounded-2xl space-y-3">
+                <h3 className="text-sm font-black uppercase tracking-widest text-white">Target URL (Opsional)</h3>
+                <p className="text-[10px] text-gray-500">Tautan halaman tujuan saat banner diklik pembeli (contoh: /whats-new atau /anime)</p>
+                <input
+                  type="text"
+                  value={promoRedirectUrl}
+                  onChange={(e) => setPromoRedirectUrl(e.target.value)}
+                  placeholder="/whats-new"
+                  className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-amber-500 transition-all"
+                />
+              </div>
+
+              {/* Save Button */}
+              <button
+                type="submit"
+                disabled={isSavingPromo}
+                className="w-full py-4 rounded-2xl bg-gradient-to-r from-amber-500 to-yellow-600 dark:from-zinc-700 dark:to-zinc-800 hover:from-amber-400 hover:to-yellow-500 dark:hover:from-zinc-600 dark:hover:to-zinc-700 text-white dark:text-zinc-100 font-black uppercase tracking-widest text-sm shadow-xl shadow-amber-500/10 dark:shadow-zinc-900/30 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3"
+              >
+                {isSavingPromo ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Menyimpan...
+                  </>
+                ) : (
+                  '💾 Simpan Pengaturan Promo ✧'
+                )}
+              </button>
+            </form>
           </div>
         )}
 

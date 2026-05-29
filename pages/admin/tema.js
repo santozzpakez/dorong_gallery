@@ -16,9 +16,41 @@ function sanitizeFileName(name) {
 }
 
 const defaultTypes = {
-  anime: [],
-  kpop: [],
-  aesthetic: []
+  anime: [
+    'Naruto',
+    'Attack On Titan',
+    'One Piece',
+    'Jujutsu Kaisen',
+    'Tokyo Ghoul',
+    'Solo Leveling',
+    'Bleach',
+    'Dragon Ball',
+    'Deathnote',
+    'Kuroko No Basket',
+    'Haikyuu!!'
+  ],
+  kpop: [
+    'BTS',
+    'Blackpink',
+    'Aespa',
+    'Newjeans',
+    'Seventeen',
+    'Twice',
+    'Stray Kids',
+    'Babymonster',
+    'Ive'
+  ],
+  aesthetic: [
+    'Cyberpunk',
+    'Minimalis',
+    'Dark Luxury',
+    'Cafe',
+    'Music',
+    'Retro Vintage',
+    'Gaming Room',
+    'Japanesse',
+    'Kids'
+  ]
 }
 
 const defaultCharactersByType = {
@@ -363,6 +395,61 @@ function AssetSlotCard({ slot, staged, onStage, stagedAssets, onReset, onCancelS
   )
 }
 
+const toSlug = (str) => typeof str === 'string' ? str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : ''
+
+const getInitialGroups = () => {
+  const groups = [...ASSET_GROUPS]
+  groups.push({ id: 'anime-sidebar-layout', label: '🎌 Anime — Sidebar Layout (10 Panels)' })
+  groups.push({ id: 'anime-all-covers', label: '🎌 Anime — All Series Covers' })
+  groups.push({ id: 'kpop-sidebar-layout', label: '🎵 K-pop — Sidebar Layout (10 Panels)' })
+  groups.push({ id: 'kpop-all-covers', label: '🎵 K-pop — All Group Covers' })
+  groups.push({ id: 'aesthetic-sidebar-layout', label: '✨ Aesthetic — Sidebar Layout (10 Panels)' })
+  groups.push({ id: 'aesthetic-all-covers', label: '✨ Aesthetic — All Theme Covers' })
+  return groups
+}
+
+const getInitialSlots = () => {
+  const slots = [...ASSET_SLOTS]
+  
+  // Anime Sidebar Slots
+  for (let i = 1; i <= 10; i++) {
+    const side = i <= 5 ? 'Kiri' : 'Kanan'
+    const pos = i <= 5 ? i : i - 5
+    slots.push({ key: `anime-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'anime-sidebar-layout', isLayoutSlot: true })
+  }
+  // Anime default cover slots
+  defaultTypes.anime.forEach(series => {
+    const slug = toSlug(series)
+    if (slug) slots.push({ key: `anime-cover-${slug}`, label: `Cover — ${series}`, group: 'anime-all-covers', defaultUrl: '' })
+  })
+
+  // K-pop Sidebar Slots
+  for (let i = 1; i <= 10; i++) {
+    const side = i <= 5 ? 'Kiri' : 'Kanan'
+    const pos = i <= 5 ? i : i - 5
+    slots.push({ key: `kpop-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'kpop-sidebar-layout', isLayoutSlot: true, isKpop: true })
+  }
+  // K-pop default cover slots
+  defaultTypes.kpop.forEach(groupName => {
+    const slug = toSlug(groupName)
+    if (slug) slots.push({ key: `kpop-${slug}`, label: `Cover — ${groupName}`, group: 'kpop-all-covers', defaultUrl: '' })
+  })
+
+  // Aesthetic Sidebar Slots
+  for (let i = 1; i <= 10; i++) {
+    const side = i <= 5 ? 'Kiri' : 'Kanan'
+    const pos = i <= 5 ? i : i - 5
+    slots.push({ key: `aesthetic-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'aesthetic-sidebar-layout', isLayoutSlot: true, isAesthetic: true })
+  }
+  // Aesthetic default cover slots
+  defaultTypes.aesthetic.forEach(name => {
+    const slug = toSlug(name)
+    if (slug) slots.push({ key: `aesthetic-${slug}`, label: `Cover — ${name}`, group: 'aesthetic-all-covers', defaultUrl: '' })
+  })
+
+  return slots
+}
+
 // --- MAIN PAGE ---
 export default function TemaAdmin() {
   const router = useRouter()
@@ -377,12 +464,11 @@ export default function TemaAdmin() {
   }, [user, adminRole, loading])
 
   const [openGroup, setOpenGroup] = useState('layout')
-  const [dynamicGroups, setDynamicGroups] = useState(ASSET_GROUPS)
-  const [dynamicSlots, setDynamicSlots] = useState(ASSET_SLOTS)
-  const [seriesList, setSeriesList] = useState([])
-  const [kpopGroupsList, setKpopGroupsList] = useState([])
-  const [aestheticThemesList, setAestheticThemesList] = useState([])
-  const [decorCategoriesList, setDecorCategoriesList] = useState([])
+  const [dynamicGroups, setDynamicGroups] = useState(getInitialGroups)
+  const [dynamicSlots, setDynamicSlots] = useState(getInitialSlots)
+  const [seriesList, setSeriesList] = useState(defaultTypes.anime)
+  const [kpopGroupsList, setKpopGroupsList] = useState(defaultTypes.kpop)
+  const [aestheticThemesList, setAestheticThemesList] = useState(defaultTypes.aesthetic)
 
   // Stage state: unsaved changes
   const [stagedAssets, setStagedAssets] = useState({})
@@ -444,14 +530,20 @@ export default function TemaAdmin() {
             }
           })
         } else {
-          types = { anime: [], kpop: [], aesthetic: [], decor: [] }
+          types = { anime: [], kpop: [], aesthetic: [] }
         }
 
         // --- 2. Sync from Database Products & Assets ---
         if (hasSupabaseConfig && supabase) {
           try {
+            const withTimeout = (promise, ms = 3000) => 
+              Promise.race([
+                promise,
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Supabase request timeout')), ms))
+              ]);
+
             // A. Sync from Products
-            const { data: pData, error: pErr } = await supabase.from('products').select('category, subcategory')
+            const { data: pData, error: pErr } = await withTimeout(supabase.from('products').select('category, subcategory'))
             if (!pErr && pData) {
               pData.forEach(p => {
                 const cat = p.category
@@ -465,7 +557,7 @@ export default function TemaAdmin() {
                   const parts = sub.split(' - ')
                   typeName = parts[0].trim()
                   charName = parts[1]?.trim() || ''
-                } else if (cat === 'aesthetic' || cat === 'decor') {
+                } else if (cat === 'aesthetic') {
                   typeName = sub.trim()
                 }
 
@@ -487,7 +579,7 @@ export default function TemaAdmin() {
             }
 
             // B. Sync from Site Assets
-            const { data: aData, error: aErr } = await supabase.from('site_assets').select('key, label, text_value')
+            const { data: aData, error: aErr } = await withTimeout(supabase.from('site_assets').select('key, label, text_value'))
             if (!aErr && aData) {
               aData.forEach(asset => {
                 // Parse global options if present
@@ -519,10 +611,8 @@ export default function TemaAdmin() {
                   rawName = asset.label || asset.key.replace('anime-cover-', '').replace(/-/g, ' ')
                 } else if (asset.key.startsWith('kpop-')) {
                   rawName = asset.label || asset.key.replace('kpop-', '').replace(/-/g, ' ')
-                } else if (asset.key.startsWith('aesthetic-')) {
-                  rawName = asset.label || asset.key.replace('aesthetic-', '').replace(/-/g, ' ')
-                } else if (asset.key.startsWith('decor-')) {
-                  rawName = asset.label || asset.key.replace('decor-', '').replace(/-/g, ' ')
+                } else if (asset.key.startsWith('aesthetic-') || asset.key.startsWith('decor-')) {
+                  rawName = asset.label || asset.key.replace('aesthetic-', '').replace('decor-', '').replace(/-/g, ' ')
                 }
 
                 if (rawName) {
@@ -532,8 +622,7 @@ export default function TemaAdmin() {
                   let cat = ''
                   if (asset.key.includes('anime')) cat = 'anime'
                   else if (asset.key.includes('kpop')) cat = 'kpop'
-                  else if (asset.key.includes('aesthetic')) cat = 'aesthetic'
-                  else if (asset.key.includes('decor')) cat = 'decor'
+                  else if (asset.key.includes('aesthetic') || asset.key.includes('decor')) cat = 'aesthetic'
                   else cat = 'custom'
 
                   if (cat && types[cat] && Array.isArray(types[cat])) {
@@ -563,7 +652,6 @@ export default function TemaAdmin() {
 
         const seriesSet = new Set(finalTypes.anime || [])
         const kpopGroups = new Set(finalTypes.kpop || [])
-        const decorThemes = new Set(finalTypes.decor || [])
         const aestheticThemes = new Set(finalTypes.aesthetic || [])
 
         // 1. Filter out ANY existing dynamic groups/slots to start fresh
@@ -580,7 +668,7 @@ export default function TemaAdmin() {
           !s.group.startsWith('aesthetic')
         )
 
-        const toSlug = (str) => typeof str === 'string' ? str.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') : ''
+
 
         // ─── ANIME SECTION ───
         filteredGroups.push({ id: 'anime-sidebar-layout', label: '🎌 Anime — Sidebar Layout (10 Panels)' })
@@ -610,20 +698,6 @@ export default function TemaAdmin() {
           if (slug) filteredSlots.push({ key: `kpop-${slug}`, label: `Cover — ${groupName}`, group: 'kpop-all-covers', defaultUrl: '' })
         })
 
-        // ─── DECOR SECTION ───
-        filteredGroups.push({ id: 'decor-sidebar-layout', label: '🖼 Decor — Sidebar Layout (10 Panels)' })
-        for (let i = 1; i <= 10; i++) {
-          const side = i <= 5 ? 'Kiri' : 'Kanan'
-          const pos = i <= 5 ? i : i - 5
-          filteredSlots.push({ key: `decor-sidebar-slot-${i}`, label: `Slot ${side} #${pos}`, group: 'decor-sidebar-layout', isLayoutSlot: true, isDecor: true })
-        }
-        filteredGroups.push({ id: 'decor-all-covers', label: '🖼 Decor — All Theme Covers' })
-        const sortedThemes = Array.from(decorThemes).sort((a, b) => a.localeCompare(b))
-        sortedThemes.forEach(name => {
-          const slug = toSlug(name)
-          if (slug) filteredSlots.push({ key: `decor-${slug}`, label: `Cover — ${name}`, group: 'decor-all-covers', defaultUrl: '' })
-        })
-
         // ─── AESTHETIC SECTION ───
         filteredGroups.push({ id: 'aesthetic-sidebar-layout', label: '✨ Aesthetic — Sidebar Layout (10 Panels)' })
         for (let i = 1; i <= 10; i++) {
@@ -642,7 +716,6 @@ export default function TemaAdmin() {
         setDynamicSlots(filteredSlots)
         setSeriesList(sortedSeries.map(s => ({ name: s, slug: toSlug(s) })))
         setKpopGroupsList(sortedKpop.map(s => ({ name: s, slug: toSlug(s) })))
-        setDecorCategoriesList(sortedThemes.map(s => ({ name: s, slug: toSlug(s) })))
         setAestheticThemesList(sortedAesthetic.map(s => ({ name: s, slug: toSlug(s) })))
       } catch (globalErr) {
         console.error('Global loadDynamicSlots error:', globalErr)
@@ -1062,38 +1135,6 @@ export default function TemaAdmin() {
                   </div>
                 </div>
 
-                {/* 4. DECOR */}
-                <div className="space-y-2">
-                  <h4 
-                    onClick={() => setOpenGroup('decor-sidebar-layout')}
-                    className="text-[10px] font-black text-emerald-500/80 uppercase tracking-[0.15em] border-b border-emerald-500/10 pb-1 flex items-center justify-between cursor-pointer hover:text-emerald-400 transition-colors"
-                  >
-                    <span>🖼 Decor Categories</span>
-                    <span className="text-[8px] font-bold text-emerald-500/40">KLIK</span>
-                  </h4>
-                  <div className="space-y-1">
-                    {dynamicGroups.filter(g => g.id.startsWith('decor') && (g.id === 'decor-sidebar-layout' || g.id === 'decor-all-covers')).map(g => {
-                      const count = dynamicSlots.filter(s => s.group === g.id).length
-                      const isActive = openGroup === g.id
-                      const label = g.id === 'decor-sidebar-layout' ? 'Sidebar (10 Panels)' : 'Theme Covers'
-                      return (
-                        <button
-                          key={g.id}
-                          onClick={() => setOpenGroup(g.id)}
-                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-left text-xs font-bold transition-all ${
-                            isActive 
-                              ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-500/5 border border-emerald-500/30 text-emerald-400' 
-                              : 'text-gray-400 hover:text-white hover:bg-white/5 border border-transparent'
-                          }`}
-                        >
-                          <span className="truncate">{label}</span>
-                          <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${isActive ? 'bg-emerald-500/20 text-emerald-400' : 'bg-white/5 text-gray-500'}`}>{count}</span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                </div>
-
                 {/* 5. AESTHETIC */}
                 <div className="space-y-2">
                   <h4 
@@ -1143,7 +1184,6 @@ export default function TemaAdmin() {
                     <span className={`w-2.5 h-8 rounded-full ${
                       group.id.startsWith('anime') ? 'bg-gradient-to-b from-rose-400 to-rose-600' :
                       group.id.startsWith('kpop') ? 'bg-gradient-to-b from-cyan-400 to-cyan-600' :
-                      group.id.startsWith('decor') ? 'bg-gradient-to-b from-emerald-400 to-emerald-600' :
                       group.id.startsWith('aesthetic') ? 'bg-gradient-to-b from-fuchsia-400 to-fuchsia-600' :
                       'bg-gradient-to-b from-amber-400 to-amber-600'
                     }`}></span>
@@ -1187,13 +1227,12 @@ export default function TemaAdmin() {
                         <div className="space-y-3">
                           {dynamicSlots.filter(s => s.group === group.id).slice(0, 5).map(slot => {
                             const selectedSlug = stagedAssets[slot.key]?.text !== undefined ? stagedAssets[slot.key].text : (getText(slot.key) || '')
-                            const coverKey = group.id.startsWith('kpop') ? `kpop-${selectedSlug}` : group.id.startsWith('aesthetic') ? `aesthetic-${selectedSlug}` : group.id.startsWith('decor') ? `decor-${selectedSlug}` : `anime-cover-${selectedSlug}`
+                            const coverKey = group.id.startsWith('kpop') ? `kpop-${selectedSlug}` : group.id.startsWith('aesthetic') ? `aesthetic-${selectedSlug}` : `anime-cover-${selectedSlug}`
                             const coverUrl = getUrl(coverKey)
 
                             const getCorrectOptionsList = () => {
                               if (group.id.startsWith('kpop')) return kpopGroupsList
                               if (group.id.startsWith('aesthetic')) return aestheticThemesList
-                              if (group.id.startsWith('decor')) return decorCategoriesList
                               return seriesList
                             }
                             const optionsList = getCorrectOptionsList()
@@ -1245,13 +1284,12 @@ export default function TemaAdmin() {
                         <div className="space-y-3">
                           {dynamicSlots.filter(s => s.group === group.id).slice(5, 10).map(slot => {
                             const selectedSlug = stagedAssets[slot.key]?.text !== undefined ? stagedAssets[slot.key].text : (getText(slot.key) || '')
-                            const coverKey = group.id.startsWith('kpop') ? `kpop-${selectedSlug}` : group.id.startsWith('aesthetic') ? `aesthetic-${selectedSlug}` : group.id.startsWith('decor') ? `decor-${selectedSlug}` : `anime-cover-${selectedSlug}`
+                            const coverKey = group.id.startsWith('kpop') ? `kpop-${selectedSlug}` : group.id.startsWith('aesthetic') ? `aesthetic-${selectedSlug}` : `anime-cover-${selectedSlug}`
                             const coverUrl = getUrl(coverKey)
 
                             const getCorrectOptionsList = () => {
                               if (group.id.startsWith('kpop')) return kpopGroupsList
                               if (group.id.startsWith('aesthetic')) return aestheticThemesList
-                              if (group.id.startsWith('decor')) return decorCategoriesList
                               return seriesList
                             }
                             const optionsList = getCorrectOptionsList()
@@ -1287,41 +1325,42 @@ export default function TemaAdmin() {
                 )}
 
                 {/* Main Slot Grid with Live Filtering */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-                  {dynamicSlots
-                    .filter(s => s.group === group.id)
-                    .filter(s => {
-                      if (!searchQuery) return true
-                      const label = s.label || ''
-                      const key = s.key || ''
-                      const textVal = stagedAssets[s.key]?.text !== undefined ? stagedAssets[s.key].text : (getText(s.key) || '')
-                      return label.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                             key.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                             textVal.toLowerCase().includes(searchQuery.toLowerCase())
-                    })
-                    .map(slot => {
-                      const getCorrectList = () => {
-                        if (slot.isKpop) return kpopGroupsList
-                        if (slot.isAesthetic) return aestheticThemesList
-                        if (slot.isDecor) return decorCategoriesList
-                        return seriesList
-                      }
+                {!group.id.includes('sidebar-layout') && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+                    {dynamicSlots
+                      .filter(s => s.group === group.id)
+                      .filter(s => {
+                        if (!searchQuery) return true
+                        const label = s.label || ''
+                        const key = s.key || ''
+                        const textVal = stagedAssets[s.key]?.text !== undefined ? stagedAssets[s.key].text : (getText(s.key) || '')
+                        return label.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                               key.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                               textVal.toLowerCase().includes(searchQuery.toLowerCase())
+                      })
+                      .map(slot => {
+                        const getCorrectList = () => {
+                          if (slot.isKpop) return kpopGroupsList
+                          if (slot.isAesthetic) return aestheticThemesList
+                          return seriesList
+                        }
 
-                      return (
-                        <AssetSlotCard
-                          key={slot.key}
-                          slot={slot}
-                          staged={stagedAssets[slot.key]}
-                          onStage={onStage}
-                          stagedAssets={stagedAssets}
-                          onReset={handleResetAsset}
-                          onCancelStaged={handleCancelStaged}
-                          seriesList={getCorrectList()}
-                        />
-                      )
-                    })
-                  }
-                </div>
+                        return (
+                          <AssetSlotCard
+                            key={slot.key}
+                            slot={slot}
+                            staged={stagedAssets[slot.key]}
+                            onStage={onStage}
+                            stagedAssets={stagedAssets}
+                            onReset={handleResetAsset}
+                            onCancelStaged={handleCancelStaged}
+                            seriesList={getCorrectList()}
+                          />
+                        )
+                      })
+                    }
+                  </div>
+                )}
 
                 {/* Empty State */}
                 {dynamicSlots.filter(s => s.group === group.id).length === 0 && (

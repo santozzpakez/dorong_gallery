@@ -7,6 +7,7 @@ import ShopGallery from '../components/ShopGallery'
 import Footer from '../components/Footer'
 import { useSiteAssets } from '../lib/siteAssets'
 import { useLanguage } from '../context/LanguageContext'
+import PromoPopup from '../components/PromoPopup'
 
 export default function Home(){
   const { getUrl } = useSiteAssets()
@@ -79,6 +80,7 @@ export default function Home(){
         <meta name="description" content="Premium anime, k-pop, decor posters & sublimation printing" />
       </Head>
       <Header />
+      <PromoPopup />
       <main className="pt-28 bg-[var(--bg)] min-h-screen transition-colors duration-300">
         <Hero />
 

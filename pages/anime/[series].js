@@ -117,7 +117,7 @@ export default function AnimeSeriesPage() {
       const definedChars = adminChars[actualSeriesName] || []
       definedChars.forEach(cName => {
         if (cName && cName !== '-') {
-          charMap.set(cName, { count: 0, image: '' })
+          charMap.set(cName, { count: 0, images: [] })
         }
       })
 
@@ -158,7 +158,7 @@ export default function AnimeSeriesPage() {
                   const current = charMap.get(matchedKey)
                   charMap.set(matchedKey, { 
                     count: current.count + 1, 
-                    image: current.image || item.image_url 
+                    images: [...(current.images || []), item.image_url] 
                   })
                 }
               }
@@ -169,11 +169,15 @@ export default function AnimeSeriesPage() {
 
       const formatted = Array.from(charMap.keys()).map(char => {
         const cSlug = toSlug(char)
+        const data = charMap.get(char)
+        const randomImage = data.images && data.images.length > 0 
+          ? data.images[Math.floor(Math.random() * data.images.length)]
+          : null
         return {
           name: char,
           slug: cSlug,
-          count: charMap.get(char).count,
-          image: charMap.get(char).image
+          count: data.count,
+          image: randomImage
         }
       })
 
@@ -188,7 +192,7 @@ export default function AnimeSeriesPage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
-      <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 w-full pb-16">
+      <main className="flex-grow pt-36 max-w-6xl mx-auto px-4 w-full pb-16">
         <Link href="/anime" className="text-xs text-accent/80 hover:text-accent transition-colors flex items-center gap-2 font-sans font-black uppercase tracking-widest">
           &larr; {t.back}
         </Link>
@@ -214,7 +218,7 @@ export default function AnimeSeriesPage() {
               <Link
                 key={character.slug}
                 href={`/anime/${seriesSlug}/${character.slug}`}
-                className="group rounded-[24px] overflow-hidden border border-zinc-200/60 dark:border-zinc-800/30 bg-gradient-to-b from-zinc-900 to-black hover:shadow-[0_20px_45px_rgb(var(--accent-main)/0.15)] hover:border-accent/50 transition-all duration-500 relative block h-80 flex flex-col justify-end p-6"
+                className="group rounded-[24px] overflow-hidden border border-zinc-200/60 dark:border-zinc-800/30 bg-gradient-to-b from-zinc-900 to-black hover:shadow-[0_20px_45px_rgb(var(--accent-main)/0.15)] hover:border-accent/50 transition-all duration-500 relative block aspect-[3/4] flex flex-col justify-end p-6"
               >
                 {/* Image Background */}
                 {displayImage ? (

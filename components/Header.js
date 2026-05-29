@@ -34,6 +34,13 @@ export default function Header() {
     { name: 'K-pop', href: '/kpop' },
     { name: 'Aesthetic', href: '/aesthetic' },
     { name: 'Custom', href: '/custom' },
+    { 
+      name: lang === 'id' ? 'Terbaru' : 
+            lang === 'jp' ? '新着' : 
+            lang === 'kr' ? '신상품' : 
+            lang === 'cn' ? '新品推荐' : "What's New", 
+      href: '/whats-new' 
+    },
   ]
 
   useEffect(() => {
@@ -76,8 +83,6 @@ export default function Header() {
       setShowSearch(false)
     }
   }
-
-  const headerBg = getUrl('cover-bg')
 
   const translations = {
     id: {
@@ -162,12 +167,6 @@ export default function Header() {
 
   return (
     <header className="fixed top-0 left-0 right-0 z-50">
-      {headerBg && (
-        <div
-          className="absolute inset-0 bg-cover bg-center z-0"
-          style={{ backgroundImage: `url(${headerBg})` }}
-        />
-      )}
 
       {/* Sidebar Overlay (Navigation) */}
       <AnimatePresence>

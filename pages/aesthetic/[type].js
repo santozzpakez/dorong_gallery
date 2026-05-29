@@ -127,7 +127,7 @@ export default function AestheticTypePage() {
   return (
     <div className="min-h-screen bg-[var(--bg)] text-[var(--text-main)] flex flex-col transition-colors duration-300">
       <Header />
-      <main className="flex-grow pt-28 max-w-6xl mx-auto px-4 pb-16 w-full">
+      <main className="flex-grow pt-36 max-w-6xl mx-auto px-4 pb-16 w-full">
 
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-xs font-sans mb-6 flex-wrap font-bold uppercase tracking-wider">
