@@ -601,6 +601,7 @@ export default function Admin() {
             {
               key: 'global-category-options',
               text_value: typeStr,
+              image_url: '',
               label: 'Global Category List Cache',
               category: 'system',
               updated_at: new Date().toISOString()
@@ -608,6 +609,7 @@ export default function Admin() {
             {
               key: 'global-character-options',
               text_value: charStr,
+              image_url: '',
               label: 'Global Character List Cache',
               category: 'system',
               updated_at: new Date().toISOString()
@@ -891,6 +893,73 @@ export default function Admin() {
     setForm((prev) => ({ ...prev, typeName: value, characterName: nextChar }))
   }
 
+  async function syncListsToDbBackground(updatedTypes, updatedChars) {
+    if (!hasSupabaseConfig || !supabase) {
+      console.warn('Background sync skipped: Supabase not configured.')
+      return
+    }
+
+    if (!token) {
+      console.error('Background sync skipped: No auth token available.')
+      setStatusMessage('⚠️ Gagal menyimpan: Belum login. Coba refresh halaman.')
+      return
+    }
+
+    try {
+      const typeStr = JSON.stringify(updatedTypes)
+      const charStr = JSON.stringify(updatedChars)
+
+      console.log('[Auto-save] Sending sync request to /api/sync-theme-assets...')
+
+      const res = await fetch('/api/sync-theme-assets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          dbUpdates: [
+            {
+              key: 'global-category-options',
+              text_value: typeStr,
+              image_url: '',
+              label: 'Global Category List Cache',
+              category: 'system',
+              updated_at: new Date().toISOString()
+            },
+            {
+              key: 'global-character-options',
+              text_value: charStr,
+              image_url: '',
+              label: 'Global Character List Cache',
+              category: 'system',
+              updated_at: new Date().toISOString()
+            }
+          ]
+        })
+      })
+
+      const data = await res.json()
+      console.log('[Auto-save] Response:', res.status, data)
+
+      if (!res.ok) {
+        throw new Error(data.error || `Server responded with status ${res.status}`)
+      }
+
+      if (typeof updateText === 'function') {
+        updateText('global-category-options', typeStr)
+        updateText('global-character-options', charStr)
+      }
+
+      console.log('✅ Auto-save background sync successful.')
+      setStatusMessage('✅ Perubahan berhasil disimpan ke database secara otomatis!')
+    } catch (err) {
+      console.error('❌ Background sync failed:', err)
+      setStatusMessage(`❌ Gagal auto-save ke database: ${err.message || 'Unknown error'}`)
+      alert(`❌ Gagal menyimpan ke database: ${err.message || 'Unknown error'}\n\nSilakan klik tombol "Simpan Daftar Karakter" secara manual.`)
+    }
+  }
+
   function addNewType() {
     const typed = newTypeName.trim()
     if (!typed || form.category === 'custom' || form.category === 'other') return
@@ -898,18 +967,27 @@ export default function Admin() {
     const formatted = clean.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')
     if (!formatted) return
 
-    setTypeOptions((prev) => {
-      const current = prev[form.category] || []
-      if (current.includes(formatted)) return prev
-      return { ...prev, [form.category]: [...current, formatted].sort() }
-    })
-    setCharactersByType((prev) => ({
-      ...prev,
-      [form.category]: { ...(prev[form.category] || {}), [formatted]: prev[form.category]?.[formatted] || [] }
-    }))
+    // Compute updated states beforehand for instant background sync
+    const currentTypes = typeOptions[form.category] || []
+    let nextTypes = typeOptions
+    if (!currentTypes.includes(formatted)) {
+      nextTypes = { ...typeOptions, [form.category]: [...currentTypes, formatted].sort() }
+    }
+
+    const currentCatChars = charactersByType[form.category] || {}
+    const nextChars = {
+      ...charactersByType,
+      [form.category]: { ...currentCatChars, [formatted]: currentCatChars[formatted] || [] }
+    }
+
+    setTypeOptions(nextTypes)
+    setCharactersByType(nextChars)
     setForm((prev) => ({ ...prev, typeName: formatted, characterName: '' }))
     setNewTypeName('')
-    setStatusMessage(`"${formatted}" ditambahkan. Tambahkan karakter di bawah jika belum ada.`)
+    setStatusMessage(`"${formatted}" ditambahkan. Menyimpan perubahan...`)
+
+    // Call background sync
+    syncListsToDbBackground(nextTypes, nextChars)
   }
 
   function addNewCharacter() {
@@ -933,23 +1011,28 @@ export default function Admin() {
 
     if (formattedNames.length === 0) return;
 
-    setCharactersByType((prev) => {
-      const catMap = { ...(prev[cat] || {}) }
-      const current = catMap[typeName] || []
-      const merged = [...new Set([...current, ...formattedNames])].sort();
-      catMap[typeName] = merged
-      return { ...prev, [cat]: catMap }
-    })
+    // Compute updated characters map beforehand
+    const catMap = { ...(charactersByType[cat] || {}) }
+    const current = catMap[typeName] || []
+    const merged = [...new Set([...current, ...formattedNames])].sort();
+    catMap[typeName] = merged
+
+    const nextChars = { ...charactersByType, [cat]: catMap }
+
+    setCharactersByType(nextChars)
 
     const lastChar = formattedNames[formattedNames.length - 1];
     setForm((prev) => ({ ...prev, characterName: lastChar }))
     setNewCharacterName('')
 
     if (formattedNames.length > 1) {
-      setStatusMessage(`${formattedNames.length} karakter berhasil ditambahkan untuk ${form.typeName}.`)
+      setStatusMessage(`${formattedNames.length} karakter berhasil ditambahkan untuk ${form.typeName}. Menyimpan ke database...`)
     } else {
-      setStatusMessage(`Karakter "${lastChar}" ditambahkan untuk ${form.typeName}.`)
+      setStatusMessage(`Karakter "${lastChar}" ditambahkan untuk ${form.typeName}. Menyimpan ke database...`)
     }
+
+    // Call background sync
+    syncListsToDbBackground(typeOptions, nextChars)
   }
 
   // ── Rename / Delete Type (Series / Grup) ──

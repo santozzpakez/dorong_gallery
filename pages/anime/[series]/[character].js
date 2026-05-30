@@ -208,13 +208,13 @@ export default function CharacterCollectionPage() {
             <Link href="/admin" className="text-accent text-xs hover:underline mt-4 inline-block uppercase font-black tracking-widest">{t.uploadViaAdmin}</Link>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="columns-2 sm:columns-3 lg:columns-4 gap-6">
             {products.map((p) => (
-              <Link key={p.id} href={`/product/${p.id}`}>
-                <article className="rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 hover:border-accent/60 hover:shadow-[0_15px_30px_rgb(var(--accent-main)/0.15)] transition-all cursor-pointer group flex flex-col h-full shadow-lg">
-                  <div className="aspect-[3/4] bg-black/40 relative overflow-hidden">
+              <Link key={p.id} href={`/product/${p.id}`} className="block break-inside-avoid mb-6">
+                <article className="rounded-2xl overflow-hidden glass border border-zinc-200/80 dark:border-zinc-850/40 hover:border-accent/60 hover:shadow-[0_15px_30px_rgb(var(--accent-main)/0.15)] transition-all cursor-pointer group flex flex-col shadow-lg">
+                  <div className="bg-black/40 relative overflow-hidden group">
                     {p.image_url ? (
-                      <Image src={p.image_url} alt={p.title} fill sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <img src={p.image_url} alt={p.title} loading="lazy" className="w-full h-auto block group-hover:scale-110 transition-transform duration-700" />
                     ) : (
                       <div className="absolute inset-0 bg-white/5 flex items-center justify-center text-xs text-gray-500">{t.noImage}</div>
                     )}

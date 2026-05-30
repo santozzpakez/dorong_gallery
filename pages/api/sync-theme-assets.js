@@ -40,6 +40,7 @@ export default async function handler(req, res) {
     // Ambil informasi user berdasarkan token
     const { data: { user }, error: userErr } = await supabaseAdmin.auth.getUser(token)
     if (userErr || !user) {
+      console.error('[sync-theme-assets] Auth error:', userErr?.message)
       return res.status(401).json({ error: 'Otorisasi gagal: Sesi telah kedaluwarsa atau tidak valid.' })
     }
 
@@ -54,18 +55,43 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Akses ditolak: Anda tidak memiliki hak akses admin.' })
     }
 
+    // --- ENSURE text_value column exists ---
+    // Jalankan ALTER TABLE untuk menambahkan kolom text_value jika belum ada
+    // dan ubah image_url menjadi nullable agar upsert tidak gagal
+    try {
+      await supabaseAdmin.rpc('exec_sql', {
+        sql: `
+          ALTER TABLE public.site_assets ADD COLUMN IF NOT EXISTS text_value text;
+          ALTER TABLE public.site_assets ALTER COLUMN image_url SET DEFAULT '';
+          ALTER TABLE public.site_assets ALTER COLUMN image_url DROP NOT NULL;
+        `
+      })
+    } catch (alterErr) {
+      // Jika RPC exec_sql tidak tersedia, abaikan — kolom mungkin sudah ada
+      console.warn('[sync-theme-assets] ALTER TABLE warning (non-fatal):', alterErr?.message)
+    }
+
+    // Pastikan setiap item memiliki image_url agar tidak melanggar constraint NOT NULL (fallback)
+    const sanitizedUpdates = dbUpdates.map(item => ({
+      ...item,
+      image_url: item.image_url ?? ''
+    }))
+
     // Upsert into site_assets
-    const { error: dbErr } = await supabaseAdmin
+    const { data: upsertData, error: dbErr } = await supabaseAdmin
       .from('site_assets')
-      .upsert(dbUpdates, { onConflict: 'key' })
+      .upsert(sanitizedUpdates, { onConflict: 'key' })
+      .select()
 
     if (dbErr) {
+      console.error('[sync-theme-assets] Database upsert failed:', dbErr)
       return res.status(500).json({ error: `Database upsert failed: ${dbErr.message}` })
     }
 
-    return res.status(200).json({ success: true })
+    console.log('[sync-theme-assets] Upsert successful:', sanitizedUpdates.map(u => u.key).join(', '))
+    return res.status(200).json({ success: true, updated: sanitizedUpdates.length })
   } catch (err) {
-    console.error('Server DB Sync Error:', err)
+    console.error('[sync-theme-assets] Server Error:', err)
     return res.status(500).json({ error: err.message })
   }
 }

@@ -76,12 +76,12 @@ export default function Hero() {
       {/* Main 60:40 Grid Split */}
       <div className="relative z-10 w-full grid grid-cols-1 lg:grid-cols-10 items-stretch">
         
-        {/* 60% LEFT SIDE: Pure & Sharp Video */}
+        {/* 50% LEFT SIDE: Pure & Sharp Video */}
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.8 }}
-          className="lg:col-span-6 relative w-full h-[250px] sm:h-[350px] lg:h-full overflow-hidden bg-black"
+          className="lg:col-span-5 relative w-full h-[250px] sm:h-[350px] lg:h-full overflow-hidden bg-black"
         >
           <video
             key={homeVideo}
@@ -106,12 +106,12 @@ export default function Hero() {
           </div>
         </motion.div>
 
-        {/* 40% RIGHT SIDE: Content Copywriting */}
+        {/* 50% RIGHT SIDE: Content Copywriting */}
         <motion.div 
           initial={{ opacity: 0, x: 30 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 0.8, delay: 0.1 }}
-          className="lg:col-span-4 flex flex-col justify-center p-8 sm:p-10 lg:p-14 space-y-6 text-left bg-gradient-to-br from-zinc-100 to-zinc-300 dark:from-zinc-900 dark:to-zinc-950 relative border-t lg:border-t-0 lg:border-l border-zinc-300 dark:border-zinc-800"
+          className="lg:col-span-5 flex flex-col justify-center p-8 sm:p-10 lg:p-14 space-y-6 text-left bg-gradient-to-br from-zinc-100 to-zinc-300 dark:from-zinc-900 dark:to-zinc-950 relative border-t lg:border-t-0 lg:border-l border-zinc-300 dark:border-zinc-800"
         >
           {/* Inner gold glow orb */}
           <div className="absolute -top-20 -right-20 w-48 h-48 bg-accent/5 rounded-full filter blur-3xl pointer-events-none"></div>
